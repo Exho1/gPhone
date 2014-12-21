@@ -1,0 +1,80 @@
+***** Help documentation for the gPhone *****
+
+*** COMMANDS AND CONVARS:
+gphone - Opens the phone
+gphone_close - Closes the phone
+
+gphone_firsttime 1/0 - (bool) First time using the phone
+
+
+*** SERVERSIDE HOOKS:
+--// Called when the server is about to wire money through the Finances app
+hook.Add("gPhone_ShouldAllowTransaction", "Example_Hook", function( sender, receiver, amount )
+	-- The variables are self-explanatory
+	
+	-- You can return 2 arguments. True or nothing allows money to be transferred and false stops it
+	-- When you return false you can also return a reason for denying the request, the reason is optional
+	-- return false, "Sorry, sending money is forbidden"
+end)
+
+--// Called when the phone has finished initializing and is on the player's screen
+hook.Add( "gPhone_Built", "Example_Hook", function(ply)
+	-- It returns nothing
+end)
+
+
+
+*** CLIENTSIDE HOOKS:
+--// Called when an application is successfully run on the phone
+hook.Add( "gPhone_AppRan", "Example_Hook", function( name, data )
+	-- name is the key for the app in the gPhone.AppBase table
+	-- data is the app table with all the functions and variables inside
+	
+	-- It returns nothing
+end)
+
+
+
+*** APP CREATION
+local APP = {}
+
+-- Name that appears on the home screen
+APP.PrintName = "App Name"
+-- Path to the icon, relative to materials directory
+APP.Icon = "vgui/gphone/app_image.png"
+-- (optional) Gamemode in which this app can be run, only use if the app has gamemode-specific functions or variables
+APP.Gamemode = "DarkRP"
+
+function APP.Run( objects, screen )
+	-- Called when your App opens
+	
+	-- The status bar is white by default which might not appear on some colors, you can darken it with this function
+	-- gPhone.DarkenStatusBar()
+	
+	-- 'screen' is gPhone.phoneScreen, its easier to write this way
+	
+	-- 'objects' is the table in which all app-related screen elements are stored
+	-- Create your parent panels in the table.
+	--[[ ex:
+		objects.Panel = vgui.Create("DPanel")
+		
+		local button = vgui.Create("DButton", objects.Panel)
+	]]
+	
+end
+
+-- You can create your own functions and reference them in the default APP functions
+-- Its just for neatness and the existance of custom functions is entirely optional
+-- function APP.YourCustomFunction( args ) print(args) end
+-- APP.YourCustomFunction( 24 )
+
+function APP.Paint( screen )
+	-- Called when the screen's Paint function is called
+	
+	-- This overrides it so you will have to draw your own background, example below
+	-- draw.RoundedBox(2, 0, 0, screen:GetTall(), Color(0, 0, 0))
+	-- Don't put any Derma in here
+end
+
+-- Adds the app to the phone
+gPhone.AddApp(APP)
