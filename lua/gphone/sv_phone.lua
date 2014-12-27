@@ -2,6 +2,7 @@
 
 --// Resourcing and app adding
 resource.AddFile( "materials/vgui/gphone/gPhone.png" )
+resource.AddFile( "resource/fonts/roboto_light.tff" )
 
 local files = file.Find( "materials/vgui/gphone/*.png", "GAME" ) -- Phone images
 for k, v in pairs(files) do
