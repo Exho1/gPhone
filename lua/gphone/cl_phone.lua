@@ -241,6 +241,8 @@ function gPhone.HidePhone()
 		
 		gPhone.PhoneActive = false
 		
+		gPhone.RemoveTickers()
+		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
 		net.SendToServer()
@@ -255,6 +257,8 @@ function gPhone.DestroyPhone()
 		
 		gPhone.PhoneActive = false
 		gPhone.PhoneExists = false
+		
+		gPhone.RemoveTickers()
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})

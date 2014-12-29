@@ -375,10 +375,9 @@ local function trackBallMovement( ball, hitX, hitY, hitCount ) -- Predict where 
 	local endX = hitX + (ang * signX * 10000)
 	local endY = hitY + (ang * signY * 10000)
 	
-	-- Align the line to the ball's center
-	local w, h = ball:GetSize()
-	startX, endX = startX + w, endX + w
-	startY, endY = startY + h, endY + h
+	-- Clamp the end points
+	--endX = math.Clamp( endX, 10, screen:GetWide() - 10)
+	--endY = math.Clamp( endY, 10, screen:GetTall() - 10)
 	
 	-- Store value for the bot
 	predictedHitPos = {x=endX, y=endY} 
@@ -392,7 +391,7 @@ local function movePaddle( obj, up ) -- Move the paddle
 	
 	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-gPhone.AppBase["_children_"].PaddleP1:GetTall()
 	local delta = 200 * RealFrameTime()
-	local moveDistance = 2
+	local moveDistance = 4
 	
 	local x, y = obj:GetPos()
 	if up then 
@@ -407,7 +406,7 @@ local function movePaddleBot( yPos, onFinished ) -- Bots need a special move fun
 	
 	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-objects.PaddleP2:GetTall()
 	local delta = 200 * RealFrameTime()
-	local moveDistance = 2
+	local moveDistance = 4
 	
 	local x, y = objects.PaddleP2:GetPos()
 	
@@ -447,9 +446,9 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 			
 			local dir = math.random(2)
 			if dir == 1 then
-				ball.VelocityX = 2
+				ball.VelocityX = 4
 			else
-				ball.VelocityX = -2
+				ball.VelocityX = -4
 			end
 		end
 		if ball.VelocityY == 0 then	
@@ -458,9 +457,9 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 			
 			local dir = math.random(2)
 			if dir == 1 then
-				ball.VelocityY = -2
+				ball.VelocityY = -4
 			else
-				ball.VelocityY = 2
+				ball.VelocityY = 4
 			end
 		end
 	else -- It has hit a paddle
@@ -471,19 +470,19 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 		
 		if plyNum == PONG_PLAYER1 then -- Player 1's paddle hit the ball
 			if ballY <= y + hitPaddle:GetTall()/2 then -- Ball hit lower half of the paddle
-				ball.VelocityX = 2
-				ball.VelocityY = -2
+				ball.VelocityX = 4
+				ball.VelocityY = -4
 			else
-				ball.VelocityX = 2
-				ball.VelocityY = 2
+				ball.VelocityX = 4
+				ball.VelocityY = 4
 			end
 		else
 			if ballY <= y + hitPaddle:GetTall()/2 then
-				ball.VelocityX = -2
-				ball.VelocityY = -2
+				ball.VelocityX = -4
+				ball.VelocityY = -4
 			else
-				ball.VelocityX = -2
-				ball.VelocityY = 2
+				ball.VelocityX = -4
+				ball.VelocityY = 4
 			end
 		end
 	end
@@ -561,6 +560,102 @@ local function handleBot() -- Create an opponent for a Player v Bot game
 
 end
 
+function APP.AddTicker( ticker )
+	ticker.app = APP
+	ticker.fps = 30
+	ticker.func = function()
+		if isInGame then
+			local objects = gPhone.AppBase["_children_"]
+			local screen = gPhone.phoneScreen
+		
+			-- Manage the client's Paddle
+			if input.IsKeyDown( KEY_S ) then
+				movePaddle( objects.PaddleP1, false )
+			elseif input.IsKeyDown( KEY_W )  then
+				movePaddle( objects.PaddleP1, true )
+			end
+			
+			-- If its a self game, allow another user to play
+			if gameType == PONG_GAME_SELF then 
+				if input.IsKeyDown( KEY_DOWN ) then
+					movePaddle( objects.PaddleP2, false )
+				elseif input.IsKeyDown( KEY_UP )  then
+					movePaddle( objects.PaddleP2, true )
+				end
+			elseif gameType == PONG_GAME_MP then
+			
+			end
+			
+			-- This block of code runs the entire game
+			if gameRunning then
+				-- Move the ball
+				moveBall() 
+				
+				-- Check paddle/ball collisions
+				checkCollision( objects.PaddleP1, 1 )
+				checkCollision( objects.PaddleP2, 2 )
+				
+				-- Update boundaries/hitboxes
+				setBounds( objects.PaddleP1 )
+				setBounds( objects.PaddleP2 )
+				setBounds( objects.Ball )
+				
+				if gameType == PONG_GAME_BOT then
+					handleBot()
+				end
+			end
+		end
+	end
+	
+	return ticker
+end
+
+--[[
+gPhone.CreateTicker( APP, 30, function()
+	if isInGame then
+		local objects = gPhone.AppBase["_children_"]
+		local screen = gPhone.phoneScreen
+	
+		-- Manage the client's Paddle
+		if input.IsKeyDown( KEY_S ) then
+			movePaddle( objects.PaddleP1, false )
+		elseif input.IsKeyDown( KEY_W )  then
+			movePaddle( objects.PaddleP1, true )
+		end
+		
+		-- If its a self game, allow another user to play
+		if gameType == PONG_GAME_SELF then 
+			if input.IsKeyDown( KEY_DOWN ) then
+				movePaddle( objects.PaddleP2, false )
+			elseif input.IsKeyDown( KEY_UP )  then
+				movePaddle( objects.PaddleP2, true )
+			end
+		elseif gameType == PONG_GAME_MP then
+		
+		end
+		
+		-- This block of code runs the entire game
+		if gameRunning then
+			-- Move the ball
+			moveBall() 
+			
+			-- Check paddle/ball collisions
+			checkCollision( objects.PaddleP1, 1 )
+			checkCollision( objects.PaddleP2, 2 )
+			
+			-- Update boundaries/hitboxes
+			setBounds( objects.PaddleP1 )
+			setBounds( objects.PaddleP2 )
+			setBounds( objects.Ball )
+			
+			if gameType == PONG_GAME_BOT then
+				handleBot()
+			end
+		end
+	end
+end)]]
+
+--[[
 --// We basically run the game in the application's Think function
 function APP.Think()
 	local objects = gPhone.AppBase["_children_"]
@@ -604,7 +699,7 @@ function APP.Think()
 			end
 		end
 	end
-end
+end]]
 
 function APP.Paint( screen )
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(0, 0, 0))

@@ -8,7 +8,7 @@ function gPhone.ToHomeScreen()
 		gPhone.RotateToPortrait()
 	end
 	
-	gPhone.AppBase["_close_"]()
+	gPhone.AppBase["_close_"]( gPhone.AppBase["_active_"])
 	gPhone.IsOnHomeScreen = false
 end
 

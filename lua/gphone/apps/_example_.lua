@@ -24,5 +24,14 @@ function APP.Think( screen )
 	
 end
 
+-- Used ONLY for games to run game logic at a constant rate per second, use this instead of the Think function
+function APP.AddTicker( ticker )
+	ticker.fps = 30
+	ticker.func = function() -- Function called X times per second where X is ticker.fps, put your code in here
+	end
+	
+	return ticker
+end
+
 -- You MUST uncomment this line for the app to work. This adds it to the phone
 --gPhone.AddApp(APP)
