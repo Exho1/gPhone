@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "gPong"
 APP.Icon = "vgui/gphone/pong.png"
+APP.FPS = 30
 
 --// Game variables
 math.randomseed(os.time())
@@ -560,6 +561,7 @@ local function handleBot() -- Create an opponent for a Player v Bot game
 
 end
 
+--[[
 function APP.AddTicker( ticker )
 	ticker.app = APP
 	ticker.fps = 30
@@ -608,7 +610,7 @@ function APP.AddTicker( ticker )
 	end
 	
 	return ticker
-end
+end]]
 
 --[[
 gPhone.CreateTicker( APP, 30, function()
@@ -655,7 +657,7 @@ gPhone.CreateTicker( APP, 30, function()
 	end
 end)]]
 
---[[
+
 --// We basically run the game in the application's Think function
 function APP.Think()
 	local objects = gPhone.AppBase["_children_"]
@@ -699,7 +701,7 @@ function APP.Think()
 			end
 		end
 	end
-end]]
+end
 
 function APP.Paint( screen )
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(0, 0, 0))

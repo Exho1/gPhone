@@ -74,8 +74,10 @@ function gPhone.AddApp( data )
 			gPhone.phoneScreen.Paint = data.Paint
 			gPhone.phoneScreen.Think = data.Think
 			
-			if data.AddTicker then  
-				gPhone.CreateTicker( data.AddTicker( {app=data} ) )
+			if tonumber(data.FPS) != nil then
+				-- Route the app's Think function to our ticker and kill the phone's Think function
+				gPhone.CreateTicker( data, data.FPS, data.Think )
+				gPhone.phoneScreen.Think = function() end
 			end
 		end,
 	}
@@ -171,10 +173,7 @@ end
 local fpsReturn = 0
 
 --// Calls an app's function X times per second in order create constant framerate
-function gPhone.CreateTicker( data )
-	local app = data.app
-	local fps = data.fps
-	local callback = data.func
+function gPhone.CreateTicker( app, fps, callback )
 
 	local appName = app.PrintName:lower() or "error"
 	
