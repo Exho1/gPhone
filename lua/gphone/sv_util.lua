@@ -30,14 +30,14 @@ function gPhone.ChatMsg( ply, text )
 	net.Send(ply)
 end
 
-function gPhone.NotifyPlayer( ply, sender, msg )
+function gPhone.NotifyPlayer( ply, sender, text, notifyEnum )
 	local data = {}
-	data.header = GPHONE_NOTIFY
+	data.header = notifyEnum
 	data.sender = sender
-	data.text = msg
+	data.text = text
 	
 	net.Start("gPhone_DataTransfer")
-		net.WriteTable(data)
+		net.WriteTable( data )
 	net.Send( ply )
 end
 

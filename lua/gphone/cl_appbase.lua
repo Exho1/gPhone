@@ -85,7 +85,7 @@ function gPhone.RunApp(name)
 		
 		-- Check if the app has a set run gamemode
 		local appGM = app.Data.Gamemode
-		if appGM != nil and string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
+		if appGM != nil and appGM != "" and string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
 			gPhone.DenyApp( appGM, "App's usable gamemode does not \r\nmatch current gamemode!" )
 			return
 		end

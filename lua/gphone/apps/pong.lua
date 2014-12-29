@@ -32,8 +32,8 @@ local PONG_GAME_MP = 2
 local PONG_GAME_SELF = 3
 
 local PONG_BALLSIDE_LEFT = 1
-local PONG_BALLSIDE_CENTER = 1
-local PONG_BALLSIDE_RIGHT = 1
+local PONG_BALLSIDE_CENTER = 2
+local PONG_BALLSIDE_RIGHT = 3
 
 --// App run
 function APP.Run( objects, screen )
@@ -249,6 +249,7 @@ local function setBounds( obj )
 end
 
 -- Set up the game to be played
+local traceData = {}
 local gameType = nil
 local ballSide = PONG_BALLSIDE_CENTER
 function APP.SetUpGame( type )
@@ -264,6 +265,7 @@ function APP.SetUpGame( type )
 	gPhone.RotateToLandscape()
 	isInGame = true
 	objectBounds = {}
+	traceData = {}
 	
 	gameType = type
 	--PONG_GAME_BOT
@@ -324,6 +326,7 @@ local function resetBall() -- Move the ball back to the center and start the gam
 	
 	gameRunning = false
 	ballSide = PONG_BALLSIDE_CENTER
+	traceData = {}
 	
 	objects.Ball:SetPos( screen:GetWide()/2 - objects.Ball:GetWide()/2, screen:GetTall()/2 - objects.Ball:GetTall()/2)
 	objects.Ball.VelocityX = 0
@@ -349,6 +352,41 @@ local function scorePoint( plyNum ) -- Add 1 point to one of the players
 	end
 end
 
+local predictedHitPos = {}
+local function trackBallMovement( ball, hitX, hitY, hitCount ) -- Predict where the ball will be for bots
+	local screen = gPhone.phoneScreen
+	
+	local ang = 45/360 -- This angle will never change with the current velocity
+	local x, y = ball:GetPos()
+	local startX = hitX or x
+	local startY = hitY or y
+	
+	-- Determine the sign of the velocity values
+	local signX = 1
+	if ball.VelocityX < 0 then
+		signX = -1
+	end
+	local signY = 1
+	if ball.VelocityY < 0 then
+		signY = -1
+	end
+	
+	-- Predict the end points
+	local endX = hitX + (ang * signX * 10000)
+	local endY = hitY + (ang * signY * 10000)
+	
+	-- Align the line to the ball's center
+	local w, h = ball:GetSize()
+	startX, endX = startX + w, endX + w
+	startY, endY = startY + h, endY + h
+	
+	-- Store value for the bot
+	predictedHitPos = {x=endX, y=endY} 
+	
+	-- TEMP: Draw a line along the path
+	traceData[hitCount] = {sx=startX, sy=startY, ex=endX, ey=endY }
+end
+
 local function movePaddle( obj, up ) -- Move the paddle
 	if !IsValid( obj ) then return end
 	
@@ -365,19 +403,24 @@ local function movePaddle( obj, up ) -- Move the paddle
 end
 
 local function movePaddleBot( yPos, onFinished ) -- Bots need a special move function
-	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-gPhone.AppBase["_children_"].PaddleP1:GetTall()
+	local objects = gPhone.AppBase["_children_"]
+	
+	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-objects.PaddleP2:GetTall()
 	local delta = 200 * RealFrameTime()
 	local moveDistance = 2
 	
-	local x, y = obj:GetPos()
+	local x, y = objects.PaddleP2:GetPos()
 	
-	obj:SetPos( x, math.Clamp(Lerp( delta, y, y + (y-yPos) ), screenTop, screenBottom) )
+	print(y, yPos)
+	-- This math is wrong...
+	objects.PaddleP2:SetPos( x, math.Clamp(Lerp( delta, y, yPos ), screenTop, screenBottom) )
 	
 	if y == yPos and IsValid(onFinished) then 
 		onFinished() -- Callback functions 
 	end
 end
 
+local hitX, hitY, hitCount = nil, nil, 0
 local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball 
 	local screen = gPhone.phoneScreen
 	local ball = gPhone.AppBase["_children_"].Ball
@@ -396,9 +439,12 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 		ball.VelocityY = 0
 	end
 
-	-- Give the ball some velocity
+	-- Tell the ball to move
 	if not bHit then -- It has not hit anything
-		if ball.VelocityX == 0 then
+		if ball.VelocityX == 0 then -- No velocity, create some
+			hitCount = hitCount + 1
+			hitX, hitY = ball:GetPos()
+			
 			local dir = math.random(2)
 			if dir == 1 then
 				ball.VelocityX = 2
@@ -406,7 +452,10 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 				ball.VelocityX = -2
 			end
 		end
-		if ball.VelocityY == 0 then
+		if ball.VelocityY == 0 then	
+			hitCount = hitCount + 1
+			hitX, hitY = ball:GetPos()
+			
 			local dir = math.random(2)
 			if dir == 1 then
 				ball.VelocityY = -2
@@ -416,6 +465,9 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 		end
 	else -- It has hit a paddle
 		local x, y = hitPaddle:GetPos()
+		
+		hitCount = hitCount + 1
+		hitX, hitY = ball:GetPos()
 		
 		if plyNum == PONG_PLAYER1 then -- Player 1's paddle hit the ball
 			if ballY <= y + hitPaddle:GetTall()/2 then -- Ball hit lower half of the paddle
@@ -437,15 +489,19 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 	end
 	
 	-- Track which side the ball is on
-	if ballX <= screen:GetWide()/2 then
+	if ballX < screen:GetWide()/2 then
 		ballSide = PONG_BALLSIDE_LEFT
 	else
 		ballSide = PONG_BALLSIDE_RIGHT
 	end
 	
+	trackBallMovement( ball, hitX, hitY, hitCount )
+	
 	-- Now actually move the ball across the screen
-	local newX = Lerp(difficultySpeed * RealFrameTime(), ballX, ballX + ball.VelocityX)
-	local newY = Lerp(difficultySpeed * RealFrameTime(), ballY, ballY + ball.VelocityY)
+	--local newX = Lerp(2, ballX, endX)
+	--local newY = Lerp(2, ballY, endY)
+	local newX = ballX + ball.VelocityX
+	local newY = ballY + ball.VelocityY
 	newX = math.Clamp( newX, 10, screen:GetWide() - ball:GetWide() - 10) -- Clamp within the playing area
 	newY = math.Clamp( newY, 10, screen:GetTall() - ball:GetTall() - 10)
 	
@@ -478,24 +534,28 @@ end
 local function handleBot() -- Create an opponent for a Player v Bot game
 	-- Add: Difficulty
 	local objects = gPhone.AppBase["_children_"]
+	local ball = gPhone.AppBase["_children_"].Ball
 	local paddle = objects.PaddleP2
 	local x, y = paddle:GetPos()
 	
-	--print(ballSide)
 	if ballSide == PONG_BALLSIDE_CENTER or not gameRunning then -- Do nothing
 		if y != paddleStartY then -- Move to the center
-			movePaddleBot( centerY )
+			movePaddleBot( paddleStartY )
 		end
 	elseif ballSide == PONG_BALLSIDE_RIGHT then -- Get ready to whack it!
 		-- movePaddle( objects.PaddleP2, true ) -- move up
+		local x = predictedHitPos.x
+		local y = predictedHitPos.y
+		
+		movePaddleBot( y )
 		
 	else -- Its not on our side yet
 		if ball.VelocityX > 0 then -- It coming to our side
 			
 		else
-			movePaddleBot( centerY, function() -- Wander a bit
-				movePaddleBot( math.random( centerY - 50, centerY + 50 ) )
-			end)
+			--[[movePaddleBot( paddleStartY, function() -- Wander a bit
+				movePaddleBot( math.random( paddleStartY - 50, paddleStartY + 50 ) )
+			end)]]
 		end
 	end
 
@@ -554,6 +614,11 @@ function APP.Paint( screen )
 		surface.DrawOutlinedRect( 5, 5, screen:GetWide() - 10, screen:GetTall() - 10 )
 		
 		draw.RoundedBox(0, screen:GetWide()/2, 5, 1, screen:GetTall() - 10, color_white )
+		
+		for k, v in pairs(traceData) do
+			surface.SetDrawColor(255,0,0)
+			surface.DrawLine( v.sx, v.sy, v.ex, v.ey )
+		end
 	end
 end
 

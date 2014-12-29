@@ -27,6 +27,7 @@ function gPhone.BuildPhone()
 	gPhone.IsPortrait = true
 	gPhone.Rotation = 0
 	gPhone.IsInAnimation = false
+	gPhone.ShouldUnlock = true
 	
 	-- Create the phone 
 		gPhone.phoneBase = vgui.Create( "DFrame" )
@@ -214,7 +215,7 @@ function gPhone.ShowPhone()
 			LocalPlayer():ConCommand("gphone_firsttime 0")
 		end
 		
-		gPhone.Unlock()
+		gPhone.BuildLockScreen()
 		
 		gPhone.IsOnHomeScreen = true
 		gPhone.PhoneActive = true
@@ -264,10 +265,22 @@ end
 --// Receives a Server-side net message
 net.Receive( "gPhone_DataTransfer", function( len, ply )
 	local data = net.ReadTable()
-	local dataHeader = string.lower(data.Header)
+	local header = data.header
 	
-	if dataHeader == GPHONE_BUILD then
+	if header == GPHONE_BUILD then
 		gPhone.BuildPhone()
+	elseif header == GPHONE_NOTIFY_GAME then
+		local sender = data.sender
+		local game = data.text
+		
+		local msg = sender:Nick().." has invited you to play "..game
+		
+		if not gPhone.PhoneActive then
+			gPhone.Vibrate()
+			gPhone.Notification( msg, {game=game} )
+		else
+			gPhone.Notification( msg, {game=game} )
+		end
 	else
 	
 	end
@@ -275,7 +288,6 @@ end)
 
 --// Logic for opening the phone by holding down a key
 local keyStartTime = 0
-local keyEndTime = 0
 hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
 	if input.IsKeyDown( gPhone.Config.OpenKey ) then
 		if keyStartTime == 0 then
@@ -290,10 +302,8 @@ hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
 			end
 			
 			keyStartTime = 0
-			keyEndTime = 0
 		end
 	else
 		keyStartTime = 0
-		keyEndTime = 0
 	end
 end)

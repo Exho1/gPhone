@@ -22,24 +22,21 @@ if SERVER then
 	
 	net.Receive( "gPhone_MultiplayerData", function( len, ply )
 		local data = net.ReadTable()
-		local dataHeader = data.header
+		local header = data.header
 		
-		if dataHeader == GPHONE_MP_REQUEST then -- Requesting a game between 2 players
+		if header == GPHONE_MP_REQUEST then -- Requesting a game between 2 players
 			local sender = ply 
 			local target = data.ply2
 			local game = data.game
 			
 			print(sender, target, game)
 			
-			gPhone.InviteToGame( target, sender, game )
+			-- Temp, I invite myself to test
+			local response = gPhone.NotifyPlayer( sender, sender, game, GPHONE_NOTIFY_GAME ) -- TEMP: First arg should be target
 		else
 		
 		end
 	end)
-	
-	function gPhone.InviteToGame( ply, sender, game )
-		gPhone.NotifyPlayer( ply, sender, msg )
-	end
 	
 end
 
@@ -54,9 +51,9 @@ if CLIENT then
 		
 		net.Receive( "gPhone_MultiplayerData", function( len, ply )
 			local data = net.ReadTable()
-			local dataHeader = data.header
+			local header = data.header
 			
-			if dataHeader == GPHONE_MP_REQUEST_RESPONSE then
+			if header == GPHONE_MP_REQUEST_RESPONSE then
 				
 			end
 		end)

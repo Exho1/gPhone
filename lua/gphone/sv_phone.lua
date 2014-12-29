@@ -3,6 +3,7 @@
 --// Resourcing and app adding
 resource.AddFile( "materials/vgui/gphone/gPhone.png" )
 resource.AddFile( "resource/fonts/roboto_light.tff" )
+resource.AddFile( "sound/gphone/vibrate.wav" )
 
 local files = file.Find( "materials/vgui/gphone/*.png", "GAME" ) -- Phone images
 for k, v in pairs(files) do
@@ -82,9 +83,9 @@ end)
 
 hook.Add("PlayerInitialSpawn", "gPhone_GenerateNumber", function( ply )
 	ply:GeneratePhoneNumber()
-	
+
 	net.Start("gPhone_DataTransfer")
-		net.WriteTable({header=GPHONE_OPEN})
+		net.WriteTable( {header=GPHONE_BUILD} )
 	net.Send( ply )
 end)
 
