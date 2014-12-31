@@ -2,19 +2,23 @@
 
 local client = LocalPlayer()
 
+-- Animations need to be smooth and so they should probably take RealFrameTime into account, I won't use tickers
+
 --// Leave the current app and go to the home screen
 function gPhone.ToHomeScreen()
 	if not gPhone.IsPortrait then
 		gPhone.RotateToPortrait()
 	end
 	
-	gPhone.AppBase["_close_"]( gPhone.AppBase["_active_"])
+	gApp["_close_"]( gApp["_active_"] )
 	gPhone.IsOnHomeScreen = false
 end
 
 --// Rotate the phone to a landscape position
 local oldPWide, oldPHeight, oldSWide, oldSHeight = nil
 function gPhone.RotateToLandscape()
+	if not gPhone.IsPortrait then return end
+	
 	gPhone.IsInAnimation = true
 	
 	-- Save old values
@@ -49,6 +53,8 @@ end
 
 --// Rotate the phone back to portrait
 function gPhone.RotateToPortrait()
+	if gPhone.IsPortrait then return end
+	
 	local oldThink = gPhone.phoneBase.Think
 	gPhone.IsInAnimation = true
 	-- Expand so the phone can rotate without cutting off anything
@@ -96,7 +102,7 @@ function gPhone.Vibrate()
 		local moveToPos = oldY - 30
 		
 		gPhone.Config.PhoneColor.a = 255
-		client:ConCommand("play gphone/vibrate.wav")
+		surface.PlaySound( "gphone/vibrate.wav" )
 		
 		-- Think function to do our animations in
 		gPhone.phoneBase.Think = function()
@@ -209,6 +215,8 @@ end
 --// Run an animation to unlock the phone's lock screen
 local lockTime, dateLabel, slideUnlock, arrow, oldScreen
 function gPhone.UnlockLockScreen( callback )
+	if not IsValid(lockTime) or not IsValid(slideUnlock) then return end
+	
 	local screen = gPhone.phoneScreen
 	local x, y = screen:GetPos()
 	gPhone.IsInAnimation = true
@@ -265,9 +273,11 @@ function gPhone.BuildLockScreen()
 	lockTime:SizeToContents()
 	lockTime:SetPos( screen:GetWide()/2 - lockTime:GetWide()/2, 15 )
 	lockTime.Think = function()
-		lockTime:SetText(os.date("%I:%M"))
-		lockTime:SetFont("gPhone_LockTime")
-		lockTime:SizeToContents()
+		if IsValid(lockTime) then
+			lockTime:SetText(os.date("%I:%M"))
+			lockTime:SetFont("gPhone_LockTime")
+			lockTime:SizeToContents()
+		end
 	end
 	
 	dateLabel = vgui.Create( "DLabel", screen )
@@ -288,8 +298,10 @@ function gPhone.BuildLockScreen()
 	arrow:SetSize( 8, 16 )
 	arrow:SetImage( "vgui/gphone/right_arrow.png" )
 	arrow.Think = function()
-		sX, sY = slideUnlock:GetPos()
-		arrow:SetPos( sX - 16, sY + 2)
+		if IsValid(slideUnlock) then
+			sX, sY = slideUnlock:GetPos()
+			arrow:SetPos( sX - 16, sY + 2)
+		end
 	end
 	
 	timer.Simple(gPhone.Config.OpenLockDelay, function()

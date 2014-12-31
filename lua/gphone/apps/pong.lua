@@ -5,33 +5,34 @@ APP.Icon = "vgui/gphone/pong.png"
 APP.FPS = 30
 
 --// Game variables
-math.randomseed(os.time())
 local gameOptions = {
 	"Player v Bot",
 	"Player v Player",
 	"Player v Self", 
 }
 local difficultyLevels = {
-	["Easy"] = 100,
-	["Intermediate"] = 125,
-	["Hard"] = 150,
-	
+	["Easy"] = {ball=4, ply=4, bot=3},
+	["Intermediate"] = {ball=6, ply=5, bot=5},
+	["Hard"] = {ball=8, ply=7, bot=8},
 }
 local objectBounds = {}
 
+local winScore = 10
 local isInGame = false
 local gameRunning = false
-local difficultySpeed = difficultyLevels.Easy -- Default 
+local gamePaused = false
+
+local ballSpeed = difficultyLevels.Easy.ball
+local botSpeed = difficultyLevels.Easy.bot
+local playerSpeed = difficultyLevels.Easy.ply
 local paddleStartY = nil
 
 -- Enumerations
 local PONG_PLAYER1 = 1
 local PONG_PLAYER2 = 2
-
 local PONG_GAME_BOT = 1
 local PONG_GAME_MP = 2
 local PONG_GAME_SELF = 3
-
 local PONG_BALLSIDE_LEFT = 1
 local PONG_BALLSIDE_CENTER = 2
 local PONG_BALLSIDE_RIGHT = 3
@@ -41,6 +42,7 @@ function APP.Run( objects, screen )
 	gPhone.HideStatusBar()
 	isInGame = false
 	gameRunning = false
+	gamePaused = false
 	
 	objects.Layout = vgui.Create( "DIconLayout", screen)
 	objects.Layout:SetSize( screen:GetWide(), screen:GetTall())
@@ -51,6 +53,10 @@ function APP.Run( objects, screen )
 	titleButton:SetSize(screen:GetWide(), 50)
 	titleButton:SetText("")
 	titleButton.Paint = function( self, w, h )
+		if self:IsDown() then
+			draw.RoundedBox(2, 5, 5, w-10, h-10, Color(180, 180, 180))
+		end
+			
 		surface.SetDrawColor( color_white )
 		surface.DrawOutlinedRect( 5, 5, w-10, h-10 )
 	end
@@ -100,7 +106,7 @@ function APP.Run( objects, screen )
 end
 
 function APP.OptionClick( option )
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	local layout = objects.Layout
 	
@@ -131,7 +137,9 @@ function APP.OptionClick( option )
 				surface.DrawOutlinedRect( 0, 0, w, h )
 			end
 			optionButton.DoClick = function()
-				difficultySpeed = num 
+				ballSpeed = num.ball
+				botSpeed = num.bot
+				playerSpeed = num.ply
 				
 				APP.SetUpGame( PONG_GAME_BOT )
 			end
@@ -141,8 +149,6 @@ function APP.OptionClick( option )
 			fake.Paint = function() end
 		end
 	elseif option == gameOptions[2] then -- Playing against a live player
-		--APP.SetUpGame( PONG_GAME_MP )
-		
 		local playerPanel = objects.Layout:Add("DPanel")
 		playerPanel:SetSize(screen:GetWide(), 40)
 		playerPanel.Paint = function() end
@@ -165,7 +171,9 @@ function APP.OptionClick( option )
 			end]]
 		end
 		for k, v in pairs( player.GetAll() ) do
-			opponentPicker:AddChoice( v:Nick() )
+			if v != LocalPlayer() then
+				opponentPicker:AddChoice( v:Nick() )
+			end
 		end
 		
 		local fake = objects.Layout:Add("DPanel") -- Invisible panel for spacing
@@ -192,11 +200,15 @@ function APP.OptionClick( option )
 		end
 		confirmButton.DoClick = function()
 			local ply = util.GetPlayerByNick( opponentPicker:GetText() )
-			local gameResponse = gPhone.RequestGame(ply, APP.PrintName)
+			if IsValid(ply) then
+				local gameResponse = gPhone.RequestGame(ply, APP.PrintName)
 			
-			gPhone.ChatMsg("Challenged "..ply:Nick().."!")
+				gPhone.ChatMsg("Challenged "..ply:Nick().."!")
+				
+				-- The server tells us when to set up the game
+				--APP.SetUpGame( PONG_GAME_MP )
+			end
 		end
-		
 	elseif option == gameOptions[3] then -- Playing against someone else on their computer
 		local helpPanel = objects.Layout:Add("DPanel")
 		helpPanel:SetSize(screen:GetWide(), 80)
@@ -249,12 +261,32 @@ local function setBounds( obj )
 	objectBounds[obj] = {x=x, y=y, width=w, height=h}
 end
 
+-- Remove all game elements and move to the main menu
+local function quitToMainMenu()	
+	local objects = gApp["_children_"]
+	
+	for k, v in pairs( objects ) do
+		if IsValid(v) then
+			v:Remove()
+		end
+	end
+	
+	gameRunning = false
+	gamePaused = false
+		
+	gPhone.RotateToPortrait()
+	APP.Run( objects, gPhone.phoneScreen )
+	
+	if gameType == PONG_GAME_MP then
+		gPhone.UpdateToDataStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
+	end
+end
+
 -- Set up the game to be played
-local traceData = {}
 local gameType = nil
 local ballSide = PONG_BALLSIDE_CENTER
 function APP.SetUpGame( type )
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
 	for k, v in pairs(objects) do
@@ -269,9 +301,14 @@ function APP.SetUpGame( type )
 	traceData = {}
 	
 	gameType = type
-	--PONG_GAME_BOT
-	--PONG_GAME_MP
-	--PONG_GAME_SELF
+	
+	if gameType == PONG_GAME_BOT then
+
+	elseif gameType == PONG_GAME_MP then
+
+	elseif gameType == PONG_GAME_SELF then
+	
+	end
 	
 	objects.ScoreP1 = vgui.Create( "DLabel", screen)
 	objects.ScoreP1:SetText( "0" )
@@ -315,31 +352,149 @@ function APP.SetUpGame( type )
 	objects.Ball.VelocityY = 0
 	setBounds( objects.Ball )
 	
-	timer.Simple(2, function()
+	objects.StatusPanel = vgui.Create("DPanel", screen)
+	objects.StatusPanel:SetSize(screen:GetTall()/3, 50)
+	objects.StatusPanel:SetPos(screen:GetWide()/2-objects.StatusPanel:GetWide()/2, 45)
+	objects.StatusPanel.Paint = function( self, w, h )
+		draw.RoundedBox(0, 0, 0, w, h, color_black )
+			
+		surface.SetDrawColor( color_white )
+		surface.DrawOutlinedRect( 0, 0, w, h )
+	end
+	
+	local statusLabel = vgui.Create("DLabel", objects.StatusPanel)
+	statusLabel:SetText("")
+	statusLabel:SetTextColor( color_white )
+	statusLabel:SetFont( "gPhone_Title" )
+	statusLabel.Think = function()
+		statusLabel:SizeToContents()
+		gPhone.SetTextAndCenter( statusLabel, objects.StatusPanel, true )
+		
+		if timer.Exists( "gPong_StartDelay" ) then
+			local time = math.Round( timer.TimeLeft("gPong_StartDelay") )
+			statusLabel:SetText( time )
+		end
+	end
+	
+	gamePaused = false
+	
+	objects.StatusPanel:SetVisible(true)
+	timer.Create("gPong_StartDelay", 3, 1, function()
 		gameRunning = true
+		timer.Destroy( "gPong_StartDelay" )
+		
+		if IsValid( objects.StatusPanel ) then
+			objects.StatusPanel:SetVisible(false)
+		end
 	end)
+	
+	--// Pause menu panels are created early on and then hidden
+	objects.LayoutPause = vgui.Create( "DIconLayout", screen)
+	objects.LayoutPause:SetSize( screen:GetWide()/3, 130)
+	objects.LayoutPause:SetSpaceY( 20 )
+	
+	local layout = objects.LayoutPause
+	
+	local resumeGame = layout:Add("DButton")
+	resumeGame:SetSize( layout:GetWide(), 50 )
+	resumeGame:SetText("Resume")
+	resumeGame:SetTextColor( color_white )
+	resumeGame:SetFont( "gPhone_Title" )
+	resumeGame.Paint = function( self, w, h )
+		if self:IsDown() then
+			draw.RoundedBox(2, 5, 5, w-10, h-10, Color(180, 180, 180))
+		else
+			draw.RoundedBox(2, 5, 5, w-10, h-10, color_black )
+		end
+			
+		surface.SetDrawColor( color_white )
+		surface.DrawOutlinedRect( 5, 5, w-10, h-10 )
+	end
+	resumeGame.DoClick = function() -- Resume the game
+		objects.LayoutPause:SetVisible( false )
+		
+		if gameType != PONG_GAME_MP then -- Multiplayer games cannot be paused
+			gamePaused = false
+			gameRunning = true
+			timer.UnPause( "gPong_StartDelay" )
+		end
+	end
+	
+	local quitGame = layout:Add("DButton")
+	quitGame:SetSize( layout:GetWide(), 50 )
+	quitGame:SetText("Quit")
+	quitGame:SetTextColor( color_white )
+	quitGame:SetFont( "gPhone_Title" )
+	quitGame.Paint = function( self, w, h )
+		if self:IsDown() then
+			draw.RoundedBox(2, 5, 5, w-10, h-10, Color(180, 180, 180))
+		else
+			draw.RoundedBox(2, 5, 5, w-10, h-10, color_black )
+		end
+			
+		surface.SetDrawColor( color_white )
+		surface.DrawOutlinedRect( 5, 5, w-10, h-10 )
+	end
+	quitGame.DoClick = function() -- Put us back at the main menu
+		quitToMainMenu()
+	end
+	
+	objects.LayoutPause:SetVisible(false)
+	objects.LayoutPause:SetPos( screen:GetWide()/2 - layout:GetWide()/2, screen:GetTall()/2 - layout:GetTall()/2 )
+end
+
+local canPauseTime = 0
+function APP.PauseGame()
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
+	
+	if gamePaused and CurTime() > canPauseTime then -- Enter was pressed again, close this
+		objects.LayoutPause:SetVisible( false )
+		
+		if gameType != PONG_GAME_MP then
+			gamePaused = false
+			gameRunning = true
+			timer.UnPause( "gPong_StartDelay" )
+		end
+	else -- Not paused
+		canPauseTime = CurTime() + 1
+		
+		if gameType != PONG_GAME_MP then
+			gamePaused = true
+			timer.Pause( "gPong_StartDelay" )
+		
+			gameRunning = false
+		end
+		
+		objects.LayoutPause:SetVisible( true )
+	end
 end
 
 --// Game related functions
 local function resetBall() -- Move the ball back to the center and start the game back up
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
 	gameRunning = false
 	ballSide = PONG_BALLSIDE_CENTER
-	traceData = {}
 	
 	objects.Ball:SetPos( screen:GetWide()/2 - objects.Ball:GetWide()/2, screen:GetTall()/2 - objects.Ball:GetTall()/2)
 	objects.Ball.VelocityX = 0
 	objects.Ball.VelocityY = 0
 	
-	timer.Simple(2, function()
+	objects.StatusPanel:SetVisible(true)
+	timer.Create("gPong_StartDelay", 3, 1, function()
 		gameRunning = true
+		timer.Destroy( "gPong_StartDelay" )
+		
+		if IsValid( objects.StatusPanel ) then
+			objects.StatusPanel:SetVisible(false)
+		end
 	end)
 end
 
 local function scorePoint( plyNum ) -- Add 1 point to one of the players
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
 	resetBall()
@@ -350,6 +505,36 @@ local function scorePoint( plyNum ) -- Add 1 point to one of the players
 	else
 		local curScore = tonumber( objects.ScoreP2:GetText() )
 		objects.ScoreP2:SetText( curScore + 1 )
+	end
+end
+
+local function checkWin()
+	local objects = gApp["_children_"]
+	local p1Score = tonumber( objects.ScoreP1:GetText() )
+	local p2Score = tonumber( objects.ScoreP2:GetText() )
+
+	if p1Score >= winScore or p2Score >= winScore then
+		print("Won")
+		gameRunning = false
+		
+		local status = objects.StatusPanel:GetChildren()[1]
+		objects.StatusPanel:SetVisible( true )
+		
+		if IsValid(status) then
+			timer.Destroy( "gPong_StartDelay" ) 
+			
+			if p1Score >= winScore then
+				status:SetText("P1 wins!")
+			else
+				status:SetText("P2 wins!")
+			end
+			
+			timer.Simple(5, function()
+				objects.ScoreP1:SetText( "0" )
+				objects.ScoreP2:SetText( "0" )
+				resetBall()
+			end)
+		end
 	end
 end
 
@@ -382,48 +567,47 @@ local function trackBallMovement( ball, hitX, hitY, hitCount ) -- Predict where 
 	
 	-- Store value for the bot
 	predictedHitPos = {x=endX, y=endY} 
-	
-	-- TEMP: Draw a line along the path
-	traceData[hitCount] = {sx=startX, sy=startY, ex=endX, ey=endY }
 end
 
-local function movePaddle( obj, up ) -- Move the paddle
-	if !IsValid( obj ) then return end
+local function movePaddle( paddle, yPos, bAddToY ) -- Move the paddle
+	if not IsValid( paddle ) or gamePaused then return end
 	
-	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-gPhone.AppBase["_children_"].PaddleP1:GetTall()
+	local x, y = paddle:GetPos()
+	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-gApp["_children_"].PaddleP1:GetTall()
 	local delta = 200 * RealFrameTime()
-	local moveDistance = 4
+	local moveDistance = playerSpeed
 	
-	local x, y = obj:GetPos()
-	if up then 
-		obj:SetPos( x, math.Clamp(Lerp( delta, y, y - moveDistance ), screenTop, screenBottom) )
+	if bAddToY then 
+		paddle:SetPos( x, math.Clamp(Lerp( delta, y, y + yPos ), screenTop, screenBottom) )
 	else
-		obj:SetPos( x, math.Clamp(Lerp( delta, y, y + moveDistance ), screenTop, screenBottom) )
+		paddle:SetPos( x, math.Clamp(Lerp( delta, y, yPos ), screenTop, screenBottom) )
 	end
 end
 
 local function movePaddleBot( yPos, onFinished ) -- Bots need a special move function
-	local objects = gPhone.AppBase["_children_"]
+	if gamePaused then return end
+	
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
 	
 	local screenTop, screenBottom = 10, gPhone.phoneScreen:GetTall()-10-objects.PaddleP2:GetTall()
 	local delta = 200 * RealFrameTime()
-	local moveDistance = 4
+	local moveDistance = botSpeed
 	
+	yPos = math.Clamp( yPos, screenTop, screenBottom )
 	local x, y = objects.PaddleP2:GetPos()
 	
-	print(y, yPos)
-	-- This math is wrong...
-	objects.PaddleP2:SetPos( x, math.Clamp(Lerp( delta, y, yPos ), screenTop, screenBottom) )
-	
-	if y == yPos and IsValid(onFinished) then 
-		onFinished() -- Callback functions 
+	if y != yPos then 
+		objects.PaddleP2:SetPos( x, Lerp( delta, y, yPos ) )
+	elseif IsValid(onFinished) then
+		onFinished() 
 	end
 end
 
 local hitX, hitY, hitCount = nil, nil, 0
 local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball 
 	local screen = gPhone.phoneScreen
-	local ball = gPhone.AppBase["_children_"].Ball
+	local ball = gApp["_children_"].Ball
 	if !IsValid( ball ) then return end
 	
 	local ballX, ballY = ball:GetPos()
@@ -447,9 +631,9 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 			
 			local dir = math.random(2)
 			if dir == 1 then
-				ball.VelocityX = 4
+				ball.VelocityX = ballSpeed
 			else
-				ball.VelocityX = -4
+				ball.VelocityX = -ballSpeed
 			end
 		end
 		if ball.VelocityY == 0 then	
@@ -458,9 +642,9 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 			
 			local dir = math.random(2)
 			if dir == 1 then
-				ball.VelocityY = -4
+				ball.VelocityY = -ballSpeed
 			else
-				ball.VelocityY = 4
+				ball.VelocityY = ballSpeed
 			end
 		end
 	else -- It has hit a paddle
@@ -471,19 +655,19 @@ local function moveBall( bHit, hitPaddle, plyNum ) -- Move the ball
 		
 		if plyNum == PONG_PLAYER1 then -- Player 1's paddle hit the ball
 			if ballY <= y + hitPaddle:GetTall()/2 then -- Ball hit lower half of the paddle
-				ball.VelocityX = 4
-				ball.VelocityY = -4
+				ball.VelocityX = ballSpeed
+				ball.VelocityY = -ballSpeed
 			else
-				ball.VelocityX = 4
-				ball.VelocityY = 4
+				ball.VelocityX = ballSpeed
+				ball.VelocityY = ballSpeed
 			end
 		else
 			if ballY <= y + hitPaddle:GetTall()/2 then
-				ball.VelocityX = -4
-				ball.VelocityY = -4
+				ball.VelocityX = -ballSpeed
+				ball.VelocityY = -ballSpeed
 			else
-				ball.VelocityX = -4
-				ball.VelocityY = 4
+				ball.VelocityX = -ballSpeed
+				ball.VelocityY = ballSpeed
 			end
 		end
 	end
@@ -510,22 +694,24 @@ end
 
 local function checkCollision( obj, plyNum ) -- Check collisions between objects
 	local paddle = objectBounds[obj] -- Paddle
-	local ball= objectBounds[gPhone.AppBase["_children_"].Ball] -- Ball
+	local ball = objectBounds[gApp["_children_"].Ball] -- Ball
 	
-	if plyNum == PONG_PLAYER1 then -- Player 1
-		if paddle.x + paddle.width >= ball.x then
-			if paddle.y <= ball.y and paddle.y + paddle.height >= ball.y then 
-				moveBall( true, gPhone.AppBase["_children_"].PaddleP1, 1 )
-			elseif paddle.x >= ball.x then
-				scorePoint( PONG_PLAYER1 )
+	if paddle and ball then
+		if plyNum == PONG_PLAYER1 then -- Player 1
+			if paddle.x + paddle.width >= ball.x then
+				if paddle.y <= ball.y and paddle.y + paddle.height >= ball.y then 
+					moveBall( true, gApp["_children_"].PaddleP1, 1 )
+				elseif paddle.x >= ball.x then
+					scorePoint( PONG_PLAYER2 )
+				end
 			end
-		end
-	else -- Player 2
-		if paddle.x - paddle.width <= ball.x then
-			if paddle.y <= ball.y and paddle.y + paddle.height >= ball.y then
-				moveBall( true, gPhone.AppBase["_children_"].PaddleP2, 2 )
-			elseif paddle.x <= ball.x then
-				scorePoint( PONG_PLAYER2 )
+		else -- Player 2
+			if paddle.x - paddle.width <= ball.x then
+				if paddle.y <= ball.y and paddle.y + paddle.height >= ball.y then
+					moveBall( true, gApp["_children_"].PaddleP2, 2 )
+				elseif paddle.x <= ball.x then
+					scorePoint( PONG_PLAYER1 )
+				end
 			end
 		end
 	end
@@ -533,153 +719,98 @@ end
 
 local function handleBot() -- Create an opponent for a Player v Bot game
 	-- Add: Difficulty
-	local objects = gPhone.AppBase["_children_"]
-	local ball = gPhone.AppBase["_children_"].Ball
+	local objects = gApp["_children_"]
+	local ball = gApp["_children_"].Ball
 	local paddle = objects.PaddleP2
 	local x, y = paddle:GetPos()
 	
 	if ballSide == PONG_BALLSIDE_CENTER or not gameRunning then -- Do nothing
-		if y != paddleStartY then -- Move to the center
+		movePaddleBot( paddleStartY )
+	elseif ballSide == PONG_BALLSIDE_RIGHT then -- Get ready to whack it!
+		--local x = predictedHitPos.x
+		--local y = predictedHitPos.y		
+		local x, y = ball:GetPos()
+		if ball.VelocityX > 0 then -- It coming to our side
+			movePaddleBot( y )
+		else
 			movePaddleBot( paddleStartY )
 		end
-	elseif ballSide == PONG_BALLSIDE_RIGHT then -- Get ready to whack it!
-		-- movePaddle( objects.PaddleP2, true ) -- move up
-		local x = predictedHitPos.x
-		local y = predictedHitPos.y
-		
-		movePaddleBot( y )
 		
 	else -- Its not on our side yet
-		if ball.VelocityX > 0 then -- It coming to our side
-			
-		else
-			--[[movePaddleBot( paddleStartY, function() -- Wander a bit
-				movePaddleBot( math.random( paddleStartY - 50, paddleStartY + 50 ) )
-			end)]]
-		end
+		movePaddleBot( paddleStartY )
 	end
-
 end
 
---[[
-function APP.AddTicker( ticker )
-	ticker.app = APP
-	ticker.fps = 30
-	ticker.func = function()
-		if isInGame then
-			local objects = gPhone.AppBase["_children_"]
-			local screen = gPhone.phoneScreen
-		
-			-- Manage the client's Paddle
-			if input.IsKeyDown( KEY_S ) then
-				movePaddle( objects.PaddleP1, false )
-			elseif input.IsKeyDown( KEY_W )  then
-				movePaddle( objects.PaddleP1, true )
-			end
-			
-			-- If its a self game, allow another user to play
-			if gameType == PONG_GAME_SELF then 
-				if input.IsKeyDown( KEY_DOWN ) then
-					movePaddle( objects.PaddleP2, false )
-				elseif input.IsKeyDown( KEY_UP )  then
-					movePaddle( objects.PaddleP2, true )
-				end
-			elseif gameType == PONG_GAME_MP then
-			
-			end
-			
-			-- This block of code runs the entire game
-			if gameRunning then
-				-- Move the ball
-				moveBall() 
-				
-				-- Check paddle/ball collisions
-				checkCollision( objects.PaddleP1, 1 )
-				checkCollision( objects.PaddleP2, 2 )
-				
-				-- Update boundaries/hitboxes
-				setBounds( objects.PaddleP1 )
-				setBounds( objects.PaddleP2 )
-				setBounds( objects.Ball )
-				
-				if gameType == PONG_GAME_BOT then
-					handleBot()
-				end
-			end
-		end
-	end
+function grabGamePositions()
+	local objects = gApp["_children_"]
+	local posTable = {}
 	
-	return ticker
-end]]
+	local p1X, p1Y = objects.PaddleP1:GetPos()
+	--local p2X, p2Y = objects.PaddleP2:GetPos()
+	local bX, bY = objects.Ball:GetPos()
+	
+	posTable.paddle1 = {y=p1Y}
+	--posTable.paddle2 = {y=p2Y}
+	posTable.ball = {x=bX, y=bY, veloX=objects.Ball.VelocityX, veloY=objects.Ball.VelocityY}
 
---[[
-gPhone.CreateTicker( APP, 30, function()
-	if isInGame then
-		local objects = gPhone.AppBase["_children_"]
+	return posTable
+end
+
+function updateGamePositions( tab )
+	if tab.ball then -- Our values exist
+		local objects = gApp["_children_"]
 		local screen = gPhone.phoneScreen
+		local ball = gApp["_children_"].Ball
+		
+		-- These are our opponent's positions, so everything is from their point of view
+		--local opponentPaddle = objects.PaddleP1
+		--local opponentY = tab.paddle1.y
+		local opponentPaddle = objects.PaddleP2
+		local opponentY = tab.paddle1.y
+		
+		movePaddle( opponentPaddle, opponentY, false )
+		
+		-- The ball's X variable might need to be altered because of multiplayer POV
+		--local ballX, ballY = tab.ball.x, tab.ball.y
+		local ballX, ballY = ball:GetPos()
+		local newX = ballX + ball.VelocityX
+		local newY = ballY + ball.VelocityY
+		newX = math.Clamp( newX, 10, screen:GetWide() - ball:GetWide() - 10)
+		newY = math.Clamp( newY, 10, screen:GetTall() - ball:GetTall() - 10)
 	
-		-- Manage the client's Paddle
-		if input.IsKeyDown( KEY_S ) then
-			movePaddle( objects.PaddleP1, false )
-		elseif input.IsKeyDown( KEY_W )  then
-			movePaddle( objects.PaddleP1, true )
-		end
-		
-		-- If its a self game, allow another user to play
-		if gameType == PONG_GAME_SELF then 
-			if input.IsKeyDown( KEY_DOWN ) then
-				movePaddle( objects.PaddleP2, false )
-			elseif input.IsKeyDown( KEY_UP )  then
-				movePaddle( objects.PaddleP2, true )
-			end
-		elseif gameType == PONG_GAME_MP then
-		
-		end
-		
-		-- This block of code runs the entire game
-		if gameRunning then
-			-- Move the ball
-			moveBall() 
-			
-			-- Check paddle/ball collisions
-			checkCollision( objects.PaddleP1, 1 )
-			checkCollision( objects.PaddleP2, 2 )
-			
-			-- Update boundaries/hitboxes
-			setBounds( objects.PaddleP1 )
-			setBounds( objects.PaddleP2 )
-			setBounds( objects.Ball )
-			
-			if gameType == PONG_GAME_BOT then
-				handleBot()
-			end
-		end
+		ball:SetPos( newX, newY )
 	end
-end)]]
+end
 
 
 --// We basically run the game in the application's Think function
 function APP.Think()
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
 	if isInGame then
 		-- Manage the client's Paddle
 		if input.IsKeyDown( KEY_S ) then
-			movePaddle( objects.PaddleP1, false )
+			movePaddle( objects.PaddleP1, playerSpeed, true )
 		elseif input.IsKeyDown( KEY_W )  then
-			movePaddle( objects.PaddleP1, true )
+			movePaddle( objects.PaddleP1, -playerSpeed, true )
+		end
+		
+		if input.IsKeyDown( KEY_ENTER ) then
+			APP.PauseGame()
 		end
 		
 		-- If its a self game, allow another user to play
 		if gameType == PONG_GAME_SELF then 
 			if input.IsKeyDown( KEY_DOWN ) then
-				movePaddle( objects.PaddleP2, false )
+				movePaddle( objects.PaddleP2, playerSpeed, true )
 			elseif input.IsKeyDown( KEY_UP )  then
-				movePaddle( objects.PaddleP2, true )
+				movePaddle( objects.PaddleP2, -playerSpeed, true )
 			end
 		elseif gameType == PONG_GAME_MP then
-		
+			gPhone.UpdateToDataStream( grabGamePositions() ) -- Sends our positions to the server
+			
+			updateGamePositions( gPhone.UpdateFromDataStream() ) -- Updates our positions from the server
 		end
 		
 		-- This block of code runs the entire game
@@ -687,14 +818,16 @@ function APP.Think()
 			-- Move the ball
 			moveBall() 
 			
-			-- Check paddle/ball collisions
-			checkCollision( objects.PaddleP1, 1 )
-			checkCollision( objects.PaddleP2, 2 )
-			
 			-- Update boundaries/hitboxes
 			setBounds( objects.PaddleP1 )
 			setBounds( objects.PaddleP2 )
 			setBounds( objects.Ball )
+			
+			-- Check paddle/ball collisions
+			checkCollision( objects.PaddleP1, 1 )
+			checkCollision( objects.PaddleP2, 2 )
+			
+			checkWin()
 			
 			if gameType == PONG_GAME_BOT then
 				handleBot()
@@ -711,11 +844,6 @@ function APP.Paint( screen )
 		surface.DrawOutlinedRect( 5, 5, screen:GetWide() - 10, screen:GetTall() - 10 )
 		
 		draw.RoundedBox(0, screen:GetWide()/2, 5, 1, screen:GetTall() - 10, color_white )
-		
-		for k, v in pairs(traceData) do
-			surface.SetDrawColor(255,0,0)
-			surface.DrawLine( v.sx, v.sy, v.ex, v.ey )
-		end
 	end
 end
 

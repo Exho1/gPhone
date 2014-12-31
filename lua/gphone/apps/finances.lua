@@ -128,7 +128,7 @@ function APP.ButtonClick( objects, name )
 			
 			local val = tonumber(self:GetValue())
 			
-			if val ~= nil and val < tonumber(LocalPlayer():getDarkRPVar("money")) then
+			if val != nil and val < tonumber(LocalPlayer():getDarkRPVar("money")) and val > 0 then
 				-- Valid amount of money to transfer (unsafe)
 				self:SetTextColor(Color(0,255,0))
 				moneyAmount = val
@@ -137,14 +137,6 @@ function APP.ButtonClick( objects, name )
 				self:SetTextColor(Color(255,0,0))
 				moneyAmount = 0
 			end
-		end
-		moneyEntry.OnGetFocus = function()
-			--moneyEntry:SetKeyBoardInputEnabled( true )
-			--moneyEntry:SetMouseInputEnabled( true )
-		end
-		moneyEntry.OnLoseFocus = function()
-			--moneyEntry:SetKeyBoardInputEnabled( false )
-			--moneyEntry:SetMouseInputEnabled( false )
 		end
 		
 		local fake = objects.Layout:Add("DPanel") -- Space
@@ -162,23 +154,22 @@ function APP.ButtonClick( objects, name )
 			end
 		end
 		sendMoney.DoClick = function()
-			-- Some clientside checks, it will be double checked on the server
-			if moneyAmount == nil or targetPlayer == nil or moneyAmount < 0 then
-				gPhone.ChatMsg( "Invalid player or amount to wire!" )
+			-- Clientside checks to stop the honest users, this will be double checked on the server to stop cheaters
+			if not IsValid(targetPlayer) or targetPlayer == LocalPlayer() then
+				gPhone.ChatMsg( "Invalid target to wire money to!" )
 				return
-			elseif moneyAmount > tonumber(LocalPlayer():getDarkRPVar("money")) then
+			elseif moneyAmount == nil or moneyAmount <= 0 or math.abs(moneyAmount) != moneyAmount then
+				gPhone.ChatMsg( "Invalid amount of money to wire!" )
+				return
+			elseif moneyAmount > tonumber( LocalPlayer():getDarkRPVar("money") ) then
 				gPhone.ChatMsg( "You do not have enough money to send!" )
 				return
 			end
 			
-			local data = {}
-			data.header = GPHONE_MONEY_TRANSFER
-			data.target = targetPlayer
-			data.amount = moneyAmount
-			
+			gPhone.MsgC( GPHONE_MSGC_NONE, "Transaction send to the server for verification" )
 			-- Send the transaction data to the server
 			net.Start("gPhone_DataTransfer")
-				net.WriteTable(data)
+				net.WriteTable( {header=GPHONE_MONEY_TRANSFER, target=targetPlayer, amount=moneyAmount} )
 			net.SendToServer()
 		end
 		

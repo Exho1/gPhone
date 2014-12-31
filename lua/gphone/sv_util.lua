@@ -31,13 +31,22 @@ function gPhone.ChatMsg( ply, text )
 end
 
 function gPhone.NotifyPlayer( ply, sender, text, notifyEnum )
-	local data = {}
-	data.header = notifyEnum
-	data.sender = sender
-	data.text = text
-	
 	net.Start("gPhone_DataTransfer")
-		net.WriteTable( data )
+		net.WriteTable( {header=notifyEnum, sender=sender, text=text} )
+	net.Send( ply )
+end
+
+--// Runs a function in the app table
+function gPhone.RunAppFunction( ply, app, name, ... )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=GPHONE_RUN_APPFUNC, app=app, func=name, args={...}} ) 
+	net.Send( ply )
+end
+
+--// Runs a function in the gPhone table
+function gPhone.RunFunction( ply, name, ... )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=GPHONE_RUN_FUNC, func=name, args={...}} ) 
 	net.Send( ply )
 end
 

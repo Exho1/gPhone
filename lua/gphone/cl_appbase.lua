@@ -1,14 +1,13 @@
 ----// Clientside Application Base //----
 
 local client = LocalPlayer()
-gPhone.Apps = gPhone.Apps or {}
 
--- AppBase is the table on which all applications will run
-gPhone.AppBase = {}
+-- gApp is the gPhone's app base, it contains all the apps and related functions
+gApp = {}
 
-gPhone.AppBase["_children_"] = {} -- Contains all the panels of an app
-gPhone.AppBase["_tickers_"] = {} -- Hook names of all added tickers
-gPhone.AppBase["_active_"] = {} -- Active app's table
+gApp["_children_"] = {} -- Contains all the panels of an app
+gApp["_tickers_"] = {} -- Hook names of all added tickers
+gApp["_active_"] = {} -- Active app's table
 
 -- Storing our objects
 local oldScreenPaint = nil
@@ -16,7 +15,7 @@ local oldScreenThink = nil
 local appLayout = nil
 
 -- Prepares the phone to run an application
-gPhone.AppBase["_init_"] = function()
+gApp["_init_"] = function()
 	oldScreenPaint = gPhone.phoneScreen.Paint
 	oldScreenThink = gPhone.phoneScreen.Think
 	
@@ -24,14 +23,19 @@ gPhone.AppBase["_init_"] = function()
 end
 
 -- Removes application panels and restores the home screen
-gPhone.AppBase["_close_"] = function( app )
+gApp["_close_"] = function( app )
 	gPhone.phoneScreen.Paint = oldScreenPaint
 	gPhone.phoneScreen.Think = oldScreenThink
 	
-	gPhone.RemoveTicker( app )
+	if app and app.Data then
+		if app.Data.Close then
+			app.Data.Close()
+		end
+	end
+	gApp.RemoveTicker( app )
 	
-	for k, v in pairs(gPhone.AppBase["_children_"]) do
-		if IsValid(v) then
+	for k, v in pairs( gApp["_children_"] ) do
+		if IsValid( v ) then
 			v:Remove()
 		end
 	end
@@ -46,11 +50,16 @@ gPhone.AppBase["_close_"] = function( app )
 	gPhone.ShowStatusBar()
 	
 	gPhone.IsOnHomeScreen = false
+	
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
+	net.SendToServer()
 end
 
 --// Grabs all app files and runs them
 function gPhone.ImportApps()
-	local files = file.Find( "lua/gphone/apps/*.lua", "GAME" )
+	print("Importing applications")
+	local files = file.Find( "gphone/apps/*.lua", "LUA" )
 	
 	if #files == 0 then
 		error("gPhone was unable to load any apps!")
@@ -66,22 +75,26 @@ end
 function gPhone.AddApp( data )
 	local name = string.lower(data.PrintName) or "error"
 	
-	gPhone.AppBase[name] = {
+	gApp[name] = {
 		["Data"] = data,
-		["Run"] = function() -- A shortcut function to launch the app
-			data.Run( gPhone.AppBase["_children_"], gPhone.phoneScreen )
+		["Start"] = function() -- A shortcut function to launch the app
+			-- Call the 'APP.Run' function
+			data.Run( gApp["_children_"], gPhone.phoneScreen )
 			
-			gPhone.phoneScreen.Paint = data.Paint
-			gPhone.phoneScreen.Think = data.Think
+			-- Override the phone's Paint and Think function
+			gPhone.phoneScreen.Paint = data.Paint or function() end
+			gPhone.phoneScreen.Think = data.Think or function() end
 			
-			if tonumber(data.FPS) != nil then
-				-- Route the app's Think function to our ticker and kill the phone's Think function
-				gPhone.CreateTicker( data, data.FPS, data.Think )
+			-- Check if the app is a game and uses custom frame rate
+			if tonumber(data.FPS) != nil and tonumber(data.FPS) != 0 then
+				-- Detour the app's Think function to our ticker and kill the phone's Think function
+				gApp.CreateTicker( data, data.FPS, data.Think )
 				gPhone.phoneScreen.Think = function() end
 			end
 		end,
 	}
 	
+	-- Add the app to the homescreen table
 	gPhone.Apps[data.PrintName] = data.Icon
 end
 
@@ -89,16 +102,18 @@ end
 function gPhone.RunApp(name)
 	local name = string.lower(name)
 	
-	if gPhone.AppBase[name] then
-		gPhone.AppBase["_init_"]() -- Prepare the phone
+	if gApp[name] then
+		gApp["_init_"]() -- Prepare the phone
 		
-		local app = gPhone.AppBase[name]
+		local app = gApp[name]
 		
 		-- Check if the app has a set run gamemode
 		local appGM = app.Data.Gamemode
-		if appGM != nil and appGM != "" and string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
-			gPhone.DenyApp( appGM, "App's usable gamemode does not \r\nmatch current gamemode!" )
-			return
+		if appGM != nil and appGM != "" then
+			if string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
+				gPhone.DenyApp( appGM, "This app cannot be used in this\r\n gamemode!" )
+				return
+			end
 		end
 		
 		-- Check usergroup privelages (unsafe, I should do this on the server)
@@ -119,16 +134,20 @@ function gPhone.RunApp(name)
 		end
 		
 		-- Run a hook to see if there are any other conditions that need to be met
-		local shouldRun = hook.Run( "gPhone_ShouldAppRun", name, gPhone.AppBase[name].Data )
+		local shouldRun = hook.Run( "gPhone_ShouldAppRun", name, gApp[name].Data )
 		if shouldRun == false then 
 			gPhone.ToHomeScreen()
 			return 
 		end
 		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable({header=GPHONE_CUR_APP, app=app.Data.PrintName})
+		net.SendToServer()
+		
 		-- All seems to be be good, run the application
 		gPhone.IsOnHomeScreen = false
-		app.Run()
-		gPhone.AppBase["_active_"] = app
+		app.Start()
+		gApp["_active_"] = app
 	else
 		-- This should never happen, catch it anyways
 		error(string.format("App '%s' does not exist in the Application table, aborting", name))
@@ -142,11 +161,13 @@ function gPhone.DenyApp( gmName, reason )
 	gPhone.IsOnHomeScreen = false
 		
 	local screen = gPhone.phoneScreen
-	local objs = gPhone.AppBase["_children_"]
+	local objs = gApp["_children_"]
 	local containerWidth = screen:GetWide()-20
 	
+	gApp["_active_"] = nil
+	
 	objs.Container = vgui.Create("DPanel", screen)
-	objs.Container:SetSize( containerWidth, screen:GetTall()/2.5 )
+	objs.Container:SetSize( containerWidth, screen:GetTall()/3 )
 	objs.Container:SetPos( 10, screen:GetTall()/2 - objs.Container:GetTall()/2 )
 	objs.Container.Paint = function()
 		draw.RoundedBox(0, 0, 0, objs.Container:GetWide(), objs.Container:GetTall(), Color(250, 250, 250))
@@ -172,8 +193,8 @@ end
 
 local fpsReturn = 0
 
---// Calls an app's function X times per second in order create constant framerate
-function gPhone.CreateTicker( app, fps, callback )
+--// Calls an app's function X times per second in order create constant framerate. 
+function gApp.CreateTicker( app, fps, func )
 
 	local appName = app.PrintName:lower() or "error"
 	
@@ -188,7 +209,7 @@ function gPhone.CreateTicker( app, fps, callback )
 		if CurTime() > nextTick then
 			frameCount = frameCount + 1
 			nextTick = CurTime() + (tickRate - RealFrameTime())
-			callback()
+			func()
 		end
 		
 		-- Its been a second
@@ -202,15 +223,17 @@ function gPhone.CreateTicker( app, fps, callback )
 		fpsReturn = frameCount / (CurTime() - startTime)
 	end)
 
-	gPhone.AppBase["_tickers_"][appName] = "gPhone_AppTicker_"..appName
+	gApp["_tickers_"][appName] = "gPhone_AppTicker_"..appName
 end
 
 --// Removes an app's ticker 
-function gPhone.RemoveTicker( app )
+function gApp.RemoveTicker( app )
+	if not app then return end
+	
 	local appName = app.Data.PrintName:lower() or "error"
 	
-	if gPhone.AppBase["_tickers_"][appName] then
-		local hookName = gPhone.AppBase["_tickers_"][appName] 
+	if gApp["_tickers_"][appName] then
+		local hookName = gApp["_tickers_"][appName] 
 		
 		hook.Remove("Think", hookName)
 		fpsReturn = 0
@@ -218,27 +241,32 @@ function gPhone.RemoveTicker( app )
 end
 
 --// Removes all tickers in the table
-function gPhone.RemoveTickers()
-	for name, hookName in pairs( gPhone.AppBase["_tickers_"] ) do
+function gApp.RemoveTickers()
+	for name, hookName in pairs( gApp["_tickers_"] ) do
 		hook.Remove("Think", hookName)
 	end
 end
 
 --// Returns a psuedo-framerate of the current app
-function gPhone.GetFPS()
+function gApp.GetFPS()
 	return math.Round(fpsReturn, 6)
 end
 
 --// Returns an average frame rate
-function gPhone.GetFPSAverage()
+function gApp.GetFPSAverage()
 	local fps = tonumber(fpsReturn) or 0
 	
 	local nextUpdate = 0
 	hook.Add("Think", "gPhone_AppFPSSmooth", function()
 		if CurTime() > nextUpdate then
-			nextUpdate = CurTime() + 0.5
+			--nextUpdate = CurTime() + 0.5
 		end
 	end)
 end
+
+
+
+
+
 
 

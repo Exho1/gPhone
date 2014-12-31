@@ -4,6 +4,7 @@ APP.PrintName = "Contacts"
 APP.Icon = "vgui/gphone/contacts.png"
 
 function APP.Run( objects, screen )
+	
 	gPhone.DarkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
@@ -135,7 +136,7 @@ function APP.ContactInfo( name )
 	local ply = util.GetPlayerByNick( name )
 	if not IsValid(ply) then return end
 	
-	local objects = gPhone.AppBase["_children_"]
+	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	local layout = objects.Layout
 	

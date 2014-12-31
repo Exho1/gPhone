@@ -69,6 +69,8 @@ surface.CreateFont( "gPhone_Error", {
 
 --// Hide or show children of a panel
 function gPhone.HideChildren( pnl )
+	if not IsValid( pnl ) then return end
+	
 	for k, v in pairs( pnl:GetChildren() ) do
 		if IsValid(v) then
 			v:SetVisible(false)
@@ -77,9 +79,21 @@ function gPhone.HideChildren( pnl )
 end
 
 function gPhone.ShowChildren( pnl )
+	if not IsValid( pnl ) then return end
+	
 	for k, v in pairs( pnl:GetChildren() ) do
 		if IsValid(v) then
 			v:SetVisible(true)
+		end
+	end
+end
+
+function gPhone.HideAppObjects()
+	if not IsValid( pnl ) then return end
+	
+	for k, v in pairs( gApp["_children_"] ) do
+		if IsValid(v) then
+			v:SetVisible( false )
 		end
 	end
 end

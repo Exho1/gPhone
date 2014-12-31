@@ -36,16 +36,16 @@ function gPhone.BuildPhone()
 	gPhone.phoneBase:SetTitle( "" )
 	gPhone.phoneBase:SetDraggable( true )  -- TEMPORARY
 	gPhone.phoneBase:SetDeleteOnClose( true )
-	gPhone.phoneBase:ShowCloseButton( true ) -- TEMPORARY
+	gPhone.phoneBase:ShowCloseButton( false ) -- TEMPORARY
 	gPhone.phoneBase.Paint = function( self, w, h)
 		surface.SetDrawColor( gPhone.Config.PhoneColor )
 		surface.SetMaterial( phone ) 
 		--surface.DrawTexturedRect( 0, 0, pWidth, pHeight )
 		surface.DrawTexturedRectRotated( self:GetWide()/2, self:GetTall()/2, pWidth, pHeight, gPhone.Rotation )
 	end
-	gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
-		gPhone.DestroyPhone()
-	end
+	--gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
+	--	gPhone.DestroyPhone()
+	--end
 	
 	local phoneBase = gPhone.phoneBase
 	local pX, pY = phoneBase:GetPos()
@@ -174,18 +174,13 @@ function gPhone.BuildPhone()
 			gPhone.RunApp( string.lower(name) )
 		end
 		
+		local x, y = xBuffer + 10, yBuffer + 50
 		local iconLabel = vgui.Create( "DLabel", gPhone.HomeIconLayout )
 		iconLabel:SetText( name )
 		iconLabel:SetFont("gPhone_AppName")
 		iconLabel:SizeToContents()
-		iconLabel:SetPos( xBuffer + 10, yBuffer + 50 )
-		if string.len(name) < 5 then
-			iconLabel:SetPos( xBuffer + 15, yBuffer + 50 )
-		elseif string.len(name) > 7 then
-			iconLabel:SetPos( xBuffer + 5, yBuffer + 50 )
-		end
+		iconLabel:SetPos( x + homeIcons[name]:GetWide()/2 - iconLabel:GetWide()/2, y )
 	
-		
 		if iconCount % 4 == 0 then
 			xBuffer = 0
 			yBuffer = yBuffer + 75
@@ -241,10 +236,14 @@ function gPhone.HidePhone()
 		
 		gPhone.PhoneActive = false
 		
-		gPhone.RemoveTickers()
+		gApp.RemoveTickers()
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
+		net.SendToServer()
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable({header=GPHONE_CUR_APP, app=nil})
 		net.SendToServer()
 	end
 end
@@ -258,10 +257,14 @@ function gPhone.DestroyPhone()
 		gPhone.PhoneActive = false
 		gPhone.PhoneExists = false
 		
-		gPhone.RemoveTickers()
+		gApp.RemoveTickers()
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
+		net.SendToServer()
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable({header=GPHONE_CUR_APP, app=nil})
 		net.SendToServer()
 	end
 end
@@ -285,6 +288,45 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		else
 			gPhone.Notification( msg, {game=game} )
 		end
+	elseif header == GPHONE_RETURNAPP then
+		local name, active = nil, gApp["_active_"]
+		active = active or {}
+		active.Data = active.Data or {}
+		
+		if active.Data.PrintName then
+			name = active.Data.PrintName or nil
+		end
+
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( {header=GPHONE_RETURNAPP, app=name} )
+		net.SendToServer()
+	elseif header == GPHONE_RUN_APPFUNC then
+		local app = data.app
+		local func = data.func
+		local args = data.args
+		
+		if gApp[app:lower()] then
+			app = app:lower()
+			for k, v in pairs( gApp[app].Data ) do
+				if k:lower() == func:lower() then
+					gApp[app].Data[k]( unpack(args) )
+					return
+				end
+			end
+		end
+		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to run application function "..func.."!" )
+	elseif header == GPHONE_RUN_FUNC then
+		local func = data.func
+		local args = data.args
+		
+		for k, v in pairs(gPhone) do
+			if k:lower() == func:lower() and type(k) == "function" then
+				gPhone[k]( unpack(args) )
+				return
+			end
+		end
+		
+		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to run phone function "..func.."!")
 	else
 	
 	end

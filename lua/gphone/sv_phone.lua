@@ -14,22 +14,34 @@ for k, v in pairs(files) do
 	resource.AddFile("materials/vgui/gphone/wallpapers/"..v)
 end
 
+files = file.Find( "gphone/apps/*.lua", "LUA" ) -- Apps
+for k, v in pairs(files) do
+	AddCSLuaFile("apps/"..v)
+end
+
+--// Player functions
+local plymeta = FindMetaTable( "Player" )
+
+
 --// Receives data from applications and runs it on the server
 net.Receive( "gPhone_DataTransfer", function( len, ply )
 	local data = net.ReadTable()
-	local dataHeader = data.header
+	local header = data.header
 	
-	if dataHeader == GPHONE_MONEY_TRANSFER then -- Money transaction
+	if header == GPHONE_MONEY_TRANSFER then -- Money transaction
 		local amount = tonumber(data.amount)
 		local target = data.target
 		local plyWallet = tonumber(ply:getDarkRPVar("money"))
+		
+		print(ply, target, amount, plyWallet)
 		
 		-- If somehow a nil amount got through, catch it
 		if amount == nil then 
 			gPhone.ChatMsg( ply, "Unable to complete transaction - nil amount" )
 			return
 		else
-			amount = math.abs(amount) -- Make sure its never a negative amount
+			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash
+			amount = math.abs(amount) 
 		end
 		
 		if ply:GetTransferCooldown() > 0 then
@@ -64,10 +76,11 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			
 			ply:SetTransferCooldown( 5 )
 		else
+			gPhone.MsgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
 			gPhone.ChatMsg( ply, "Unable to complete transaction - lack of funds" )
 			return
 		end
-	elseif dataHeader == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
+	elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
 		local phoneOpen = data.open
 		
 		if phoneOpen == true then
@@ -76,6 +89,8 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		else
 			ply:SetNWBool("gPhone_Open", false)
 		end
+	elseif header == GPHONE_CUR_APP then
+		ply:SetNWString("gPhone_CurApp", data.app)
 	else
 	
 	end
