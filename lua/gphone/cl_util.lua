@@ -25,42 +25,42 @@ concommand.Add("vibrate", function()
 end)
 
 --// Fonts
-surface.CreateFont( "gPhone_TitleLite", {
+surface.CreateFont( "gPhone_18Lite", {
 	font = "Roboto Lt",
 	size = 18,
 	weight = 500,
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_StatusBar", {
+surface.CreateFont( "gPhone_14", {
 	font = "Roboto Lt",
 	size = 14,
 	weight = 500,
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_AppName", {
+surface.CreateFont( "gPhone_12", {
 	font = "Roboto Lt",
 	size = 12,
 	weight = 600,
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_LockTime", {
+surface.CreateFont( "gPhone_60", {
 	font = "Roboto Lt",
 	size = 60,
 	weight = 300,
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_Title", {
+surface.CreateFont( "gPhone_18", {
 	font = "Roboto Lt",
 	size = 18,
 	weight = 650,
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_Error", {
+surface.CreateFont( "gPhone_22", {
 	font = "Roboto Lt",
 	size = 22,
 	weight = 650,
@@ -246,17 +246,66 @@ function gPhone.LoadClientConfig()
 	gPhone.Config = cfgTable
 end
 
---// Utility function to grab a player object from a string
-function util.GetPlayerByNick( nick, bExact )
-	for k, v in pairs(player.GetAll()) do
-		if bExact then 
-			if v:Nick() == nick then
-				return v
-			end
-		else
-			if v:Nick():lower() == nick:lower() then
-				return v
-			end
-		end
+--// Saves a text message to an existing txt document or a new one
+function gPhone.SaveTextMessage( tbl )
+	-- tbl.sender, tbl.time, tbl.date, tbl.message
+	local ply = util.GetPlayerByNick( tbl.sender )
+	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
+	
+	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
+		print("Exists")
+		local readFile = file.Read( "gphone/messages/"..idFormat..".txt", "DATA" )
+		local readTable = util.JSONToTable( readFile ) 
+		
+		table.insert( readTable, 1, tbl )
 	end
+	
+	PrintTable(tbl)
+	
+	local json = util.TableToJSON( tbl ) 
+		
+	file.CreateDir( "gphone/messages" )
+	file.Write( "gphone/messages/"..idFormat..".txt", json)
+end
+
+--// Loads all text messages for the name
+function gPhone.LoadTextMessagesFrom( name )
+	local ply = util.GetPlayerByNick( name )
+	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
+	
+	local msgTable = {}
+	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
+		print("Exists")
+		local cfgFile = file.Read( "gphone/client_config.txt", "DATA" )
+		msgTable = util.JSONToTable( cfgFile ) 
+	end
+	
+	PrintTable( msgTable )
+	
+	return msgTable
+end
+
+function gPhone.SteamIDToFormat( id )
+
+	local idFragments = string.Explode( ":", id )
+	
+	local oneOrZero = idFragments[2]
+	local bulk = idFragments[3]
+	
+	local fmat = oneOrZero..bulk
+	
+	return fmat
+end
+
+function gPhone.FormatToSteamID( fmat )
+	local front = "STEAM_0:"
+	
+	local formatFrags = string.Explode( "", fmat )
+	local middle = formatFrags[1]
+	table.remove( formatFrags, 1 )
+	local end_ = table.concat( formatFrags, "")
+	
+	local id = front..middle..":"..end_
+	
+	return id
 end

@@ -33,17 +33,7 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		local target = data.target
 		local plyWallet = tonumber(ply:getDarkRPVar("money"))
 		
-		print(ply, target, amount, plyWallet)
-		
-		-- If somehow a nil amount got through, catch it
-		if amount == nil then 
-			gPhone.ChatMsg( ply, "Unable to complete transaction - nil amount" )
-			return
-		else
-			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash
-			amount = math.abs(amount) 
-		end
-		
+		-- Cooldowns to prevent spam
 		if ply:GetTransferCooldown() > 0 then
 			gPhone.ChatMsg( ply, "You must wait "..math.Round(ply:GetTransferCooldown()).."s before sending more money" )
 			return
@@ -53,6 +43,16 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		if not IsValid(target) or target == ply then
 			gPhone.ChatMsg( ply, "Unable to complete transaction - invalid recipient" )
 			return
+		end
+		
+		-- If a negative or string amount got through, stop it
+		if amount < 0 or amount == nil then 
+			gPhone.FlagPlayer( ply, GPHONE_F_FINANCES )
+			gPhone.ChatMsg( ply, "Unable to complete transaction - nil amount" )
+			return
+		else
+			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash
+			amount = math.abs(amount) 
 		end
 		
 		-- Make sure the player has this money and didn't cheat it on the client
@@ -73,9 +73,11 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			ply:addMoney(-amount)
 			gPhone.ChatMsg( target, "Received $"..amount.." from "..ply:Nick().."!" )
 			gPhone.ChatMsg( ply, "Wired $"..amount.." to "..target:Nick().." successfully!" )
+			gPhone.ConfirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
 			
 			ply:SetTransferCooldown( 5 )
-		else
+		else	
+			gPhone.FlagPlayer( ply, GPHONE_F_FINANCES )
 			gPhone.MsgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
 			gPhone.ChatMsg( ply, "Unable to complete transaction - lack of funds" )
 			return
@@ -91,8 +93,12 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		end
 	elseif header == GPHONE_CUR_APP then
 		ply:SetNWString("gPhone_CurApp", data.app)
-	else
-	
+	elseif header == GPHONE_F_EXISTS then
+		local cache = data.data
+
+		local length = string.len(cache[1].body) / 3
+		gPhone.AdminMsg( ply:Nick().." ("..ply:SteamID()..") has "..#cache.." attempts at exploiting the gPhone recorded!" )
+		-- Perhaps add an app to keep track of these
 	end
 end)
 

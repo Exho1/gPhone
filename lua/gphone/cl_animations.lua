@@ -6,6 +6,8 @@ local client = LocalPlayer()
 
 --// Leave the current app and go to the home screen
 function gPhone.ToHomeScreen()
+	if gPhone.IsOnHomeScreen == true then return end
+	
 	if not gPhone.IsPortrait then
 		gPhone.RotateToPortrait()
 	end
@@ -269,26 +271,26 @@ function gPhone.BuildLockScreen()
 	
 	lockTime = vgui.Create( "DLabel", screen )
 	lockTime:SetText( os.date("%I:%M") )
-	lockTime:SetFont("gPhone_LockTime")
+	lockTime:SetFont("gPhone_60")
 	lockTime:SizeToContents()
 	lockTime:SetPos( screen:GetWide()/2 - lockTime:GetWide()/2, 15 )
 	lockTime.Think = function()
 		if IsValid(lockTime) then
 			lockTime:SetText(os.date("%I:%M"))
-			lockTime:SetFont("gPhone_LockTime")
+			lockTime:SetFont("gPhone_60")
 			lockTime:SizeToContents()
 		end
 	end
 	
 	dateLabel = vgui.Create( "DLabel", screen )
 	dateLabel:SetText( os.date("%A, %B %d") )
-	dateLabel:SetFont("gPhone_TitleLite")
+	dateLabel:SetFont("gPhone_18Lite")
 	dateLabel:SizeToContents()
 	dateLabel:SetPos( screen:GetWide()/2 - dateLabel:GetWide()/2, 70 )
 	
 	slideUnlock = vgui.Create( "DLabel", screen )
 	slideUnlock:SetText( "slide to unlock" )
-	slideUnlock:SetFont("gPhone_TitleLite")
+	slideUnlock:SetFont("gPhone_18Lite")
 	slideUnlock:SizeToContents()
 	slideUnlock:SetPos( screen:GetWide()/2 - slideUnlock:GetWide()/2, screen:GetTall() - slideUnlock:GetTall() - 50 )
 	

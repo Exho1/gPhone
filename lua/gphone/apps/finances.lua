@@ -10,18 +10,31 @@ function APP.Run( objects, screen )
 	bodyWidth = screen:GetWide()-20
 	
 	local toDraw = {
-		"Budget: $"..LocalPlayer():getDarkRPVar("money") or "N/A",
+		"Current User: "..LocalPlayer():Nick(),
+		"Balance: $"..LocalPlayer():getDarkRPVar("money") or "N/A",
 		"Salary: $"..LocalPlayer():getDarkRPVar("salary") or "N/A",
 		"_SPACE_",
 		"Wire Funds",
+		--"_SPACE_",
+		"Transaction Log",
 	}
 	
 	local isButton = { -- Is the object a button? Poor way of handling this
 		[1] = false,
 		[2] = false,
 		[3] = false,
-		[4] = true,
+		[4] = false,
+		[5] = true,
+		[6] = true,
 	}
+	
+	local offset = 20 -- A little trick to push the scrollbar off the screen
+	objects.LayoutScroll = vgui.Create( "DScrollPanel", screen )
+	objects.LayoutScroll:SetSize( screen:GetWide() + offset, screen:GetTall() - 120 )
+	objects.LayoutScroll:SetPos( 30, 90 )
+	objects.LayoutScroll.Paint = function() 
+		--draw.RoundedBox(0, 0, 0, objects.LayoutScroll:GetWide(), objects.LayoutScroll:GetTall(), Color(250, 250, 250))
+	end
 	
 	objects.Container = vgui.Create("DPanel", screen)
 	objects.Container:SetSize( bodyWidth - 20, 30 )
@@ -32,15 +45,15 @@ function APP.Run( objects, screen )
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Finance Manager" ) 
-	objects.Title:SetFont("gPhone_TitleLite")
+	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SetTextColor(Color(0,0,0))
 	objects.Title:SizeToContents()
 	objects.Title:SetPos( screen:GetWide()/2 - objects.Title:GetWide()/2, 40 )
 	
 	-- Layout system copied from the settings app
-	objects.Layout = vgui.Create( "DIconLayout", screen)
+	objects.Layout = vgui.Create( "DIconLayout", objects.LayoutScroll)
 	objects.Layout:SetSize( bodyWidth - 40, screen:GetTall() - 50 )
-	objects.Layout:SetPos( 30, 90 )
+	objects.Layout:SetPos( 0,0  )
 	objects.Layout:SetSpaceY( 0 )
 	
 	local pnlWidth = bodyWidth - 40
@@ -70,7 +83,7 @@ function APP.Run( objects, screen )
 				title = vgui.Create( "DLabel", background )
 				title:SetText( name )
 				title:SetTextColor(Color(0,0,0))
-				title:SetFont("gPhone_Title")
+				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 0, 5 )
 				gPhone.SetTextAndCenter(title, background)
@@ -85,9 +98,10 @@ function APP.Run( objects, screen )
 				title = vgui.Create( "DLabel", background )
 				title:SetText( name )
 				title:SetTextColor(Color(0,0,0))
-				title:SetFont("gPhone_Title")
+				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 10, 5 )
+				gPhone.SetTextAndCenter(title, background)
 			end
 		end
 	end
@@ -95,6 +109,8 @@ end
 
 --// Custom button handling function
 function APP.ButtonClick( objects, name )
+	local screen = gPhone.phoneScreen
+	
 	if name == "Wire Funds" then
 		for k, v in pairs(objects.Layout:GetChildren()) do
 			v:SetVisible(false)
@@ -105,7 +121,7 @@ function APP.ButtonClick( objects, name )
 		
 		local targetEntry = objects.Layout:Add("DComboBox")
 		targetEntry:SetValue( "Reciever" )
-		targetEntry:SetFont("gPhone_Title")
+		targetEntry:SetFont("gPhone_18")
 		targetEntry:SetSize( pnlWidth, 30 )
 		for k, v in pairs(player.GetAll()) do 
 			if v != LocalPlayer() then
@@ -122,7 +138,7 @@ function APP.ButtonClick( objects, name )
 		
 		local moneyEntry = objects.Layout:Add("DTextEntry")
 		moneyEntry:SetText( "Amount" )
-		moneyEntry:SetFont("gPhone_Title")
+		moneyEntry:SetFont("gPhone_18")
 		moneyEntry:SetSize( pnlWidth, 30 )
 		moneyEntry.OnTextChanged = function( self )
 			
@@ -176,7 +192,7 @@ function APP.ButtonClick( objects, name )
 		local title = vgui.Create( "DLabel", sendMoney )
 		title:SetText( "Transfer" )
 		title:SetTextColor(Color(0,0,0))
-		title:SetFont("gPhone_Title")
+		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
 		gPhone.SetTextAndCenter(title, sendMoney)
@@ -204,10 +220,52 @@ function APP.ButtonClick( objects, name )
 		local title = vgui.Create( "DLabel", cancelTransaction )
 		title:SetText( "Cancel" )
 		title:SetTextColor(Color(0,0,0))
-		title:SetFont("gPhone_Title")
+		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
 		gPhone.SetTextAndCenter(title, cancelTransaction)
+	elseif name == "Transaction Log" then
+		for k, v in pairs(objects.Layout:GetChildren()) do
+			v:SetVisible( false )
+		end
+		
+		if file.Exists( "gphone/transaction_log.txt", "DATA" ) then 
+			local readFile = file.Read( "gphone/transaction_log.txt", "DATA" )
+			local readTable = util.JSONToTable( readFile ) 
+			
+			for key, tbl in pairs( readTable ) do
+				local background = objects.Layout:Add("DPanel")
+				background:SetSize(screen:GetWide()-60, 30)
+				background:SetText("")
+				background.Paint = function()
+					draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(250, 250, 250))
+				end
+				
+				local title = vgui.Create( "DLabel", background )
+				title:SetText( tbl.time )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_12")
+				title:SizeToContents()
+				title:SetPos( 10, 15 )
+				gPhone.SetTextAndCenter(title, background)
+				
+				local title = vgui.Create( "DLabel", background )
+				title:SetText( tbl.target.." - $"..tbl.amount )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 10, 0 )
+				gPhone.SetTextAndCenter(title, background)
+				
+				local fake = objects.Layout:Add("DPanel")
+				fake:SetSize(screen:GetWide()-60, 5)
+				fake.Paint = function() end
+			end
+		else
+		
+		end
+	else
+	
 	end
 end
 

@@ -16,19 +16,19 @@ function APP.Run( objects, screen )
 
 end
 
--- Called when the phone screen's Paint function is called
-function APP.Paint( screen )
-	
-end
-
 -- Called when the phone screen's Think function is called
 function APP.Think( screen )
 	
 end
 
+-- Called when the phone screen's Paint function is called
+function APP.Paint( screen )
+	
+end
+
 -- Called when the app is told to close and the app's objects are about to be cleaned up
 function APP.Close()
-	 
+
 end
 
 -- This adds the application to the phone

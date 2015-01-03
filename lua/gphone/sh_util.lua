@@ -1,5 +1,27 @@
 ----// Shared Utility Functions //----
 
+--// Net Message Header Enumerations
+GPHONE_MP_REQUEST = 1
+GPHONE_MP_REQUEST_RESPONSE = 2
+GPHONE_MP_PLAYER_QUIT = 3
+
+GPHONE_MONEY_TRANSFER = 4
+GPHONE_STATE_CHANGED = 5
+GPHONE_BUILD = 6
+GPHONE_NOTIFY_GAME = 7
+GPHONE_NOTIFY_NORMAL = 8
+
+GPHONE_RETURNAPP = 9
+GPHONE_CUR_APP = 10
+GPHONE_RUN_APPFUNC = 11
+GPHONE_RUN_FUNC = 12
+GPHONE_MONEY_CONFIRMED = 13
+
+GPHONE_F_OTHER = 14
+GPHONE_F_FINANCES = 15
+GPHONE_F_EXISTS = 16
+
+
 local plymeta = FindMetaTable( "Player" )
 
 function plymeta:HasPhoneOpen()
@@ -43,7 +65,7 @@ function gPhone.MsgC( enum, ... )
 	local col = nil
 	if SERVER then 
 		side = "SV" 
-		col = Color( 50, 100, 255 ) -- Get a more accurate color
+		col = Color( 0, 128, 255 )
 	else 
 		side = "CL" 
 		col = Color( 255, 255, 100 )
@@ -62,20 +84,18 @@ function gPhone.MsgC( enum, ... )
 	end
 end
 
---// Net Message Header Enumerations
-GPHONE_MP_REQUEST = 1
-GPHONE_MP_REQUEST_RESPONSE = 2
-GPHONE_MP_PLAYER_QUIT = 3
-
-GPHONE_MONEY_TRANSFER = 4
-GPHONE_STATE_CHANGED = 5
-GPHONE_BUILD = 6
-GPHONE_NOTIFY_GAME = 7
-GPHONE_NOTIFY_NORMAL = 8
-
-GPHONE_RETURNAPP = 9
-GPHONE_CUR_APP = 10
-GPHONE_RUN_APPFUNC = 11
-GPHONE_RUN_FUNC = 12
-
+--// Utility function to grab a player object from a string
+function util.GetPlayerByNick( nick, bExact )
+	for k, v in pairs(player.GetAll()) do
+		if bExact then 
+			if v:Nick() == nick then
+				return v
+			end
+		else
+			if v:Nick():lower() == nick:lower() then
+				return v
+			end
+		end
+	end
+end
 

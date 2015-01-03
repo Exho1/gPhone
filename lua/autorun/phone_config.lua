@@ -6,7 +6,8 @@
 
 --[[ To Do:
 	- New icons that are not all white
-	- Boot-up screen
+	- Decide on an icon size once and for all and remove the unnecessary materials
+	- Multiplayer
 ]]
 
 gPhone = gPhone or {}
@@ -52,6 +53,7 @@ if SERVER then
 	AddCSLuaFile("gphone/cl_animations.lua")
 	AddCSLuaFile("gphone/sh_util.lua")
 	AddCSLuaFile("gphone/sh_multiplayer.lua")
+	AddCSLuaFile("vgui/backbutton.lua")
 	
 	include("gphone/sv_util.lua")
 	include("gphone/sv_phone.lua")
@@ -70,6 +72,7 @@ if CLIENT then
 	include("gphone/cl_animations.lua")
 	include("gphone/sh_util.lua")
 	include("gphone/sh_multiplayer.lua")
+	include("vgui/backbutton.lua")
 	
 	gPhone.LoadClientConfig()
 	

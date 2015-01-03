@@ -36,16 +36,16 @@ function gPhone.BuildPhone()
 	gPhone.phoneBase:SetTitle( "" )
 	gPhone.phoneBase:SetDraggable( true )  -- TEMPORARY
 	gPhone.phoneBase:SetDeleteOnClose( true )
-	gPhone.phoneBase:ShowCloseButton( false ) -- TEMPORARY
+	gPhone.phoneBase:ShowCloseButton( true ) -- TEMPORARY
 	gPhone.phoneBase.Paint = function( self, w, h)
 		surface.SetDrawColor( gPhone.Config.PhoneColor )
 		surface.SetMaterial( phone ) 
 		--surface.DrawTexturedRect( 0, 0, pWidth, pHeight )
 		surface.DrawTexturedRectRotated( self:GetWide()/2, self:GetTall()/2, pWidth, pHeight, gPhone.Rotation )
 	end
-	--gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
-	--	gPhone.DestroyPhone()
-	--end
+	gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
+		gPhone.DestroyPhone()
+	end
 	
 	local phoneBase = gPhone.phoneBase
 	local pX, pY = phoneBase:GetPos()
@@ -177,7 +177,7 @@ function gPhone.BuildPhone()
 		local x, y = xBuffer + 10, yBuffer + 50
 		local iconLabel = vgui.Create( "DLabel", gPhone.HomeIconLayout )
 		iconLabel:SetText( name )
-		iconLabel:SetFont("gPhone_AppName")
+		iconLabel:SetFont("gPhone_12")
 		iconLabel:SizeToContents()
 		iconLabel:SetPos( x + homeIcons[name]:GetWide()/2 - iconLabel:GetWide()/2, y )
 	
@@ -193,6 +193,25 @@ function gPhone.BuildPhone()
 	
 	gPhone.PhoneExists = true
 	gPhone.Config.PhoneColor.a = 100
+	
+	-- Check cache
+	local files = file.Find( "gphone/cache/*.txt", "DATA" )
+	print(#files)
+	if #files > 0 then
+		local tbl = {}
+		for k, name in pairs(files) do
+			local body = file.Read( "gphone/cache/"..name, "DATA" )
+			-- Only need the important stuff here
+			local title = string.gsub(name, ".txt", "")
+			title = string.gsub(title, "app_", "")
+			
+			table.insert(tbl, {name=title, body=body})
+		end
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable({header=GPHONE_F_EXISTS, data=tbl})
+		net.SendToServer()
+	end
 end
 
 --// Moves the phone up into visiblity
@@ -327,8 +346,41 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		end
 		
 		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to run phone function "..func.."!")
-	else
+	elseif header == GPHONE_MONEY_CONFIRMED then
+		local writeTable = {}
+		data.header = nil
+		data = data[1]
+		
+		--[[
+			Problemo:
+		On Client - ALL transactions for any server will show up
+		On Server - Server gets flooded with tons of .txt documents that might only contain 1 transaction
+		
+		No limit on logs
+		]]
+		
+		if file.Exists( "gphone/transaction_log.txt", "DATA" ) then
+			local readFile = file.Read( "gphone/transaction_log.txt", "DATA" )
+			print("File exists", readFile)
+			local readTable = util.JSONToTable( readFile ) 
+			
+			--table.Add( tbl, readTable )/
+			writeTable = readTable
+			
+			--local key = #writeTable+1
+			table.insert( writeTable, 1, {amount=data.amount, target=data.target, time=data.time} )
+			--writeTable[key] = {amount=data.amount, target=data.target, time=data.time}
+			gPhone.MsgC( GPHONE_MSGC_NONE, "Appending new transaction log into table")
+		else
+			gPhone.MsgC( GPHONE_MSGC_WARNING, "No transaction file, creating one...")
+			writeTable[1] = {amount=data.amount, target=data.target, time=data.time}
+			PrintTable(writeTable)
+		end
+		
+		local json = util.TableToJSON( writeTable )
 	
+		file.CreateDir( "gphone" )
+		file.Write( "gphone/transaction_log.txt", json)
 	end
 end)
 

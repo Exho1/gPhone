@@ -46,22 +46,22 @@ if SERVER then
 			-- The sender of the game invite is ALWAYS player 1 and the recipient is player 2
 			
 			-- Send the table to the necessary player
-			if data.sender == ply2 then
+			--if data.sender == ply2 then
+			--	gPhone.StreamData( data, ply1 )
+			--elseif data.sender == ply1 then
+			--	gPhone.StreamData( data, ply2 )
+			--else -- No client inputs yet
 				gPhone.StreamData( data, ply1 )
-			elseif data.sender == ply1 then
 				gPhone.StreamData( data, ply2 )
-			else -- No client inputs yet
-				gPhone.StreamData( data, ply1 )
-				gPhone.StreamData( data, ply2 )
-			end
+			--end
 			
 			-- Player has gone to the home screen or closed the phone
 			if ply1:GetApp() == "" or ply1:GetApp() == nil then
 				gPhone.EndDataStream( ply1 )
 			end
-			elseif ply2:GetApp() == "" or ply2:GetApp() == nil then
-				gPhone.EndDataStream( ply2 )
-			end
+			--elseif ply2:GetApp() == "" or ply2:GetApp() == nil then
+			--	gPhone.EndDataStream( ply2 )
+			--end
 			
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true

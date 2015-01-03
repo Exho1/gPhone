@@ -34,6 +34,7 @@ gApp["_close_"] = function( app )
 	end
 	gApp.RemoveTicker( app )
 	
+	-- Hides all the app children
 	for k, v in pairs( gApp["_children_"] ) do
 		if IsValid( v ) then
 			v:Remove()
@@ -176,17 +177,17 @@ function gPhone.DenyApp( gmName, reason )
 	local topError = vgui.Create( "DLabel", objs.Container ) -- Header
 	topError:SetText( "[App Error]" )
 	topError:SetTextColor(Color(0,0,0))
-	topError:SetFont("gPhone_Error")
+	topError:SetFont("gPhone_22")
 	topError:SizeToContents()
-	local width, height = gPhone.GetTextSize("App Error", "gPhone_Error")
+	local width, height = gPhone.GetTextSize("App Error", "gPhone_22")
 	topError:SetPos( containerWidth/2 - width/2, 5 )
 	
 	local errorMsg = vgui.Create( "DLabel", objs.Container ) -- Actual message
 	errorMsg:SetText( reason )
 	errorMsg:SetTextColor(Color(0,0,0))
-	errorMsg:SetFont("gPhone_StatusBar")
+	errorMsg:SetFont("gPhone_14")
 	errorMsg:SizeToContents()
-	local width, height = gPhone.GetTextSize(reason, "gPhone_StatusBar")
+	local width, height = gPhone.GetTextSize(reason, "gPhone_14")
 	errorMsg:SetPos( containerWidth/2 - width/2, 30 )
 	
 end
