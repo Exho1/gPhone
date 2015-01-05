@@ -13,6 +13,10 @@ files = file.Find( "materials/vgui/gphone/wallpapers/*.png", "GAME" ) -- Wallpap
 for k, v in pairs(files) do
 	resource.AddFile("materials/vgui/gphone/wallpapers/"..v)
 end
+files = file.Find( "materials/vgui/gphone/apps/*.png", "GAME" ) -- App images
+for k, v in pairs(files) do
+	resource.AddFile("materials/vgui/gphone/apps/"..v)
+end
 
 files = file.Find( "gphone/apps/*.lua", "LUA" ) -- Apps
 for k, v in pairs(files) do

@@ -35,6 +35,8 @@ else
 		
 		ColorBlue = Color(20,80,200),
 		PhoneColor = Color(255,255,255,255),
+		
+		IconLayout = {}
 	}
 end
 

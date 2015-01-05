@@ -9,15 +9,17 @@ gApp["_children_"] = {} -- Contains all the panels of an app
 gApp["_tickers_"] = {} -- Hook names of all added tickers
 gApp["_active_"] = {} -- Active app's table
 
--- Storing our objects
+-- Backing up homescreen functions
 local oldScreenPaint = nil
 local oldScreenThink = nil
+local oldScreenMousePressed = nil
 local appLayout = nil
 
 -- Prepares the phone to run an application
 gApp["_init_"] = function()
 	oldScreenPaint = gPhone.phoneScreen.Paint
 	oldScreenThink = gPhone.phoneScreen.Think
+	oldScreenMousePressed = gPhone.phoneScreen.OnMousePressed
 	
 	gPhone.HomeIconLayout:SetVisible( false )
 end
@@ -26,6 +28,7 @@ end
 gApp["_close_"] = function( app )
 	gPhone.phoneScreen.Paint = oldScreenPaint
 	gPhone.phoneScreen.Think = oldScreenThink
+	 gPhone.phoneScreen.OnMousePressed = oldScreenMousePressed
 	
 	if app and app.Data then
 		if app.Data.Close then
@@ -36,6 +39,13 @@ gApp["_close_"] = function( app )
 	
 	-- Hides all the app children
 	for k, v in pairs( gApp["_children_"] ) do
+		if type(v) == "table" then 
+			for k, v in pairs(v) do 
+				-- What if someone has 2 tables inside each other? Find a better way...
+				v:Remove()
+			end
+		end
+		
 		if IsValid( v ) then
 			v:Remove()
 		end
@@ -96,7 +106,8 @@ function gPhone.AddApp( data )
 	}
 	
 	-- Add the app to the homescreen table
-	gPhone.Apps[data.PrintName] = data.Icon
+	--gPhone.Apps[data.PrintName] = data.Icon
+	table.insert(gPhone.Apps, {icon=data.Icon, name=data.PrintName})
 end
 
 --// Runs the app on the phone
@@ -209,7 +220,9 @@ function gApp.CreateTicker( app, fps, func )
 		-- Call the next tick
 		if CurTime() > nextTick then
 			frameCount = frameCount + 1
-			nextTick = CurTime() + (tickRate - RealFrameTime())
+			--nextTick = CurTime() + (tickRate - RealFrameTime())
+			nextTick = CurTime() + tickRate - (RealFrameTime()/2)
+			
 			func()
 		end
 		

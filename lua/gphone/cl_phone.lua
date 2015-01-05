@@ -88,6 +88,7 @@ function gPhone.BuildPhone()
 	local nextPass, battPerc = CurTime() + math.random(30, 60), 100
 	batteryPercent.Think = function()
 		if CurTime() > nextPass then
+			batteryPercent:SetPos( sWidth - batteryPercent:GetWide() - 21, 0)
 			local dropPerc = math.random(1, 3)
 
 			battPerc = battPerc - dropPerc
@@ -156,47 +157,145 @@ function gPhone.BuildPhone()
 	}
 	gPhone.StatusBarHeight = 15
 	
-	-- Homescreen icons
+	--// Homescreen
 	local homeIcons = {}
+	local buildApps 
 	
-	gPhone.HomeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
-	gPhone.HomeIconLayout:SetSize( sWidth - 20, sHeight - 40 )
-	gPhone.HomeIconLayout:SetPos( 10, 25 )
-	gPhone.HomeIconLayout.Paint = function() end
-	
-	local xBuffer, yBuffer, iconCount = 0, 0, 1
-	for name, mat in pairs(gPhone.Apps) do
-		homeIcons[name] = vgui.Create( "DImageButton", gPhone.HomeIconLayout ) 
-		homeIcons[name]:SetSize( 32, 32 )
-		homeIcons[name]:SetPos( 10 + xBuffer, 10 + yBuffer )
-		homeIcons[name]:SetImage( mat )		
-		homeIcons[name].DoClick = function()
-			gPhone.RunApp( string.lower(name) )
+	-- Loads up icon positions from the config file
+	local newApps = {}
+	local denies = 0
+	if #gPhone.Config.IconLayout > 1 then
+		for a = 1,#gPhone.Apps do
+			local app = gPhone.Apps[a] -- name and icon
+			local name = app.name
+			denies = 0
+			
+			-- Checks if an app exists in the config file and at which key
+			for i = 1,#gPhone.Config.IconLayout do
+				if app.name == gPhone.Config.IconLayout[i].name then
+					if app.icon == gPhone.Config.IconLayout[i].icon then -- Config icon matches app's set icon path
+						newApps[i] = gPhone.Config.IconLayout[i]
+					else -- Use the app's icon path anyways
+						newApps[i] = gPhone.Config.IconLayout[i]
+						newApps[i].icon = app.icon
+					end
+				else
+					denies = denies + 1
+				end
+			end
+			
+			-- This app does not exist in the config, put it at the end
+			if denies == #gPhone.Config.IconLayout then
+				table.insert(newApps, app)
+			end
 		end
 		
-		local x, y = xBuffer + 10, yBuffer + 50
-		local iconLabel = vgui.Create( "DLabel", gPhone.HomeIconLayout )
-		iconLabel:SetText( name )
-		iconLabel:SetFont("gPhone_12")
-		iconLabel:SizeToContents()
-		iconLabel:SetPos( x + homeIcons[name]:GetWide()/2 - iconLabel:GetWide()/2, y )
+		gPhone.Apps = newApps
+	end	
 	
-		if iconCount % 4 == 0 then
-			xBuffer = 0
-			yBuffer = yBuffer + 75
-		else
-			xBuffer = xBuffer + 55
-			yBuffer = yBuffer
+	-- Build the layout
+	gPhone.HomeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
+	gPhone.HomeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
+	gPhone.HomeIconLayout:SetPos( 5, 25 )
+	gPhone.HomeIconLayout.Paint = function() end
+	gPhone.HomeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) -- Drag and drop em
+		if drop then
+			--print("THE EAGLE HAS LANDED")
+			for k, v in pairs(homeIcons) do
+				local iX, iY = v.pnl:GetPos()
+				local iW, iH = v.pnl:GetSize()
+				
+				-- Check if our mouse is inside the bounds of another icon
+				if x >= iX and x <= iX + iW then
+					if y >= iY and y <= iY + iH then
+						local droppedData = {}
+						local droppedKey = 0
+						
+						-- Get the name and image of the icon we are moving
+						for i = 1,#homeIcons do
+							if item[1] == homeIcons[i].pnl:GetChildren()[1] then
+								local droppedName = homeIcons[i].name
+								
+								for i = 1, #gPhone.Apps do
+									if gPhone.Apps[i].name == droppedName then
+										droppedData = gPhone.Apps[i]
+										droppedKey = i
+									end
+								end
+							end
+						end
+						
+						-- Remove the icon from its old key and move it to its new key
+						table.remove(gPhone.Apps, droppedKey)
+						table.insert(gPhone.Apps, k, droppedData)
+						
+						-- Destroy the old homescreen 
+						for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
+							v:Remove()
+						end
+						homeIcons = {}
+						
+						-- Build a shiny new homescreen
+						buildApps( gPhone.Apps )
+					end
+				end
+			end
 		end
-		iconCount = iconCount + 1
-	end
+	end, {})
 	
+	-- Populate the homescreen with apps. This function was declared local earlier so I could call it above
+	function buildApps( tbl )
+		local xBuffer, yBuffer, iconCount = 0, 0, 1
+		for key, data in pairs( tbl ) do
+			local iconPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
+			iconPanel:SetSize( 50, 45 )
+			iconPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+			--iconPanel:Droppable( "gPhoneIcon" )
+			iconPanel.Paint = function( self, w, h )
+				--draw.RoundedBox(0, 0, 0, w, h, Color(255,0,0) )
+			end
+			
+			local imagePanel = vgui.Create( "DImageButton", iconPanel ) 
+			imagePanel:SetSize( 32, 32 )
+			imagePanel:SetPos( 10, 0 )
+			imagePanel:SetImage( data.icon )
+			--imagePanel:SetDragParent( iconPanel )
+			imagePanel:Droppable( "gPhoneIcon" )
+			imagePanel.DoClick = function()
+				gPhone.RunApp( string.lower(data.name) )
+			end
+			
+			--local x, y = xBuffer + 10, yBuffer + 50
+			local iconLabel = vgui.Create( "DLabel", iconPanel )
+			iconLabel:SetText( data.name )
+			iconLabel:SetFont("gPhone_12")
+			iconLabel:SizeToContents()
+			iconLabel:SetPos( iconPanel:GetWide()/2 - iconLabel:GetWide()/2, imagePanel:GetTall() + 2)
+		
+			if iconCount % 4 == 0 then
+				xBuffer = 0
+				yBuffer = yBuffer + 75
+			else
+				xBuffer = xBuffer + 55
+				yBuffer = yBuffer
+			end
+			iconCount = iconCount + 1
+			
+			table.insert(homeIcons, {name=data.name, pnl=iconPanel })
+		end
+		
+		-- Save the app positions
+		gPhone.Config.IconLayout = gPhone.Apps
+		gPhone.SaveClientConfig()
+	end
+	buildApps( gPhone.Apps )
+	
+	-- Assorted stuff
 	gPhone.PhoneExists = true
 	gPhone.Config.PhoneColor.a = 100
 	
 	-- Check cache
 	local files = file.Find( "gphone/cache/*.txt", "DATA" )
-	print(#files)
 	if #files > 0 then
 		local tbl = {}
 		for k, name in pairs(files) do

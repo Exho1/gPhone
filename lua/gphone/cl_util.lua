@@ -224,6 +224,7 @@ end
 function gPhone.SaveClientConfig()
 	print("Saving gPhone Config")
 	
+	--PrintTable(gPhone.Config)
 	cfgJSON = util.TableToJSON( gPhone.Config )
 	
 	file.CreateDir( "gphone" )
