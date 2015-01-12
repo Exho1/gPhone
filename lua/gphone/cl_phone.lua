@@ -159,24 +159,24 @@ function gPhone.BuildPhone()
 	
 	--// Homescreen
 	local homeIcons = {}
-	local buildApps 
 	
-	-- Loads up icon positions from the config file
+	-- Loads up icon positions from the oosition file
+	local txtPositions = gPhone.GetAppPositions()
 	local newApps = {}
 	local denies = 0
-	if #gPhone.Config.IconLayout > 1 then
+	if #txtPositions > 1 then
 		for a = 1,#gPhone.Apps do
 			local app = gPhone.Apps[a] -- name and icon
 			local name = app.name
 			denies = 0
 			
 			-- Checks if an app exists in the config file and at which key
-			for i = 1,#gPhone.Config.IconLayout do
-				if app.name == gPhone.Config.IconLayout[i].name then
-					if app.icon == gPhone.Config.IconLayout[i].icon then -- Config icon matches app's set icon path
-						newApps[i] = gPhone.Config.IconLayout[i]
+			for i = 1,#txtPositions do
+				if name == txtPositions[i].name then
+					if app.icon == txtPositions[i].icon then -- Config icon matches app's set icon path
+						newApps[i] = txtPositions[i]
 					else -- Use the app's icon path anyways
-						newApps[i] = gPhone.Config.IconLayout[i]
+						newApps[i] = txtPositions[i]
 						newApps[i].icon = app.icon
 					end
 				else
@@ -185,35 +185,113 @@ function gPhone.BuildPhone()
 			end
 			
 			-- This app does not exist in the config, put it at the end
-			if denies == #gPhone.Config.IconLayout then
+			if denies == #txtPositions then
 				table.insert(newApps, app)
 			end
 		end
 		
 		gPhone.Apps = newApps
-	end	
+	end
 	
 	-- Build the layout
 	gPhone.HomeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
 	gPhone.HomeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
 	gPhone.HomeIconLayout:SetPos( 5, 25 )
 	gPhone.HomeIconLayout.Paint = function() end
-	gPhone.HomeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) -- Drag and drop em
+	gPhone.CanMoveApps = true
+	gPhone.IsInFolder = false
+	
+	-- Handles the dropping of icons on the home screen
+	gPhone.HomeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
 		if drop then
-			--print("THE EAGLE HAS LANDED")
+			--[[
+				// Issues //
+			Cant drag icons out of folders
+			Cant move icons inside folders
+			Folders sometimes throw lua errors due to being in the homeIcons table strangely
+			*gPhone.IsInFolder
+			]]
+			
 			for k, v in pairs(homeIcons) do
 				local iX, iY = v.pnl:GetPos()
 				local iW, iH = v.pnl:GetSize()
 				
-				-- Check if our mouse is inside the bounds of another icon
-				if x >= iX and x <= iX + iW then
-					if y >= iY and y <= iY + iH then
-						local droppedData = {}
+				if x >= iX + iW/3 and x <= iX + iW - iW/3 then
+					if y >= iY and y <= iY + iH then	
+						-- Create a folder
+						gPhone.CanMoveApps = false
+						local droppedData = {name="Folder", apps={}}
 						local droppedKey = 0
 						
 						-- Get the name and image of the icon we are moving
 						for i = 1,#homeIcons do
 							if item[1] == homeIcons[i].pnl:GetChildren()[1] then
+								if gPhone.Apps[k].apps then return end -- Dont drop folders on anything
+								local droppedName = homeIcons[i].name
+								
+								for i = 1, #gPhone.Apps do
+									if gPhone.Apps[i].name == droppedName then
+										droppedKey = i
+									end
+								end
+							end
+						end
+						
+						if gPhone.Apps[k] == gPhone.Apps[droppedKey] then return end
+
+						if gPhone.Apps[k].apps != nil then -- Dropped on a folder
+							table.insert(gPhone.Apps[k].apps, {name=gPhone.Apps[droppedKey].name, icon=gPhone.Apps[droppedKey].icon})
+							table.remove(gPhone.Apps, droppedKey)
+						else
+							-- Put the 2 icons into the folder
+							table.insert(droppedData.apps, {name=gPhone.Apps[k].name, icon=gPhone.Apps[k].icon})
+							table.insert(droppedData.apps, {name=gPhone.Apps[droppedKey].name, icon=gPhone.Apps[droppedKey].icon})
+							
+							-- Remove the moved icon and the dropped-on icon, create a folder
+							table.remove(gPhone.Apps, droppedKey)
+							table.remove(gPhone.Apps, k)
+							table.insert(gPhone.Apps, k, droppedData)
+						end
+						
+						-- Build a shiny new homescreen
+						gPhone.BuildHomescreen( gPhone.Apps )
+						gPhone.CanMoveApps = true
+					end
+				elseif dragndrop.GetDroppable() != nil and gPhone.CanMoveApps then
+					-- We are not dropping in the folder area, move the apps instead
+					local prevX, prevY 
+
+					local x, y = v.pnl:GetPos()
+					local w, h = v.pnl:GetSize()
+					local heldPanel = dragndrop.GetDroppable()[1]
+					local shouldMove = false
+					-- GetDroppable doesnt return a true pos, this works just as well
+					local mX, mY = gPhone.HomeIconLayout:ScreenToLocal( gui.MouseX(), gui.MouseY() )
+					if x != 0 and homeIcons[k-1] != nil then
+						prevX, prevY = homeIcons[k-1].pnl:GetPos()
+						prevH, prevW = homeIcons[k-1].pnl:GetSize()		
+					
+						-- Check if the mouse is in the droppable area (between panels)
+						if mX <= x + w/3 and mX >= prevX + (prevH/3 *2) then -- Increase the drop area by 33% on each side
+							if mY >= y and mY <= y + h then
+								shouldMove = true
+							end
+						end
+					else
+						if mX <= x + w/3 then 
+							if mY >= y and mY <= y + h then
+								shouldMove = true
+							end
+						end
+					end
+					
+					if shouldMove then
+						local droppedData = {name="N/A", icon="N/A"}
+						local droppedKey = 0
+						
+						-- Get the name and image of the icon we are moving
+						for i = 1,#homeIcons do
+							if heldPanel == homeIcons[i].pnl:GetChildren()[1] then
 								local droppedName = homeIcons[i].name
 								
 								for i = 1, #gPhone.Apps do
@@ -225,52 +303,267 @@ function gPhone.BuildPhone()
 							end
 						end
 						
+						-- Drop the panel
+						dragndrop.StopDragging()
+						
 						-- Remove the icon from its old key and move it to its new key
 						table.remove(gPhone.Apps, droppedKey)
-						table.insert(gPhone.Apps, k, droppedData)
-						
-						-- Destroy the old homescreen 
-						for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
-							v:Remove()
-						end
-						homeIcons = {}
+						table.insert(gPhone.Apps, k, droppedData )
 						
 						-- Build a shiny new homescreen
-						buildApps( gPhone.Apps )
+						gPhone.BuildHomescreen( gPhone.Apps )
 					end
 				end
 			end
 		end
 	end, {})
 	
-	-- Populate the homescreen with apps. This function was declared local earlier so I could call it above
-	function buildApps( tbl )
+	-- Populate the homescreen with apps
+	function gPhone.BuildHomescreen( tbl )
+		-- Destroy the old homescreen 
+		for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
+			v:Remove()
+		end
+		homeIcons = {}
+						
 		local xBuffer, yBuffer, iconCount = 0, 0, 1
 		for key, data in pairs( tbl ) do
-			local iconPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
-			iconPanel:SetSize( 50, 45 )
-			iconPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
-			--iconPanel:Droppable( "gPhoneIcon" )
-			iconPanel.Paint = function( self, w, h )
-				--draw.RoundedBox(0, 0, 0, w, h, Color(255,0,0) )
+			local bgPanel
+			if data.icon then
+				-- Create a normal app icon
+				bgPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
+				bgPanel:SetSize( 50, 45 )
+				bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+				bgPanel.Paint = function( self, w, h )
+					--draw.RoundedBox(0, 0, 0, w, h, Color(255,0,0) )
+				end
+				
+				local imagePanel = vgui.Create( "DImageButton", bgPanel ) 
+				imagePanel:SetSize( 32, 32 )
+				imagePanel:SetPos( 10, 0 )
+				imagePanel:SetImage( data.icon )
+				imagePanel:Droppable( "gPhoneIcon" )
+				imagePanel.DoClick = function()
+					gPhone.RunApp( string.lower(data.name) )
+				end
+				
+				local iconLabel = vgui.Create( "DLabel", bgPanel )
+				iconLabel:SetText( data.name )
+				iconLabel:SetFont("gPhone_12")
+				iconLabel:SizeToContents()
+				iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, imagePanel:GetTall() + 2)
+			else 
+				-- The fun part, create a folder
+				local folderLabel, folderName, nameEditor 
+				bgPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
+				bgPanel:SetSize( 50, 45 )
+				bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+				bgPanel.Paint = function( self, w, h )
+					if IsValid(nameEditor) and nameEditor:IsEditing() then
+						local w, h = folderName:GetSize()
+						local x, y = folderName:GetPos()
+						draw.RoundedBox(4, 0, y - 5, bgPanel:GetWide(), h + 10, Color(50, 50, 50, 150) )
+					end
+				end
+				
+				local previewPanel = vgui.Create( "DImageButton", bgPanel ) 
+				previewPanel:SetSize( 32, 32 )
+				previewPanel:SetPos( 10, 0 )
+				previewPanel:Droppable( "gPhoneIcon" )
+				previewPanel.Paint = function( self, w, h )
+					draw.RoundedBox(4, 0, 0, w, h, Color(255, 0, 0, 255) )
+					
+					draw.DrawText( #tbl[key].apps, "gPhone_18", 10, 10, color_white )
+					-- Draw icons of the other apps inside the folder
+				end
+				
+				local iconLabel = vgui.Create( "DLabel", bgPanel )
+				iconLabel:SetText( data.name )
+				iconLabel:SetFont("gPhone_12")
+				iconLabel:SizeToContents()
+				if iconLabel:GetWide() <= bgPanel:GetWide() then
+					iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, previewPanel:GetTall() + 2)
+				else
+					iconLabel:SetPos( 0, previewPanel:GetTall() + 2)
+				end
+				
+				local x, y = previewPanel:GetPos()
+				local w, h = previewPanel:GetSize()
+				local oldBGPos = {bgPanel:GetPos()}
+				local oldBGSize = {bgPanel:GetSize()}
+				
+				-- Declared early because I am terrible at managing this
+				local function closeFolder() 
+					nameEditor:OnEnter()
+					
+					previewPanel:SetCursor( "hand" )
+					bgPanel:SetPos( unpack(oldBGPos) )
+					bgPanel:SetSize( unpack(oldBGSize) )
+					
+					nameEditor:SetVisible(false)
+					folderName:SetVisible(false)
+					
+					previewPanel:SizeTo( w, h, 0.5)
+					timer.Simple(0.5, function()
+						if IsValid(bgPanel) then
+							--bgPanel:Remove()
+						end
+					end)
+					
+					gPhone.IsInFolder = false
+					gPhone.BuildHomescreen( gPhone.Apps )
+				end
+				
+				-- Handle the building of folders
+				previewPanel.DoClick = function( self )
+					gPhone.IsInFolder = true
+					previewPanel:SetCursor( "arrow" )
+						
+					-- Hide the other apps
+					for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
+						if v != bgPanel then
+							v:SetVisible(false)
+						end
+					end
+					
+					bgPanel.OnMousePressed = function()
+						if IsValid(previewPanel) and IsValid(folderName) then
+							closeFolder()
+						end
+					end
+					
+					iconLabel:SetVisible(false)
+					bgPanel:SetPos( 0, 0 )
+					bgPanel:SetSize( gPhone.HomeIconLayout:GetWide(),  gPhone.HomeIconLayout:GetTall() )
+					
+					local w, h = gPhone.HomeIconLayout:GetWide(), gPhone.HomeIconLayout:GetTall()/1.7
+					self:SizeTo( w, h, 0.5)
+					self:MoveTo( 0, gPhone.HomeIconLayout:GetTall()/2 - h/2, 0.5)
+					
+					folderName = vgui.Create( "DLabel", bgPanel )
+					folderName:SetText( data.name )
+					folderName:SetFont("gPhone_40")
+					folderName:SizeToContents()
+					folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15)
+					local strTable = {}
+					local nextFlash = 0
+					folderName.Paint = function( self, w , h )
+						-- Create a flashing fake carret on the Label
+						
+						if CurTime() > nextFlash and IsValid(nameEditor) then
+							-- Put all the of letters into a table
+							for i = 1, string.len(self:GetText()) do
+								strTable[i] = self:GetText()[i]
+							end
+							
+							-- Get the size from the 
+							local x = 0
+							for i = 1, nameEditor:GetCaretPos() do
+								x = x + gPhone.GetTextSize( strTable[i], self:GetFont() )
+							end
+							
+							draw.RoundedBox(0, x, 5, 2, h - 10, Color(255, 255, 255, 255) )
+							
+							timer.Simple(0.5, function()
+								nextFlash = CurTime() + 0.1
+							end)
+						end
+					end
+						
+					nameEditor = vgui.Create( "DTextEntry", bgPanel )
+					nameEditor:SetText( data.name )
+					nameEditor:SetFont( "gPhone_36" )
+					nameEditor:SizeToContents()
+					nameEditor.Paint = function() end
+					nameEditor.Think = function()
+						-- Size and position the editor on top of the label
+						local x, y = folderName:GetPos()
+						nameEditor:SetPos( x, y )
+						nameEditor:SetSize(folderName:GetSize())
+						
+						if self.Opened == false then
+							nameEditor:Remove()
+						end
+						
+						if folderName:GetWide() <= bgPanel:GetWide() then
+							folderName:SizeToContents()
+							local w, h = folderName:GetSize()
+							folderName:SetSize( w + 10, h )
+						end
+						
+						if IsValid( nameEditor.Menu ) then
+							nameEditor.Menu:Remove()
+						end
+					end
+					nameEditor.OnChange = function()
+						-- Position the label based on the text
+						folderName:SetText( nameEditor:GetText() or data.name )
+						if folderName:GetWide() <= bgPanel:GetWide() then
+							folderName:SizeToContents()
+							local w, h = folderName:GetSize()
+							folderName:SetSize( w + 10, h )
+						end
+						folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15 )
+					end
+					nameEditor.OnEnter = function()
+						-- Set the name of the folder based on the text
+						local text = folderName:GetText()
+						if text == "" then
+							folderName:SetText("Folder")
+							folderName:SizeToContents()
+							
+							local w, h = folderName:GetSize()
+							folderName:SetSize( w + 10, h )
+							folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15 )
+							nameEditor:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 55 )
+							return
+						end
+						data.name = folderName:GetText()
+					end
+					
+					-- Create the folder's app icons
+					local xBuffer, yBuffer = 0,0
+					local folderIconCount = 0
+					for k, v in pairs( tbl[key].apps ) do
+						-- Create a normal app icon
+						local bgPanel = vgui.Create( "DPanel", previewPanel )
+						bgPanel:SetSize( 50, 45 )
+						bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+						bgPanel.Paint = function( self, w, h )
+						end
+						
+						local imagePanel = vgui.Create( "DImageButton", bgPanel ) 
+						imagePanel:SetSize( 32, 32 )
+						imagePanel:SetPos( 10, 0 )
+						imagePanel:SetImage( v.icon )
+						imagePanel:Droppable( "gPhoneIcon" )
+						imagePanel.DoClick = function()
+							gPhone.RunApp( string.lower(v.name) )
+						end
+						
+						local iconLabel = vgui.Create( "DLabel", bgPanel )
+						iconLabel:SetText( v.name )
+						iconLabel:SetFont("gPhone_12")
+						iconLabel:SizeToContents()
+						iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, imagePanel:GetTall() + 2)
+						
+						local folderLabel = vgui.Create( "DLabel", bgPanel )
+						folderLabel:SetText( v.name )
+						folderLabel:SetFont("gPhone_12")
+						folderLabel:SizeToContents()
+						folderLabel:SetPos( bgPanel:GetWide()/2 - folderLabel:GetWide()/2, 34)
+						
+						if folderIconCount % 4 == 0 then
+							xBuffer = 0
+							yBuffer = yBuffer + 75
+						else
+							xBuffer = xBuffer + 55
+							yBuffer = yBuffer
+						end
+						folderIconCount = folderIconCount+ 1
+					end
+				end
 			end
-			
-			local imagePanel = vgui.Create( "DImageButton", iconPanel ) 
-			imagePanel:SetSize( 32, 32 )
-			imagePanel:SetPos( 10, 0 )
-			imagePanel:SetImage( data.icon )
-			--imagePanel:SetDragParent( iconPanel )
-			imagePanel:Droppable( "gPhoneIcon" )
-			imagePanel.DoClick = function()
-				gPhone.RunApp( string.lower(data.name) )
-			end
-			
-			--local x, y = xBuffer + 10, yBuffer + 50
-			local iconLabel = vgui.Create( "DLabel", iconPanel )
-			iconLabel:SetText( data.name )
-			iconLabel:SetFont("gPhone_12")
-			iconLabel:SizeToContents()
-			iconLabel:SetPos( iconPanel:GetWide()/2 - iconLabel:GetWide()/2, imagePanel:GetTall() + 2)
 		
 			if iconCount % 4 == 0 then
 				xBuffer = 0
@@ -279,16 +572,15 @@ function gPhone.BuildPhone()
 				xBuffer = xBuffer + 55
 				yBuffer = yBuffer
 			end
-			iconCount = iconCount + 1
 			
-			table.insert(homeIcons, {name=data.name, pnl=iconPanel })
+			iconCount = iconCount + 1
+			table.insert(homeIcons, {name=data.name, pnl=bgPanel })
 		end
 		
 		-- Save the app positions
-		gPhone.Config.IconLayout = gPhone.Apps
-		gPhone.SaveClientConfig()
+		--gPhone.SetAppPositions( gPhone.Apps ) -- TEMP FOR TESTING
 	end
-	buildApps( gPhone.Apps )
+	gPhone.BuildHomescreen( gPhone.Apps )
 	
 	-- Assorted stuff
 	gPhone.PhoneExists = true
@@ -480,6 +772,8 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 	
 		file.CreateDir( "gphone" )
 		file.Write( "gphone/transaction_log.txt", json)
+	elseif header == GPHONE_TEXT_MSG then
+		gPhone.ReceiveTextMessage( data.data )
 	end
 end)
 

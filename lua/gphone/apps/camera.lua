@@ -1,7 +1,7 @@
 local APP = {}
 
 APP.PrintName = "Camera"
-APP.Icon = "vgui/gphone/camera_new.png"
+APP.Icon = "vgui/gphone/camera.png"
 
 function APP.Run( objects, screen )
 	gPhone.HideStatusBar()

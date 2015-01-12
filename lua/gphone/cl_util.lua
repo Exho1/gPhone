@@ -19,10 +19,19 @@ concommand.Add("gphone_configsave", function()
 	gPhone.SaveClientConfig()
 end)
 
--- Temp
+-- TEMPORARY
+concommand.Add("text", function()
+	gPhone.SendTextMessage( "Exho", 1 )
+end)
+
+concommand.Add("textload", function()
+	gPhone.LoadTextMessages()
+end)
+
 concommand.Add("vibrate", function()
 	gPhone.Vibrate()
 end)
+-- END TEMPORARY
 
 --// Fonts
 surface.CreateFont( "gPhone_18Lite", {
@@ -33,6 +42,13 @@ surface.CreateFont( "gPhone_18Lite", {
 } )
 
 surface.CreateFont( "gPhone_14", {
+	font = "Roboto Lt",
+	size = 14,
+	weight = 500,
+	antialias = true,
+} )
+
+surface.CreateFont( "gPhone_16", {
 	font = "Roboto Lt",
 	size = 14,
 	weight = 500,
@@ -53,6 +69,13 @@ surface.CreateFont( "gPhone_60", {
 	antialias = true,
 } )
 
+surface.CreateFont( "gPhone_40", {
+	font = "Roboto Lt",
+	size = 40,
+	weight = 400,
+	antialias = true,
+} )
+
 surface.CreateFont( "gPhone_18", {
 	font = "Roboto Lt",
 	size = 18,
@@ -60,9 +83,16 @@ surface.CreateFont( "gPhone_18", {
 	antialias = true,
 } )
 
-surface.CreateFont( "gPhone_22", {
+surface.CreateFont( "gPhone_20", {
 	font = "Roboto Lt",
-	size = 22,
+	size = 20,
+	weight = 650,
+	antialias = true,
+} )
+
+surface.CreateFont( "gPhone_36", {
+	font = "Roboto Lt",
+	size = 36,
 	weight = 650,
 	antialias = true,
 } )
@@ -222,9 +252,8 @@ end
 
 --// Config
 function gPhone.SaveClientConfig()
-	print("Saving gPhone Config")
+	gPhone.MsgC( GPHONE_MSGC_NONE, "Saving config file")
 	
-	--PrintTable(gPhone.Config)
 	cfgJSON = util.TableToJSON( gPhone.Config )
 	
 	file.CreateDir( "gphone" )
@@ -232,10 +261,10 @@ function gPhone.SaveClientConfig()
 end
 
 function gPhone.LoadClientConfig()
-	print("Loading gPhone Config")
+	gPhone.MsgC( GPHONE_MSGC_NONE, "Loading config file")
 	
 	if not file.Exists( "gphone/client_config.txt", "DATA" ) then
-		print("gPhone cannot load a non-existant config file! Rebuilding...")
+		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
 		gPhone.SaveClientConfig()
 		gPhone.LoadClientConfig()
 		return
@@ -247,47 +276,111 @@ function gPhone.LoadClientConfig()
 	gPhone.Config = cfgTable
 end
 
---// Saves a text message to an existing txt document or a new one
-function gPhone.SaveTextMessage( tbl )
-	-- tbl.sender, tbl.time, tbl.date, tbl.message
-	local ply = util.GetPlayerByNick( tbl.sender )
+function gPhone.SetAppPositions( tbl )
+	cfgJSON = util.TableToJSON( tbl )
+	
+	file.CreateDir( "gphone" )
+	file.Write( "gphone/homescreen_layout.txt", cfgJSON)
+end
+
+function gPhone.GetAppPositions()
+	if not file.Exists( "gphone/homescreen_layout.txt", "DATA" ) then
+		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to locate app position file!")
+		gPhone.SetAppPositions( gPhone.Apps )
+		return
+	end
+	
+	local posFile = file.Read( "gphone/homescreen_layout.txt", "DATA" )
+	local posTable = util.JSONToTable( posFile ) 
+
+	return posTable
+end
+
+function gPhone.SendTextMessage( target, msg ) 
+	local ply = util.GetPlayerByNick( target )
 	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
 	
+	if msg == 1 then
+		local possibles = {"Numbers: 123123123123", "What what..",
+		"I need more messages to enter into this box to test", "Howaboutalongnonspacedstring?",
+		"This is a very, very long spaced string that should use at least 3 lines if I am lucky"}
+		
+		msg = table.Random(possibles)
+	end
+	
+	print("Sent", msg, "to", target)
+	local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
+	
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
+	net.SendToServer()
+	
+	-- Store the sent text on the client
+	msgTable.self = true
+	msgTable.sender = LocalPlayer():Nick()
+	gPhone.ReceiveTextMessage( msgTable, true )
+end
+
+--[[
+	// Issues //
+Messages are not saving
+id on line 197 is nil after the first message
+
+]]
+
+--// Saves a text message to an existing txt document or a new one
+function gPhone.ReceiveTextMessage( tbl, bSelf )
+	-- tbl.sender, tbl.self, tbl.time, tbl.date, tbl.message
+	local writeTable = {}
+	local ply
+	if bSelf then
+		ply = util.GetPlayerByNick( tbl.sender )
+	else
+		ply = util.GetPlayerByNick( tbl.target )
+	end
+	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
+	
+	print("ID format", idFormat)
 	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
-		print("Exists")
 		local readFile = file.Read( "gphone/messages/"..idFormat..".txt", "DATA" )
 		local readTable = util.JSONToTable( readFile ) 
 		
-		table.insert( readTable, 1, tbl )
+		writeTable = readTable
 	end
-	
-	PrintTable(tbl)
-	
-	local json = util.TableToJSON( tbl ) 
+
+	print("Received", ply )
+	table.insert( writeTable, tbl )
+
+	local json = util.TableToJSON( writeTable ) 
 		
 	file.CreateDir( "gphone/messages" )
 	file.Write( "gphone/messages/"..idFormat..".txt", json)
+	
+	local app = gApp["_active_"]
+	if app.Data.PrintName == "Messages" then
+		app.Data.UpdateMessages( idFormat )
+	end
 end
 
---// Loads all text messages for the name
-function gPhone.LoadTextMessagesFrom( name )
-	local ply = util.GetPlayerByNick( name )
-	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
-	
+--// Loads all text messages 
+function gPhone.LoadTextMessages()
 	local msgTable = {}
-	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
-		print("Exists")
-		local cfgFile = file.Read( "gphone/client_config.txt", "DATA" )
-		msgTable = util.JSONToTable( cfgFile ) 
-	end
+	files = file.Find( "gphone/messages/*.txt", "DATA" )
 	
-	PrintTable( msgTable )
+	for k, v in pairs(files) do
+		local msgFile = file.Read( "gphone/messages/"..v, "DATA" )
+		local tbl = util.JSONToTable( msgFile )
+		
+		local id = string.gsub(v, ".txt", "")
+		id = gPhone.FormatToSteamID( id )
+		
+		msgTable[id] = tbl
+	end
 	
 	return msgTable
 end
 
 function gPhone.SteamIDToFormat( id )
-
 	local idFragments = string.Explode( ":", id )
 	
 	local oneOrZero = idFragments[2]

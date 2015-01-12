@@ -8,6 +8,13 @@
 	- New icons that are not all white
 	- Decide on an icon size once and for all and remove the unnecessary materials
 	- Multiplayer
+	- Fix animations so that they are consistant
+	- Notifications for text messages
+	- App notifications, red and white circles
+	- Convert all the back buttons to my format
+		objects.Back = vgui.Create("gPhoneBackButton", screen)
+		objects.Back:SetTextColor( gPhone.Config.ColorBlue )
+		objects.Back:SetPos( )
 ]]
 
 gPhone = gPhone or {}
@@ -21,6 +28,8 @@ if SERVER then
 else
 	--// Clientside config
 	gPhone.Config = {
+		ShowRunTimeConsoleMessages = true,
+		ShowUnusableApps = true,
 		
 		DarkenStatusBar = false,
 		
@@ -35,8 +44,6 @@ else
 		
 		ColorBlue = Color(20,80,200),
 		PhoneColor = Color(255,255,255,255),
-		
-		IconLayout = {}
 	}
 end
 

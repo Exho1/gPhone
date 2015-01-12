@@ -32,6 +32,8 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 	local data = net.ReadTable()
 	local header = data.header
 	
+	hook.Run( "gPhone_ReceivedClientData", ply, header, data )
+	
 	if header == GPHONE_MONEY_TRANSFER then -- Money transaction
 		local amount = tonumber(data.amount)
 		local target = data.target
@@ -86,6 +88,19 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			gPhone.ChatMsg( ply, "Unable to complete transaction - lack of funds" )
 			return
 		end
+	elseif header == GPHONE_TEXT_MSG then
+		local msgTable = {}
+		local nick = data.tbl.target
+		local target = util.GetPlayerByNick( nick )
+		
+		msgTable = data.tbl
+		--msgTable.target = nil
+		msgTable.sender = ply:Nick()
+		msgTable.self = false
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( {header=GPHONE_TEXT_MSG, data=msgTable} )
+		net.Send( target )
 	elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
 		local phoneOpen = data.open
 		

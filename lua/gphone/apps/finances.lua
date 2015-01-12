@@ -1,7 +1,7 @@
 local APP = {}
 
 APP.PrintName = "Finances"
-APP.Icon = "vgui/gphone/finances_new.png"
+APP.Icon = "vgui/gphone/finances.png"
 APP.Gamemode = "DarkRP"
 
 local bodyWidth

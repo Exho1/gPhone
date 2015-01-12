@@ -20,6 +20,7 @@ GPHONE_MONEY_CONFIRMED = 13
 GPHONE_F_OTHER = 14
 GPHONE_F_FINANCES = 15
 GPHONE_F_EXISTS = 16
+GPHONE_TEXT_MSG = 17
 
 
 local plymeta = FindMetaTable( "Player" )
@@ -64,10 +65,9 @@ function gPhone.MsgC( enum, ... )
 	local side = nil
 	local col = nil
 	if SERVER then 
-		side = "SV" 
 		col = Color( 0, 128, 255 )
 	else 
-		side = "CL" 
+		if gPhone.Config.ShowRunTimeConsoleMessages == true then return end -- Should we write to console for this?!?!
 		col = Color( 255, 255, 100 )
 	end
 
@@ -78,24 +78,33 @@ function gPhone.MsgC( enum, ... )
 	end
 	
 	if enum == GPHONE_MSGC_WARNING then
-		MsgC( col, "[gPhone - "..side.."]: ", Color(220,80,80), table.concat( args, "   " ), "\n" )
+		MsgC( col, "[gPhone]: ", Color(220,80,80), table.concat( args, "   " ), "\n" )
 	else
-		MsgC( col, "[gPhone - "..side.."]: ", Color(80,220,80), table.concat( args, "   " ), "\n" )
+		MsgC( col, "[gPhone]: ", Color(80,220,80), table.concat( args, "   " ), "\n" )
 	end
 end
 
 --// Utility function to grab a player object from a string
-function util.GetPlayerByNick( nick, bExact )
+function util.GetPlayerByNick( name, bExact )
 	for k, v in pairs(player.GetAll()) do
 		if bExact then 
-			if v:Nick() == nick then
+			if v:Nick() == name then
 				return v
 			end
 		else
-			if v:Nick():lower() == nick:lower() then
+			if v:Nick():lower() == name:lower() then
 				return v
 			end
 		end
 	end
+end
+
+function util.GetPlayerByID( id )
+	for k, v in pairs(player.GetAll()) do
+		if v:SteamID() == id then
+			return v
+		end
+	end
+	return id
 end
 
