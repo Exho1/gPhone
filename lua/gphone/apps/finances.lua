@@ -3,10 +3,11 @@ local APP = {}
 APP.PrintName = "Finances"
 APP.Icon = "vgui/gphone/finances.png"
 APP.Gamemode = "DarkRP"
+APP.Tags = {"Money", "Transfer", "Funds"}
 
 local bodyWidth
 function APP.Run( objects, screen )
-	gPhone.LightenStatusBar()
+	gPhone.lightenStatusBar()
 	bodyWidth = screen:GetWide()-20
 	
 	local toDraw = {
@@ -86,7 +87,7 @@ function APP.Run( objects, screen )
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 0, 5 )
-				gPhone.SetTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, background)
 			else
 				background = objects.Layout:Add("DPanel")
 				background:SetSize(pnlWidth, 30)
@@ -101,7 +102,7 @@ function APP.Run( objects, screen )
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 10, 5 )
-				gPhone.SetTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, background)
 			end
 		end
 	end
@@ -172,17 +173,17 @@ function APP.ButtonClick( objects, name )
 		sendMoney.DoClick = function()
 			-- Clientside checks to stop the honest users, this will be double checked on the server to stop cheaters
 			if not IsValid(targetPlayer) or targetPlayer == LocalPlayer() then
-				gPhone.ChatMsg( "Invalid target to wire money to!" )
+				gPhone.chatMsg( "Invalid target to wire money to!" )
 				return
 			elseif moneyAmount == nil or moneyAmount <= 0 or math.abs(moneyAmount) != moneyAmount then
-				gPhone.ChatMsg( "Invalid amount of money to wire!" )
+				gPhone.chatMsg( "Invalid amount of money to wire!" )
 				return
 			elseif moneyAmount > tonumber( LocalPlayer():getDarkRPVar("money") ) then
-				gPhone.ChatMsg( "You do not have enough money to send!" )
+				gPhone.chatMsg( "You do not have enough money to send!" )
 				return
 			end
 			
-			gPhone.MsgC( GPHONE_MSGC_NONE, "Transaction send to the server for verification" )
+			gPhone.msgC( GPHONE_MSGC_NONE, "Transaction send to the server for verification" )
 			-- Send the transaction data to the server
 			net.Start("gPhone_DataTransfer")
 				net.WriteTable( {header=GPHONE_MONEY_TRANSFER, target=targetPlayer, amount=moneyAmount} )
@@ -195,7 +196,7 @@ function APP.ButtonClick( objects, name )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
-		gPhone.SetTextAndCenter(title, sendMoney)
+		gPhone.setTextAndCenter(title, sendMoney)
 		
 		local cancelTransaction = objects.Layout:Add("DButton")
 		cancelTransaction:SetSize(pnlWidth, 30)
@@ -223,7 +224,7 @@ function APP.ButtonClick( objects, name )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
-		gPhone.SetTextAndCenter(title, cancelTransaction)
+		gPhone.setTextAndCenter(title, cancelTransaction)
 	elseif name == "Transaction Log" then
 		for k, v in pairs(objects.Layout:GetChildren()) do
 			v:SetVisible( false )
@@ -247,7 +248,7 @@ function APP.ButtonClick( objects, name )
 				title:SetFont("gPhone_12")
 				title:SizeToContents()
 				title:SetPos( 10, 15 )
-				gPhone.SetTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, background)
 				
 				local title = vgui.Create( "DLabel", background )
 				title:SetText( tbl.target.." - $"..tbl.amount )
@@ -255,7 +256,7 @@ function APP.ButtonClick( objects, name )
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 10, 0 )
-				gPhone.SetTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, background)
 				
 				local fake = objects.Layout:Add("DPanel")
 				fake:SetSize(screen:GetWide()-60, 5)
@@ -280,4 +281,4 @@ function APP.Paint(screen)
 	draw.RoundedBox(0, 10, 25, bodyWidth, screen:GetTall()-35, Color(200, 200, 200))
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

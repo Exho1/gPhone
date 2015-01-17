@@ -21,7 +21,7 @@ gApp["_init_"] = function()
 	oldScreenThink = gPhone.phoneScreen.Think
 	oldScreenMousePressed = gPhone.phoneScreen.OnMousePressed
 	
-	gPhone.HomeIconLayout:SetVisible( false )
+	gPhone.homeIconLayout:SetVisible( false )
 end
 
 -- Removes application panels and restores the home screen
@@ -35,7 +35,7 @@ gApp["_close_"] = function( app )
 			app.Data.Close()
 		end
 	end
-	gApp.RemoveTicker( app )
+	gApp.removeTicker( app )
 	
 	-- Hides all the app children
 	for k, v in pairs( gApp["_children_"] ) do
@@ -51,16 +51,16 @@ gApp["_close_"] = function( app )
 		end
 	end
 	
-	gPhone.HomeIconLayout:SetVisible( true )
+	gPhone.homeIconLayout:SetVisible( true )
 	
-	if gPhone.Config.DarkenStatusBar == true then
-		gPhone.DarkenStatusBar()
+	if gPhone.config.DarkenStatusBar == true then
+		gPhone.darkenStatusBar()
 	else
-		gPhone.LightenStatusBar()
+		gPhone.lightenStatusBar()
 	end
-	gPhone.ShowStatusBar()
+	gPhone.showStatusBar()
 	
-	gPhone.IsOnHomeScreen = false
+	gPhone.isOnHomeScreen = false
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
@@ -68,8 +68,8 @@ gApp["_close_"] = function( app )
 end
 
 --// Grabs all app files and runs them
-function gPhone.ImportApps()
-	gPhone.MsgC( GPHONE_MSGC_NONE, "Importing applications..." )
+function gPhone.importApps()
+	gPhone.msgC( GPHONE_MSGC_NONE, "Importing applications..." )
 	local files = file.Find( "gphone/apps/*.lua", "LUA" )
 	
 	if #files == 0 then
@@ -83,44 +83,44 @@ function gPhone.ImportApps()
 end
 
 --// Adds an application table to the phone
-function gPhone.AddApp( data )
-	local name = string.lower(data.PrintName) or "error"
+function gPhone.addApp( tbl )
+	local name = string.lower(tbl.PrintName) or "error"
 	
 	gApp[name] = {
-		["Data"] = data,
+		["Data"] = tbl,
 		["Start"] = function() -- A shortcut function to launch the app
 			-- Call the 'APP.Run' function
-			data.Run( gApp["_children_"], gPhone.phoneScreen )
+			tbl.Run( gApp["_children_"], gPhone.phoneScreen )
 			
 			-- Override the phone's Paint and Think function
-			gPhone.phoneScreen.Paint = data.Paint or function() end
-			gPhone.phoneScreen.Think = data.Think or function() end
+			gPhone.phoneScreen.Paint = tbl.Paint or function() end
+			gPhone.phoneScreen.Think = tbl.Think or function() end
 			
 			-- Check if the app is a game and uses custom frame rate
-			if tonumber(data.FPS) != nil and tonumber(data.FPS) != 0 then
+			if tonumber(tbl.FPS) != nil and tonumber(tbl.FPS) != 0 then
 				-- Detour the app's Think function to our ticker and kill the phone's Think function
-				gApp.CreateTicker( data, data.FPS, data.Think )
+				gApp.createTicker( tbl, tbl.FPS, tbl.Think )
 				gPhone.phoneScreen.Think = function() end
 			end
 		end,
 	}
 	
 	-- Don't add the app to the phone if we hide unusable apps
-	if gPhone.Config.ShowUnusableApps == false then
-		if data.Gamemode and data.Gamemode != "" then
-			if string.lower(data.Gamemode) != string.lower(engine.ActiveGamemode()) then
-				gPhone.MsgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..data.PrintName ) 
+	if gPhone.config.ShowUnusableApps == false then
+		if tbl.Gamemode and tbl.Gamemode != "" then
+			if string.lower(tbl.Gamemode) != string.lower(engine.ActiveGamemode()) then
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..tbl.PrintName ) 
 				--return
 			end
 		end
 	end
 	
 	-- Add the app to the homescreen table
-	table.insert(gPhone.Apps, {icon=data.Icon, name=data.PrintName})
+	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName})
 end
 
 --// Runs the app on the phone
-function gPhone.RunApp(name)
+function gPhone.runApp(name)
 	local name = string.lower(name)
 	
 	if gApp[name] then
@@ -132,7 +132,7 @@ function gPhone.RunApp(name)
 		local appGM = app.Data.Gamemode
 		if appGM != nil and appGM != "" then
 			if string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
-				gPhone.DenyApp( appGM, "This app cannot be used in this\r\n gamemode!" )
+				gPhone.denyApp( appGM, "This app cannot be used in this\r\n gamemode!" )
 				return
 			end
 		end
@@ -149,7 +149,7 @@ function gPhone.RunApp(name)
 			end
 			
 			if not isWhitelisted then 
-				gPhone.DenyApp( appGM, "Your usergroup cannot use this app!" )
+				gPhone.denyApp( appGM, "Your usergroup cannot use this app!" )
 				return 
 			end
 		end
@@ -157,7 +157,7 @@ function gPhone.RunApp(name)
 		-- Run a hook to see if there are any other conditions that need to be met
 		local shouldRun = hook.Run( "gPhone_ShouldAppRun", name, gApp[name].Data )
 		if shouldRun == false then
-			gPhone.ToHomeScreen()
+			gPhone.toHomeScreen()
 			return 
 		end
 		
@@ -166,21 +166,21 @@ function gPhone.RunApp(name)
 		net.SendToServer()
 		
 		-- All seems to be be good, run the application
-		gPhone.IsOnHomeScreen = false
+		gPhone.isOnHomeScreen = false
 		app.Start()
 		gApp["_active_"] = app
 	else
 		-- This should never happen outside of developing
 		error(string.format("App '%s' does not exist in the Application table, aborting", name))
-		gPhone.ToHomeScreen()
+		gPhone.toHomeScreen()
 	end
 end
 
 --// Denies the user access to an app without breaking everything
-function gPhone.DenyApp( gmName, reason )
-	gPhone.MsgC( GPHONE_MSGC_WARNING, "You cannot use this application!" ) 
+function gPhone.denyApp( gmName, reason )
+	gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot use this application!" ) 
 	-- Don't need to initialize the app base, its already been done
-	gPhone.IsOnHomeScreen = false
+	gPhone.isOnHomeScreen = false
 		
 	local screen = gPhone.phoneScreen
 	local objs = gApp["_children_"]
@@ -200,7 +200,7 @@ function gPhone.DenyApp( gmName, reason )
 	topError:SetTextColor(Color(0,0,0))
 	topError:SetFont("gPhone_22")
 	topError:SizeToContents()
-	local width, height = gPhone.GetTextSize("App Error", "gPhone_22")
+	local width, height = gPhone.getTextSize("App Error", "gPhone_22")
 	topError:SetPos( containerWidth/2 - width/2, 5 )
 	
 	local errorMsg = vgui.Create( "DLabel", objs.Container ) -- Actual message
@@ -208,14 +208,14 @@ function gPhone.DenyApp( gmName, reason )
 	errorMsg:SetTextColor(Color(0,0,0))
 	errorMsg:SetFont("gPhone_14")
 	errorMsg:SizeToContents()
-	local width, height = gPhone.GetTextSize(reason, "gPhone_14")
+	local width, height = gPhone.getTextSize(reason, "gPhone_14")
 	errorMsg:SetPos( containerWidth/2 - width/2, 30 )
 end
 
 --// Calls an app's function X times per second in order to simulate a constant framerate. 
 local fpsReturn = 0
-function gApp.CreateTicker( app, fps, func )
-	gPhone.MsgC( GPHONE_MSGC_NONE, "Creating ticker for "..app.PrintName.." to run at "..fps.." ticks per second" )
+function gApp.createTicker( app, fps, func )
+	gPhone.msgC( GPHONE_MSGC_NONE, "Creating ticker for "..app.PrintName.." to run at "..fps.." ticks per second" )
 	
 	local appName = app.PrintName:lower() or "error"
 	
@@ -250,13 +250,13 @@ function gApp.CreateTicker( app, fps, func )
 end
 
 --// Removes an app's ticker 
-function gApp.RemoveTicker( app )
+function gApp.removeTicker( app )
 	if not app or not app.Data then return end
 	
 	local appName = app.Data.PrintName:lower() or "error"
 	
 	if gApp["_tickers_"][appName] then
-		gPhone.MsgC( GPHONE_MSGC_NONE, "Removing ticker for "..app.Data.PrintName)
+		gPhone.msgC( GPHONE_MSGC_NONE, "Removing ticker for "..app.Data.PrintName)
 		local hookName = gApp["_tickers_"][appName] 
 		
 		hook.Remove("Think", hookName)
@@ -265,19 +265,19 @@ function gApp.RemoveTicker( app )
 end
 
 --// Removes all tickers in the table
-function gApp.RemoveTickers()
+function gApp.removeTickers()
 	for name, hookName in pairs( gApp["_tickers_"] ) do
 		hook.Remove("Think", hookName)
 	end
 end
 
 --// Returns a psuedo-framerate of the current app
-function gApp.GetFPS()
+function gApp.getFPS()
 	return math.Round(fpsReturn, 6)
 end
 
 --// Returns an average frame rate
-function gApp.GetFPSAverage()
+function gApp.getFPSAverage()
 	local fps = tonumber(fpsReturn) or 0
 	
 	local nextUpdate = 0

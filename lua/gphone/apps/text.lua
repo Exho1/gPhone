@@ -2,9 +2,10 @@ local APP = {}
 
 APP.PrintName = "Messages"
 APP.Icon = "vgui/gphone/text.png"
+APP.Tags = {"Messaging", "Contact", "Communication"}
 
 function APP.Run( objects, screen )
-	gPhone.DarkenStatusBar()
+	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Messages" )
@@ -19,13 +20,13 @@ function APP.Run( objects, screen )
 	objects.NewText:SetSize( 16, 16 )
 	objects.NewText:SetPos( screen:GetWide() - objects.NewText:GetWide() - 10, y )
 	objects.NewText:SetImage( "materials/vgui/gphone/writenew.png" )
-	objects.NewText:SetColor( gPhone.Config.ColorBlue )
+	objects.NewText:SetColor( gPhone.config.ColorBlue )
 	objects.NewText.DoClick = function() 
 		APP.NewConversation()
 	end
 	
 	objects.Back = vgui.Create("gPhoneBackButton", screen)
-	objects.Back:SetTextColor( gPhone.Config.ColorBlue )
+	objects.Back:SetTextColor( gPhone.config.ColorBlue )
 	objects.Back:SetPos( 10, y )
 	objects.Back:SetVisible( false ) -- We dont need this right now
 	
@@ -54,29 +55,83 @@ function APP.PopulateMain( layout )
 	local curDate = os.date( "%x" ) -- 01/10/15
 	local curTime = os.date( "%I:%M%p" )  -- 9:34am
 	
-	messageTable = gPhone.LoadTextMessages()
+	messageTable = gPhone.loadTextMessages()
 	
 	for id, tbl in pairs( messageTable ) do
-		local background = layout:Add("DButton")
+		local isPlayerOnline -- Can't message offline players, yet.
+		
+		local backbackground = layout:Add("DPanel")
+		backbackground:SetSize(screen:GetWide(), 50)
+		backbackground.Paint = function() end
+		
+		local deleteOffset = 50
+		local deleteConvo = vgui.Create( "DButton", backbackground )
+		deleteConvo:SetSize(deleteOffset, deleteOffset)
+		deleteConvo:SetPos(backbackground:GetWide()-deleteOffset,0)
+		deleteConvo:SetText("Delete")
+		deleteConvo:SetFont("gPhone_18lite")
+		deleteConvo:SetFont("gPhone_18lite")
+		deleteConvo:SetColor( color_white )
+		deleteConvo:SetVisible(false)
+		deleteConvo.Paint = function( self, w, h )
+			draw.RoundedBox(0, 0, 0, w, h, Color(220, 27, 23))
+		end
+		deleteConvo.DoClick = function( self )
+			-- Deletes the conversation from the phone, this CANNOT be undone
+			backbackground:Remove()
+			local fmat = gPhone.steamIDToFormat( id )
+			file.Delete( "gphone/messages/"..fmat..".txt" )
+			layout:LayoutIcons_TOP()
+		end
+		
+		local background = vgui.Create("DButton", backbackground )
 		background:SetSize(screen:GetWide(), 50)
 		background:SetText("")
 		background.Paint = function( self )
-			if not self:IsDown() then
+			if not self:IsDown() and isPlayerOnline then -- Normal
 				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
-			else
+			elseif isPlayerOnline then -- Held
 				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+			else -- Player offline
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(210, 210, 210))
 			end
 			
 			draw.RoundedBox(0, 25, self:GetTall()-1, self:GetWide()-25, 1, Color(150, 150, 150))
 		end
-		background.DoClick = function()
-			gPhone.HideChildren( layout )
-			print("Open conversation: "..id)
-			APP.PopulateMessages( id )
+		background.DoClick = function( self )
+			local x, y = self:ScreenToLocal( gui.MouseX(), gui.MouseY() )
+			
+			if x >= self:GetWide() - (deleteOffset - 10) and not background.DeleteMode  then
+				local bX, bY = background:GetPos()
+				background:MoveTo( bX - deleteOffset, bY, 0.5, 0, -1 )
+				background.DeleteMode = true
+				deleteConvo:SetVisible(true)
+				return
+			elseif background.DeleteMode then
+				local bX, bY = background:GetPos()
+				background:MoveTo( bX + deleteOffset, bY, 0.5, 0, -1, function() deleteConvo:SetVisible(false) end)
+				background.DeleteMode = false
+				return
+			end
+			
+			if isPlayerOnline then
+				gPhone.hideChildren( layout )
+				APP.PopulateMessages( id )
+			end
+		end
+		
+		local senderNick
+		if IsValid(  util.getPlayerByID( id ) ) then
+			isPlayerOnline = true
+			senderNick = util.getPlayerByID( id ):Nick()
+		else
+			isPlayerOnline = false
+			background:SetCursor("arrow")
+			senderNick = gPhone.steamIDToPhoneNumber( id )
 		end
 		
 		local senderName = vgui.Create( "DLabel", background )
-		senderName:SetText( util.GetPlayerByID( id ):Nick() )
+		senderName:SetText( senderNick )
 		senderName:SetTextColor(Color(0,0,0))
 		senderName:SetFont("gPhone_18")
 		senderName:SizeToContents()
@@ -134,7 +189,7 @@ end
 
 --// Update the messages from outside the application
 function APP.UpdateMessages( id )
-	id = gPhone.FormatToSteamID( id )
+	id = gPhone.formatToSteamID( id )
 	print("Update messages using id: "..id)
 	APP.PopulateMessages( id )
 end
@@ -158,7 +213,7 @@ function APP.PopulateMessages( id )
 		objects.Back:SetVisible( false )
 		objects.NewText:SetVisible( true )
 		objects.LayoutScroll.Paint = oldPaint
-		gPhone.SetTextAndCenter(objects.Title, screen)
+		gPhone.setTextAndCenter(objects.Title, screen)
 		objects.LayoutScroll:SetSize( oldW, oldH )
 		
 		objects.WritePanel:SetVisible( false )
@@ -171,7 +226,7 @@ function APP.PopulateMessages( id )
 		APP.Run( objects, screen )
 	end
 
-	messageTable = gPhone.LoadTextMessages()
+	messageTable = gPhone.loadTextMessages()
 	
 	-- Panel to write and send new gMessages
 	local writePanelOffset = 30
@@ -203,10 +258,9 @@ function APP.PopulateMessages( id )
 	send.DoClick = function()
 		-- Send a text message
 		if textBox:GetText() != nil and textBox:GetText() != "" then
-			local nick = util.GetPlayerByID( id ):Nick()
+			local nick = util.getPlayerByID( id ):Nick()
 			local text = textBox:GetText()
-			print("Sent text message: ", nick, text, id)
-			gPhone.SendTextMessage( util.GetPlayerByID( id ):Nick(), textBox:GetText() ) 
+			gPhone.sendTextMessage( util.getPlayerByID( id ):Nick(), textBox:GetText() ) 
 			textBox:SetText("")
 			
 			objects.LayoutScroll:SetSize( oldW, oldH )
@@ -217,8 +271,10 @@ function APP.PopulateMessages( id )
 	objects.LayoutScroll:SetSize( w, h - writePanelOffset ) -- Shrink the scroll panel so the chat box fits nicely
 	
 	-- Create the messages 
+	local messageCount = 0
 	local function createConversation( tbl )
-		print("**** Build message boxes", tbl )
+		tbl = tbl or {}
+		
 		local yBuffer = 0
 		for k, tbl in pairs( tbl ) do
 			objects.LayoutScroll.Paint = function( self, w, h )
@@ -250,27 +306,29 @@ function APP.PopulateMessages( id )
 			message.Paint = function() end
 			
 			local w, h = message:GetSize()
-			if w - 10 >= background:GetWide() then
+			if w - 10 >= background:GetWide() then -- Gmod's word wrapping is meh, I'll make my own
 				local text = message:GetText()
 				surface.SetFont(message:GetFont())
 				
-				-- Simulates Word Wrapping in order to figure out how to properly size the message box
-				-- At this point I could probably just make my own word wrapping...
+				-- Split the text by letter into a table
 				local frags = string.Explode( "", text )
 				local width, lineBreaks = 0, 1
 				for k, v in pairs( frags ) do
 					width = width + surface.GetTextSize(v)
 					
-					if width >= background:GetWide() then 
+					-- The string is longer than the message's width (minus a buffer)
+					if width >= background:GetWide() - 10 then 
+						table.insert(frags, k, "\r\n")
 						lineBreaks = lineBreaks + 1
 						width = 0 
 					end
 				end
 				
-				-- Use Gmod's wrapping
-				message:SetWrap( true ) 
+				-- Reassemble the text 
+				text = table.concat( frags, "" )
+				message:SetText( text )
 				
-				-- Use our simulate word wrap to size the message's background
+				-- Size the message box's background according to the number of line breaks
 				local wid, heig = background:GetSize()
 				message:SetSize( wid - 10, h * (lineBreaks)) 
 			else
@@ -291,13 +349,15 @@ function APP.PopulateMessages( id )
 			end
 			
 			-- Increase the buffer and move the scroll panel down using modified PANEL:ScrollToChild code
-			yBuffer = yBuffer + background:GetTall() + 10
+			yBuffer = yBuffer + background:GetTall() + 1
+			
 			local x, y = objects.LayoutScroll.pnlCanvas:GetChildPosition( background )
 			local w, h = background:GetSize()
 			y = y + h * 0.5
 			y = y - objects.LayoutScroll:GetTall() * 0.5
-
 			objects.LayoutScroll.VBar:AnimateTo( y, 0, 0, 0.5 )
+			
+			messageCount = messageCount + 1
 		end
 	end
 	createConversation( messageTable[id] )
@@ -310,9 +370,9 @@ function APP.NewConversation()
 	
 	objects.NewText:SetVisible( false )
 	objects.Back:SetVisible( true )
-	gPhone.HideChildren( objects.Layout )
-	objects.Title:SetText("New Message")
-	gPhone.SetTextAndCenter(objects.Title, screen)
+	gPhone.hideChildren( objects.Layout )
+	objects.Title:SetText( "New Message" )
+	gPhone.setTextAndCenter( objects.Title, screen )
 	
 	local oldPaint = objects.LayoutScroll.Paint
 	local oldW, oldH = objects.LayoutScroll:GetSize()
@@ -321,7 +381,7 @@ function APP.NewConversation()
 		objects.NewText:SetVisible( true )
 		objects.Back:SetVisible( false )
 		objects.LayoutScroll.Paint = oldPaint
-		gPhone.SetTextAndCenter(objects.Title, screen)
+		gPhone.setTextAndCenter(objects.Title, screen)
 		objects.LayoutScroll:SetSize( oldW, oldH )
 		
 		for k, v in pairs(objects) do
@@ -357,7 +417,7 @@ function APP.NewConversation()
 	local playerPanels = {}
 	local playerList = {}
 	for k, v in pairs( player.GetAll() ) do 
-		table.insert(playerList, {name=v:Nick(), number=v:GetPhoneNumber()})
+		table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
 	end
 	
 	-- Create a list of all connected players to help with sending messages
@@ -387,7 +447,7 @@ function APP.NewConversation()
 			end
 		end
 
-		local ply = util.GetPlayerByNick( nick )
+		local ply = util.getPlayerByNick( nick )
 		local contactName = vgui.Create( "DLabel", playerPanels[nick] )
 		contactName:SetText( nick )
 		contactName.number = number -- Index the player's phone number too so it can be searched
@@ -468,9 +528,9 @@ function APP.NewConversation()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
 			objects.Title:SetText("Messages")
-			gPhone.SetTextAndCenter(objects.Title, screen)
+			gPhone.setTextAndCenter(objects.Title, screen)
 			
-			gPhone.SendTextMessage( messageTarget:GetText(), messageBox:GetText() ) 
+			gPhone.sendTextMessage( messageTarget:GetText(), messageBox:GetText() ) 
 			messageBox:SetText("")
 			
 			-- Remove all the objects
@@ -482,12 +542,12 @@ function APP.NewConversation()
 			
 			-- Recreate the main screen and fix the scroll panel (hacky but it gets the job done)
 			APP.Run( objects, screen )
-			gPhone.HideChildren( objects.Layout )
+			gPhone.hideChildren( objects.Layout )
 			objects.LayoutScroll.Paint = oldPaint
 			objects.LayoutScroll:SetSize( oldW, oldH + 30 )
 			
 			-- Build the conversation screen
-			APP.PopulateMessages( util.GetPlayerByNick(messageTarget:GetText()):SteamID() )
+			APP.PopulateMessages( util.getPlayerByNick(messageTarget:GetText()):SteamID() )
 		end
 	end
 end
@@ -499,4 +559,4 @@ function APP.Paint( screen )
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

@@ -3,6 +3,7 @@ local APP = {}
 APP.PrintName = "gPong"
 APP.Icon = "vgui/gphone/pong.png"
 APP.FPS = 30
+APP.Tags = {"Game", "Retro", "2D"}
 
 --// Game variables
 local gameOptions = {
@@ -39,7 +40,7 @@ local PONG_BALLSIDE_RIGHT = 3
 
 --// App run
 function APP.Run( objects, screen )
-	gPhone.HideStatusBar()
+	gPhone.hideStatusBar()
 	isInGame = false
 	gameRunning = false
 	gamePaused = false
@@ -61,7 +62,7 @@ function APP.Run( objects, screen )
 		surface.DrawOutlinedRect( 5, 5, w-10, h-10 )
 	end
 	titleButton.DoClick = function() -- Put us back at the main menu
-		gPhone.HideChildren( objects.Layout )
+		gPhone.hideChildren( objects.Layout )
 		APP.Run( objects, screen )
 	end
 	
@@ -70,7 +71,7 @@ function APP.Run( objects, screen )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_22")
 	title:SizeToContents()
-	gPhone.SetTextAndCenter(title, titleButton, true)
+	gPhone.setTextAndCenter(title, titleButton, true)
 	
 	local fake = objects.Layout:Add("DPanel")
 	fake:SetSize(screen:GetWide(), 50)
@@ -199,14 +200,12 @@ function APP.OptionClick( option )
 			surface.DrawOutlinedRect( 0, 0, w, h )
 		end
 		confirmButton.DoClick = function()
-			local ply = util.GetPlayerByNick( opponentPicker:GetText() )
+			local ply = util.getPlayerByNick( opponentPicker:GetText() )
 			if IsValid(ply) then
-				local gameResponse = gPhone.RequestGame(ply, APP.PrintName)
-			
-				gPhone.ChatMsg("Challenged "..ply:Nick().."!")
+				local gameResponse = gPhone.requestGame(ply, APP.PrintName)
 				
 				-- The server tells us when to set up the game
-				--APP.SetUpGame( PONG_GAME_MP )
+				APP.SetUpGame( PONG_GAME_MP )
 			end
 		end
 	elseif option == gameOptions[3] then -- Playing against someone else on their computer
@@ -274,11 +273,11 @@ local function quitToMainMenu()
 	gameRunning = false
 	gamePaused = false
 		
-	gPhone.RotateToPortrait()
+	gPhone.rotateToPortrait()
 	APP.Run( objects, gPhone.phoneScreen )
 	
 	if gameType == PONG_GAME_MP then
-		gPhone.UpdateToDataStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
+		gPhone.updateToNetStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
 	end
 end
 
@@ -295,7 +294,7 @@ function APP.SetUpGame( type )
 		end
 	end
 	
-	gPhone.RotateToLandscape()
+	gPhone.rotateToLandscape()
 	isInGame = true
 	objectBounds = {}
 	traceData = {}
@@ -368,7 +367,7 @@ function APP.SetUpGame( type )
 	statusLabel:SetFont( "gPhone_18" )
 	statusLabel.Think = function()
 		statusLabel:SizeToContents()
-		gPhone.SetTextAndCenter( statusLabel, objects.StatusPanel, true )
+		gPhone.setTextAndCenter( statusLabel, objects.StatusPanel, true )
 		
 		if timer.Exists( "gPong_StartDelay" ) then
 			local time = math.Round( timer.TimeLeft("gPong_StartDelay") )
@@ -763,16 +762,13 @@ function updateGamePositions( tab )
 		local ball = gApp["_children_"].Ball
 		
 		-- These are our opponent's positions, so everything is from their point of view
-		--local opponentPaddle = objects.PaddleP1
-		--local opponentY = tab.paddle1.y
-		local opponentPaddle = objects.PaddleP2
+		local opponentPaddle = objects.PaddleP1
 		local opponentY = tab.paddle1.y
 		
 		movePaddle( opponentPaddle, opponentY, false )
 		
 		-- The ball's X variable might need to be altered because of multiplayer POV
-		--local ballX, ballY = tab.ball.x, tab.ball.y
-		local ballX, ballY = ball:GetPos()
+		local ballX, ballY = tab.ball.x, tab.ball.y
 		local newX = ballX + ball.VelocityX
 		local newY = ballY + ball.VelocityY
 		newX = math.Clamp( newX, 10, screen:GetWide() - ball:GetWide() - 10)
@@ -808,9 +804,9 @@ function APP.Think()
 				movePaddle( objects.PaddleP2, -playerSpeed, true )
 			end
 		elseif gameType == PONG_GAME_MP then
-			gPhone.UpdateToDataStream( grabGamePositions() ) -- Sends our positions to the server
+			gPhone.updateToNetStream( grabGamePositions() ) -- Sends our positions to the server
 			
-			updateGamePositions( gPhone.UpdateFromDataStream() ) -- Updates our positions from the server
+			updateGamePositions( gPhone.updateFromNetStream() ) -- Updates our positions from the server
 		end
 		
 		-- This block of code runs the entire game
@@ -847,4 +843,4 @@ function APP.Paint( screen )
 	end
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

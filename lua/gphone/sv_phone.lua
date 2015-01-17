@@ -26,8 +26,8 @@ end
 --// Player functions
 local plymeta = FindMetaTable( "Player" )
 
-
 --// Receives data from applications and runs it on the server
+local antiSpamWindow, lastText = 0, 0
 net.Receive( "gPhone_DataTransfer", function( len, ply )
 	local data = net.ReadTable()
 	local header = data.header
@@ -40,21 +40,21 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		local plyWallet = tonumber(ply:getDarkRPVar("money"))
 		
 		-- Cooldowns to prevent spam
-		if ply:GetTransferCooldown() > 0 then
-			gPhone.ChatMsg( ply, "You must wait "..math.Round(ply:GetTransferCooldown()).."s before sending more money" )
+		if ply:getTransferCooldown() > 0 then
+			gPhone.chatMsg( ply, "You must wait "..math.Round(ply:getTransferCooldown()).."s before sending more money" )
 			return
 		end
 		
 		-- If the player disconnected or they are sending money to themselves, stop the transaction
 		if not IsValid(target) or target == ply then
-			gPhone.ChatMsg( ply, "Unable to complete transaction - invalid recipient" )
+			gPhone.chatMsg( ply, "Unable to complete transaction - invalid recipient" )
 			return
 		end
 		
 		-- If a negative or string amount got through, stop it
 		if amount < 0 or amount == nil then 
-			gPhone.FlagPlayer( ply, GPHONE_F_FINANCES )
-			gPhone.ChatMsg( ply, "Unable to complete transaction - nil amount" )
+			gPhone.flagPlayer( ply, GPHONE_F_FINANCES )
+			gPhone.chatMsg( ply, "Unable to complete transaction - nil amount" )
 			return
 		else
 			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash
@@ -67,9 +67,9 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			local shouldTransfer, denyReason = hook.Run( "gPhone_ShouldAllowTransaction", ply, target, amount )
 			if shouldTransfer == false then
 				if denyReason != nil then
-					gPhone.ChatMsg( ply, denyReason )
+					gPhone.chatMsg( ply, denyReason )
 				else
-					gPhone.ChatMsg( ply, "Unable to complete transaction, sorry" )
+					gPhone.chatMsg( ply, "Unable to complete transaction, sorry" )
 				end
 				return
 			end
@@ -77,30 +77,78 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			-- Complete the transaction
 			target:addMoney(amount)
 			ply:addMoney(-amount)
-			gPhone.ChatMsg( target, "Received $"..amount.." from "..ply:Nick().."!" )
-			gPhone.ChatMsg( ply, "Wired $"..amount.." to "..target:Nick().." successfully!" )
-			gPhone.ConfirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
+			gPhone.chatMsg( target, "Received $"..amount.." from "..ply:Nick().."!" )
+			gPhone.chatMsg( ply, "Wired $"..amount.." to "..target:Nick().." successfully!" )
+			gPhone.confirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
 			
-			ply:SetTransferCooldown( 5 )
+			ply:setTransferCooldown( 5 )
 		else	
-			gPhone.FlagPlayer( ply, GPHONE_F_FINANCES )
-			gPhone.MsgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
-			gPhone.ChatMsg( ply, "Unable to complete transaction - lack of funds" )
+			gPhone.flagPlayer( ply, GPHONE_F_FINANCES )
+			gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
+			gPhone.chatMsg( ply, "Unable to complete transaction - lack of funds" )
 			return
 		end
 	elseif header == GPHONE_TEXT_MSG then
+		local canText = ply:GetNWBool("gPhone_CanText", true)
 		local msgTable = {}
 		local nick = data.tbl.target
-		local target = util.GetPlayerByNick( nick )
+		local target = util.getPlayerByNick( nick )
 		
 		msgTable = data.tbl
-		--msgTable.target = nil
 		msgTable.sender = ply:Nick()
 		msgTable.self = false
 		
+		-- Flagged for spam
+		if not canText then
+			gPhone.chatMsg( ply, "You cannot text for "..math.Round(ply.TextCooldown).." more seconds!" )
+			return 
+		end
+		
+		-- Anti text spam
+		ply.MessageCount = (ply.MessageCount or 0) + 1
+		hook.Add("Think", "gPhone_AntiSpam_"..ply:SteamID(), function()
+			-- Span of time in which texts are counted to check against spam
+			if CurTime() > antiSpamWindow then
+				antiSpamWindow = CurTime() + gPhone.config.AntiSpamTimeframe
+				ply.MessageCount = 0
+			end
+			
+			-- If they haven't texted in 10 seconds, this hook is no longer needed
+			if CurTime() - lastText > 10 then
+				hook.Remove("Think", "gPhone_AntiSpam_"..ply:SteamID())
+				ply.MessageCount = 0
+			end
+
+			-- Caught em
+			if ply.MessageCount > gPhone.config.TextPerTimeframeLimit and CurTime() < antiSpamWindow then
+				ply:SetNWBool("gPhone_CanText", false)
+				ply.TextCooldown = gPhone.config.TextSpamCooldown
+				
+				gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been caught spamming the texting system" )
+				gPhone.chatMsg( ply, "To prevent spam, you have been blocked from texting for "..ply.TextCooldown.." seconds!" )
+				ply.MessageCount = 0 
+				
+				-- Countdown until the cooldown ends
+				local endTime = CurTime() + ply.TextCooldown
+				hook.Add("Think", "gPhone_TextCooldown_"..ply:SteamID(), function()
+					ply.TextCooldown = endTime - CurTime()
+					
+					if ply.TextCooldown <= 0 then
+						ply.TextCooldown = nil
+						canText = true
+						ply:SetNWBool("gPhone_CanText", true)
+						hook.Remove("Think", "gPhone_TextCooldown_"..ply:SteamID())
+					end
+				end)
+			end
+		end)
+		
+		-- Send the message the the target
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable( {header=GPHONE_TEXT_MSG, data=msgTable} )
 		net.Send( target )
+		
+		lastText = CurTime()
 	elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
 		local phoneOpen = data.open
 		
@@ -116,13 +164,13 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		local cache = data.data
 
 		local length = string.len(cache[1].body) / 3
-		gPhone.AdminMsg( ply:Nick().." ("..ply:SteamID()..") has "..#cache.." attempts at exploiting the gPhone recorded!" )
+		gPhone.adminMsg( ply:Nick().." ("..ply:SteamID()..") has "..#cache.." attempts at exploiting the gPhone recorded!" )
 		-- Perhaps add an app to keep track of these
 	end
 end)
 
 hook.Add("PlayerInitialSpawn", "gPhone_GenerateNumber", function( ply )
-	ply:GeneratePhoneNumber()
+	ply:generatePhoneNumber()
 
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable( {header=GPHONE_BUILD} )

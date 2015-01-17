@@ -2,9 +2,10 @@ local APP = {}
 
 APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
+APP.Tags = {"Useful", "Config"}
 
 function APP.Run( objects, screen )
-	gPhone.DarkenStatusBar()
+	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Settings" )
@@ -18,7 +19,7 @@ function APP.Run( objects, screen )
 	objects.Layout:SetPos( 0, 80 )
 	objects.Layout:SetSpaceY( 0 )
 	
-	for key, name in pairs(gPhone.SettingsTabs) do
+	for key, name in pairs(gPhone.settingsTabs) do
 		if name == "_SPACE_" then
 			local fake = objects.Layout:Add("DPanel")
 			fake:SetSize(screen:GetWide(), 30)
@@ -53,7 +54,7 @@ end
 --// Custom function to handle the opening of setting tabs
 function APP.OpenTab( name, objects, screen )
 	if name == "Wallpaper" then
-		gPhone.SetTextAndCenter(objects.Title, screen)
+		gPhone.setTextAndCenter(objects.Title, screen)
 		
 		-- Hide the app's home screen
 		for k, v in pairs(objects.Layout:GetChildren()) do
@@ -65,13 +66,13 @@ function APP.OpenTab( name, objects, screen )
 		objects.Back = vgui.Create("DButton", screen)
 		objects.Back:SetText("Back")
 		objects.Back:SetFont("gPhone_18Lite")
-		objects.Back:SetTextColor( gPhone.Config.ColorBlue )
+		objects.Back:SetTextColor( gPhone.config.ColorBlue )
 		objects.Back:SetPos( 10, tY )
 		objects.Back.Paint = function() end
-		objects.Back:SetSize( gPhone.GetTextSize("Back", "gPhone_18Lite") )
+		objects.Back:SetSize( gPhone.getTextSize("Back", "gPhone_18Lite") )
 		objects.Back.DoClick = function()
 			objects.Back:Remove()
-			gPhone.SetTextAndCenter(objects.Title, screen)
+			gPhone.setTextAndCenter(objects.Title, screen)
 			
 			for k, pnl in pairs(objects.Layout:GetChildren()) do
 				if pnl:IsVisible() then
@@ -112,11 +113,11 @@ function APP.OpenTab( name, objects, screen )
 		local previewLock = vgui.Create("DImage", background)
 		previewLock:SetSize( screen:GetWide()/2.5, screen:GetTall()/3 )
 		previewLock:SetPos( 20, 10)
-		previewLock:SetImage( gPhone.GetWallpaper( false ) )
+		previewLock:SetImage( gPhone.getWallpaper( false ) )
 		local previewHome = vgui.Create("DImage", background)
 		previewHome:SetSize( screen:GetWide()/2.5, screen:GetTall()/3 )
 		previewHome:SetPos( 20 + previewLock:GetWide() + 10, 10)
-		previewHome:SetImage( gPhone.GetWallpaper( true ) )
+		previewHome:SetImage( gPhone.getWallpaper( true ) )
 		
 		--// Switch modes to the Material Selector, its down here so I can reference a couple things
 		newBG.DoClick = function()
@@ -163,15 +164,15 @@ function APP.OpenTab( name, objects, screen )
 			darkenStatusBar:SetText( "Darken Status Bar" )	
 			darkenStatusBar:SizeToContents()
 			darkenStatusBar:SetTextColor( Color(0,0,0) )
-			darkenStatusBar:SetValue( gPhone.Config.DarkenStatusBar )
+			darkenStatusBar:SetValue( gPhone.config.DarkenStatusBar )
 			darkenStatusBar.OnChange = function()
 				local bool = darkenStatusBar:GetChecked()
 				if bool == true then
-					gPhone.Config.DarkenStatusBar = true
+					gPhone.config.DarkenStatusBar = true
 				else
-					gPhone.Config.DarkenStatusBar = false
+					gPhone.config.DarkenStatusBar = false
 				end
-				gPhone.SaveClientConfig()
+				gPhone.saveClientConfig()
 			end
 			
 			-- Should the image be a lock screen?
@@ -187,8 +188,8 @@ function APP.OpenTab( name, objects, screen )
 				end
 			end
 			useAsLock.DoClick = function(self)
-				gPhone.SetWallpaper( false, selectedImage )
-				gPhone.SaveClientConfig()
+				gPhone.setWallpaper( false, selectedImage )
+				gPhone.saveClientConfig()
 			end
 			
 			-- Or should the image be the home screen
@@ -204,8 +205,8 @@ function APP.OpenTab( name, objects, screen )
 				end
 			end
 			useAsHome.DoClick = function(self)
-				gPhone.SetWallpaper( true, selectedImage )
-				gPhone.SaveClientConfig()
+				gPhone.setWallpaper( true, selectedImage )
+				gPhone.saveClientConfig()
 			end
 		end
 	end
@@ -218,4 +219,4 @@ function APP.Paint(screen)
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

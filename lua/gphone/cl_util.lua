@@ -4,32 +4,25 @@ local client = LocalPlayer()
 
 --// Console commands
 concommand.Add("gphone", function()
-	gPhone.BuildPhone()
+	gPhone.buildPhone()
 end)
 
 concommand.Add("gphone_close", function()
-	gPhone.HidePhone()
+	gPhone.hidePhone()
 end)
 
 concommand.Add("gphone_remove", function()
-	gPhone.DestroyPhone()
+	gPhone.destroyPhone()
 end)
 
 concommand.Add("gphone_configsave", function()
-	gPhone.SaveClientConfig()
+	gPhone.saveClientConfig()
 end)
 
 -- TEMPORARY
-concommand.Add("text", function()
-	gPhone.SendTextMessage( "Exho", 1 )
-end)
-
-concommand.Add("textload", function()
-	gPhone.LoadTextMessages()
-end)
 
 concommand.Add("vibrate", function()
-	gPhone.Vibrate()
+	gPhone.vibrate()
 end)
 -- END TEMPORARY
 
@@ -83,10 +76,24 @@ surface.CreateFont( "gPhone_18", {
 	antialias = true,
 } )
 
+surface.CreateFont( "gPhone_18lite", {
+	font = "Roboto Lt",
+	size = 18,
+	weight = 500,
+	antialias = true,
+} )
+
 surface.CreateFont( "gPhone_20", {
 	font = "Roboto Lt",
 	size = 20,
 	weight = 650,
+	antialias = true,
+} )
+
+surface.CreateFont( "gPhone_22", {
+	font = "Roboto Lt",
+	size = 20,
+	weight = 500,
 	antialias = true,
 } )
 
@@ -97,8 +104,25 @@ surface.CreateFont( "gPhone_36", {
 	antialias = true,
 } )
 
+--// Panel-based blur function kindly given by Netheous (STEAM_0:0:19766778)
+local blur = Material( "pp/blurscreen" )
+function gPhone.drawPanelBlur( panel, layers, density, alpha )
+	local x, y = panel:LocalToScreen(0, 0)
+
+	surface.SetDrawColor( 255, 255, 255, alpha )
+	surface.SetMaterial( blur )
+
+	for i = 1, 3 do
+		blur:SetFloat( "$blur", ( i / layers ) * density )
+		blur:Recompute()
+
+		render.UpdateScreenEffectTexture()
+		surface.DrawTexturedRect( -x, -y, ScrW(), ScrH() )
+	end
+end
+
 --// Hide or show children of a panel
-function gPhone.HideChildren( pnl )
+function gPhone.hideChildren( pnl )
 	if not IsValid( pnl ) then return end
 	
 	for k, v in pairs( pnl:GetChildren() ) do
@@ -108,7 +132,7 @@ function gPhone.HideChildren( pnl )
 	end
 end
 
-function gPhone.ShowChildren( pnl )
+function gPhone.showChildren( pnl )
 	if not IsValid( pnl ) then return end
 	
 	for k, v in pairs( pnl:GetChildren() ) do
@@ -118,7 +142,7 @@ function gPhone.ShowChildren( pnl )
 	end
 end
 
-function gPhone.HideAppObjects()
+function gPhone.hideAppObjects()
 	if not IsValid( pnl ) then return end
 	
 	for k, v in pairs( gApp["_children_"] ) do
@@ -129,7 +153,7 @@ function gPhone.HideAppObjects()
 end
 
 --// Chat messages
-function gPhone.ChatMsg( text )
+function gPhone.chatMsg( text )
 	chat.AddText(
 		Color(17, 148, 240), "[gPhone]", 
 		Color(255,255,255), ": "..text
@@ -137,38 +161,38 @@ function gPhone.ChatMsg( text )
 end
  
 net.Receive( "gPhone_ChatMsg", function( len, ply )
-	gPhone.ChatMsg( net.ReadString() )
+	gPhone.chatMsg( net.ReadString() )
 end)
 
 --// Wallpaper
-function gPhone.SetWallpaper( bHome, texStr )
+function gPhone.setWallpaper( bHome, texStr )
 	if bHome then
-		gPhone.Config.HomeWallpaperMat = Material(texStr)
-		gPhone.Config.HomeWallpaper = texStr
+		gPhone.config.HomeWallpaperMat = Material(texStr)
+		gPhone.config.HomeWallpaper = texStr
 	else
-		gPhone.Config.LockWallpaperMat = Material(texStr)
-		gPhone.Config.LockWallpaper = texStr
+		gPhone.config.LockWallpaperMat = Material(texStr)
+		gPhone.config.LockWallpaper = texStr
 	end
 end
 
-function gPhone.GetWallpaper( bHome, isMat )
+function gPhone.getWallpaper( bHome, isMat )
 	if bHome then
 		if isMat then
-			return gPhone.Config.HomeWallpaperMat or Material( gPhone.Config.FallbackWallpaper )
+			return gPhone.config.HomeWallpaperMat or Material( gPhone.config.FallbackWallpaper )
 		else
-			return gPhone.Config.HomeWallpaper or gPhone.Config.FallbackWallpaper
+			return gPhone.config.HomeWallpaper or gPhone.config.FallbackWallpaper
 		end
 	else
 		if isMat then
-			return gPhone.Config.LockWallpaperMat or Material( gPhone.Config.FallbackWallpaper )
+			return gPhone.config.LockWallpaperMat or Material( gPhone.config.FallbackWallpaper )
 		else
-			return gPhone.Config.LockWallpaper or gPhone.Config.FallbackWallpaper
+			return gPhone.config.LockWallpaper or gPhone.config.FallbackWallpaper
 		end
 	end
 end
 
 --// Color the status bar
-function gPhone.DarkenStatusBar()
+function gPhone.darkenStatusBar()
 	for class, tab in pairs(gPhone.StatusBar) do
 		if class == "text" then
 			for k, pnl in pairs(tab) do
@@ -184,7 +208,7 @@ function gPhone.DarkenStatusBar()
 	end
 end
 
-function gPhone.LightenStatusBar() 
+function gPhone.lightenStatusBar() 
 	for class, tab in pairs(gPhone.StatusBar) do
 		if class == "text" then
 			for k, pnl in pairs(tab) do
@@ -201,7 +225,7 @@ function gPhone.LightenStatusBar()
 end
 
 --// Show or hide the entire status bar or portions
-function gPhone.ShowStatusBar()
+function gPhone.showStatusBar()
 	for class, tab in pairs(gPhone.StatusBar) do
 		for k, pnl in pairs(tab) do
 			pnl:SetVisible(true)
@@ -209,7 +233,7 @@ function gPhone.ShowStatusBar()
 	end
 end
 
-function gPhone.ShowStatusBarElement( name )
+function gPhone.showStatusBarElement( name )
 	for class, tab in pairs(gPhone.StatusBar) do
 		if tab[string.lower(name)] then
 			tab[string.lower(name)]:SetVisible(true)
@@ -217,7 +241,7 @@ function gPhone.ShowStatusBarElement( name )
 	end
 end
 
-function gPhone.HideStatusBar()
+function gPhone.hideStatusBar()
 	for class, tab in pairs(gPhone.StatusBar) do
 		for k, pnl in pairs(tab) do
 			pnl:SetVisible(false)
@@ -225,7 +249,7 @@ function gPhone.HideStatusBar()
 	end
 end
 
-function gPhone.HideStatusBarElement( name )
+function gPhone.hideStatusBarElement( name )
 	for class, tab in pairs(gPhone.StatusBar) do
 		if tab[string.lower(name)] then
 			tab[string.lower(name)]:SetVisible(false)
@@ -234,13 +258,13 @@ function gPhone.HideStatusBarElement( name )
 end
 
 --// Grab text size easily
-function gPhone.GetTextSize(text, font)
+function gPhone.getTextSize(text, font)
 	surface.SetFont(font)
 	return surface.GetTextSize(text)
 end
 
 --// Center text in a panel
-function gPhone.SetTextAndCenter(label, parent, vertical)
+function gPhone.setTextAndCenter(label, parent, vertical)
 	label:SizeToContents()
 	local x, y = label:GetPos()
 	if vertical then
@@ -250,43 +274,46 @@ function gPhone.SetTextAndCenter(label, parent, vertical)
 	end
 end
 
---// Config
-function gPhone.SaveClientConfig()
-	gPhone.MsgC( GPHONE_MSGC_NONE, "Saving config file")
+--// Save config
+function gPhone.saveClientConfig()
+	gPhone.msgC( GPHONE_MSGC_NONE, "Saving config file")
 	
-	cfgJSON = util.TableToJSON( gPhone.Config )
+	cfgJSON = util.TableToJSON( gPhone.config )
 	
 	file.CreateDir( "gphone" )
 	file.Write( "gphone/client_config.txt", cfgJSON)
 end
 
-function gPhone.LoadClientConfig()
-	gPhone.MsgC( GPHONE_MSGC_NONE, "Loading config file")
+--// Load config
+function gPhone.loadClientConfig()
+	gPhone.msgC( GPHONE_MSGC_NONE, "Loading config file")
 	
 	if not file.Exists( "gphone/client_config.txt", "DATA" ) then
-		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
-		gPhone.SaveClientConfig()
-		gPhone.LoadClientConfig()
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
+		gPhone.saveClientConfig()
+		gPhone.loadClientConfig()
 		return
 	end
 	
 	local cfgFile = file.Read( "gphone/client_config.txt", "DATA" )
 	local cfgTable = util.JSONToTable( cfgFile ) 
 
-	gPhone.Config = cfgTable
+	gPhone.config = cfgTable
 end
 
-function gPhone.SetAppPositions( tbl )
+--// Retrieves app positions
+function gPhone.saveAppPositions( tbl )
 	cfgJSON = util.TableToJSON( tbl )
 	
 	file.CreateDir( "gphone" )
 	file.Write( "gphone/homescreen_layout.txt", cfgJSON)
 end
 
-function gPhone.GetAppPositions()
+--// Saves moved app positions
+function gPhone.getActiveAppPositions()
 	if not file.Exists( "gphone/homescreen_layout.txt", "DATA" ) then
-		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to locate app position file!")
-		gPhone.SetAppPositions( gPhone.Apps )
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate app position file!")
+		gPhone.saveAppPositions( gPhone.apps )
 		return
 	end
 	
@@ -296,51 +323,42 @@ function gPhone.GetAppPositions()
 	return posTable
 end
 
-function gPhone.SendTextMessage( target, msg ) 
-	local ply = util.GetPlayerByNick( target )
-	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
+--// Sends a text message 
+function gPhone.sendTextMessage( target, msg ) 
+	local ply = util.getPlayerByNick( target )
+	local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
 	
-	if msg == 1 then
-		local possibles = {"Numbers: 123123123123", "What what..",
-		"I need more messages to enter into this box to test", "Howaboutalongnonspacedstring?",
-		"This is a very, very long spaced string that should use at least 3 lines if I am lucky"}
-		
-		msg = table.Random(possibles)
-	end
-	
-	print("Sent", msg, "to", target)
 	local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
 	
+	-- Off to the server!
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
 	net.SendToServer()
 	
+	-- If the server has flagged us as a spammer our message should not appear in the app
+	-- The message does get sent to the server, though, so that we can receive a "X seconds left" message
+	if LocalPlayer():GetNWBool("gPhone_CanText", true) == false then return end
+	
 	-- Store the sent text on the client
 	msgTable.self = true
 	msgTable.sender = LocalPlayer():Nick()
-	gPhone.ReceiveTextMessage( msgTable, true )
+	gPhone.receiveTextMessage( msgTable, true )
 end
 
---[[
-	// Issues //
-Messages are not saving
-id on line 197 is nil after the first message
-
-]]
-
 --// Saves a text message to an existing txt document or a new one
-function gPhone.ReceiveTextMessage( tbl, bSelf )
+function gPhone.receiveTextMessage( tbl, bSelf )
 	-- tbl.sender, tbl.self, tbl.time, tbl.date, tbl.message
 	local writeTable = {}
 	local ply
 	if bSelf then
-		ply = util.GetPlayerByNick( tbl.sender )
+		ply = util.getPlayerByNick( tbl.sender )
 	else
-		ply = util.GetPlayerByNick( tbl.target )
+		ply = util.getPlayerByNick( tbl.target )
 	end
-	local idFormat = gPhone.SteamIDToFormat( ply:SteamID() )
+	local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
 	
-	print("ID format", idFormat)
+	print("Received", bSelf, tbl.sender, tbl.target)
+	
 	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
 		local readFile = file.Read( "gphone/messages/"..idFormat..".txt", "DATA" )
 		local readTable = util.JSONToTable( readFile ) 
@@ -348,7 +366,6 @@ function gPhone.ReceiveTextMessage( tbl, bSelf )
 		writeTable = readTable
 	end
 
-	print("Received", ply )
 	table.insert( writeTable, tbl )
 
 	local json = util.TableToJSON( writeTable ) 
@@ -357,30 +374,29 @@ function gPhone.ReceiveTextMessage( tbl, bSelf )
 	file.Write( "gphone/messages/"..idFormat..".txt", json)
 	
 	local app = gApp["_active_"]
-	if app.Data.PrintName == "Messages" then
-		app.Data.UpdateMessages( idFormat )
-	end
+	app.Data.UpdateMessages( idFormat )
 end
 
 --// Loads all text messages 
-function gPhone.LoadTextMessages()
+function gPhone.loadTextMessages()
 	local msgTable = {}
 	files = file.Find( "gphone/messages/*.txt", "DATA" )
 	
 	for k, v in pairs(files) do
-		local msgFile = file.Read( "gphone/messages/"..v, "DATA" )
-		local tbl = util.JSONToTable( msgFile )
+		local msgJSON = file.Read( "gphone/messages/"..v, "DATA" )
+		local tbl = util.JSONToTable( msgJSON )
 		
 		local id = string.gsub(v, ".txt", "")
-		id = gPhone.FormatToSteamID( id )
+		id = gPhone.formatToSteamID( id )
 		
 		msgTable[id] = tbl
 	end
-	
+
 	return msgTable
 end
 
-function gPhone.SteamIDToFormat( id )
+--// Changes a Steam ID into a file-compatible string, for naming
+function gPhone.steamIDToFormat( id )
 	local idFragments = string.Explode( ":", id )
 	
 	local oneOrZero = idFragments[2]
@@ -391,7 +407,8 @@ function gPhone.SteamIDToFormat( id )
 	return fmat
 end
 
-function gPhone.FormatToSteamID( fmat )
+--// Reverses a formatted string back to its Steam ID
+function gPhone.formatToSteamID( fmat )
 	local front = "STEAM_0:"
 	
 	local formatFrags = string.Explode( "", fmat )

@@ -4,6 +4,8 @@ local APP = {}
 APP.PrintName = "App Name"
 -- Path to the icon, relative to materials directory
 APP.Icon = "vgui/gphone/app_image.png"
+-- Short describing words for your app which may be used to help name a folder containing your app
+APP.Tags = {}
 -- (optional) Gamemode which this app's use is restricted to. Useful if it contains gamemode-specific functions or variables
 APP.Gamemode = ""
 -- (optional) Usergroups which can use this app, all others will be directed to a denial screen. 
@@ -32,4 +34,4 @@ function APP.Close()
 end
 
 -- This adds the application to the phone
---gPhone.AddApp(APP)
+--gPhone.addApp(APP)

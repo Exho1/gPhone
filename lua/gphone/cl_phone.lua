@@ -5,13 +5,14 @@ local phone = Material( "vgui/gphone/gphone.png" )
 local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)	
 
 --// Builds the phone 
-function gPhone.BuildPhone()
-	gPhone.LoadClientConfig()
+function gPhone.buildPhone()
+	gPhone.loadClientConfig()
 
-	gPhone.Apps = {}
-	gPhone.ImportApps()
-	gPhone.SettingsTabs = {
+	gPhone.apps = {}
+	gPhone.importApps()
+	gPhone.settingsTabs = {
 		"General",
+		"Updates", 
 		"Wallpaper",
 		"_SPACE_", -- Moves the next entry down one button height (not an actual tab)
 		"Text",
@@ -24,10 +25,10 @@ function gPhone.BuildPhone()
 	local sWidth, sHeight = 234, 416 -- Screen
 	local hWidth, hHeight = 45, 45 -- Home button
 	
-	gPhone.IsPortrait = true
-	gPhone.Rotation = 0
-	gPhone.IsInAnimation = false
-	gPhone.ShouldUnlock = true
+	gPhone.isPortrait = true
+	gPhone.rotation = 0
+	gPhone.isInAnimation = false
+	gPhone.shouldUnlock = true
 	
 	-- Create the phone 
 		gPhone.phoneBase = vgui.Create( "DFrame" )
@@ -38,31 +39,31 @@ function gPhone.BuildPhone()
 	gPhone.phoneBase:SetDeleteOnClose( true )
 	gPhone.phoneBase:ShowCloseButton( true ) -- TEMPORARY
 	gPhone.phoneBase.Paint = function( self, w, h)
-		surface.SetDrawColor( gPhone.Config.PhoneColor )
+		surface.SetDrawColor( gPhone.config.PhoneColor )
 		surface.SetMaterial( phone ) 
 		--surface.DrawTexturedRect( 0, 0, pWidth, pHeight )
-		surface.DrawTexturedRectRotated( self:GetWide()/2, self:GetTall()/2, pWidth, pHeight, gPhone.Rotation )
+		surface.DrawTexturedRectRotated( self:GetWide()/2, self:GetTall()/2, pWidth, pHeight, gPhone.rotation )
 	end
 	gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
-		gPhone.DestroyPhone()
+		gPhone.destroyPhone()
 	end
 	
 	local phoneBase = gPhone.phoneBase
 	local pX, pY = phoneBase:GetPos()
-	gPhone.SetWallpaper( true, gPhone.Config.HomeWallpaper )
-	gPhone.SetWallpaper( false, gPhone.Config.LockWallpaper )
+	gPhone.setWallpaper( true, gPhone.config.HomeWallpaper )
+	gPhone.setWallpaper( false, gPhone.config.LockWallpaper )
 	
 		gPhone.phoneScreen = vgui.Create("DPanel", gPhone.phoneBase)
 	gPhone.phoneScreen:SetPos( 31, 87 )
 	gPhone.phoneScreen:SetSize( sWidth, sHeight ) 
 	gPhone.phoneScreen.Paint = function( self )
-		surface.SetMaterial( gPhone.GetWallpaper( true, true ) )  -- Draw the wallpaper
+		surface.SetMaterial( gPhone.getWallpaper( true, true ) )  -- Draw the wallpaper
 		surface.SetDrawColor(255,255,255)
 		surface.DrawTexturedRect(0, 0, self:GetWide(), self:GetTall())
 	end
 	gPhone.phoneScreen.Think = function()
-		if gPhone.Config.DarkenStatusBar == true then
-			gPhone.DarkenStatusBar()
+		if gPhone.config.DarkenStatusBar == true then
+			gPhone.darkenStatusBar()
 		end
 	end
 	
@@ -99,11 +100,11 @@ function gPhone.BuildPhone()
 		end
 		
 		if battPerc < math.random(1, 4) then -- Simulate a phone dying, its kinda silly and few people will ever see it
-			gPhone.ChatMsg( "Your phone has run out of battery and died! Recharging..." )
-			gPhone.HidePhone()
+			gPhone.chatMsg( "Your phone has run out of battery and died! Recharging..." )
+			gPhone.hidePhone()
 			timer.Simple(math.random(2, 5), function()
-				gPhone.ChatMsg( "Phone recharged!" )
-				gPhone.ShowPhone()
+				gPhone.chatMsg( "Phone recharged!" )
+				gPhone.showPhone()
 				battPerc = 100
 			end)
 		end
@@ -135,10 +136,36 @@ function gPhone.BuildPhone()
 		draw.RoundedBox( 0, 2, 2, batterySize, 4, col )
 	end
 	
+	gPhone.SignalStrength = 5
+	
+	local signalDots = {}
+	local xBuffer = 3
+	for i = 1, 5 do
+		signalDots[i] = vgui.Create("DImage", gPhone.phoneScreen)
+		signalDots[i]:SetSize( 6, 6 )
+		signalDots[i]:SetPos( xBuffer, 4)
+		signalDots[i]:SetImageColor(Color(255,255,255))
+		local off = Material( "vgui/gphone/dot_empty.png", "smooth noclamp" )
+		local on = Material( "vgui/gphone/dot_full.png", "smooth noclamp" )
+		signalDots[i].Paint = function( self )
+			if i <= gPhone.SignalStrength then
+				surface.SetMaterial( on ) 
+				surface.SetDrawColor( self:GetImageColor() )
+				surface.DrawTexturedRect(0, 0, self:GetWide(), self:GetTall())
+			else
+				surface.SetMaterial( off ) 
+				surface.SetDrawColor( self:GetImageColor() )
+				surface.DrawTexturedRect(0, 0, self:GetWide(), self:GetTall())
+			end
+		end
+		xBuffer = xBuffer + signalDots[i]:GetWide() + 1
+	end
+	
 	local serviceProvider = vgui.Create( "DLabel", gPhone.phoneScreen )
 	serviceProvider:SetText( "Garry" )
 	serviceProvider:SizeToContents()
-	serviceProvider:SetPos( 5, 0 )
+	local lastDot = signalDots[#signalDots]
+	serviceProvider:SetPos( lastDot:GetPos() + lastDot:GetWide() + 5, 0 )
 	
 	gPhone.homeButton = vgui.Create( "DButton", gPhone.phoneBase )
 	gPhone.homeButton:SetSize( hWidth, hHeight )
@@ -146,14 +173,14 @@ function gPhone.BuildPhone()
 	gPhone.homeButton:SetText( "" )
 	gPhone.homeButton.Paint = function() end
 	gPhone.homeButton.DoClick = function()
-		if gPhone.IsOnHomeScreen != true and gPhone.IsInAnimation != true then
-			gPhone.ToHomeScreen()
+		if gPhone.isOnHomeScreen != true and gPhone.isInAnimation != true then
+			gPhone.toHomeScreen()
 		end
 	end
 	
 	gPhone.StatusBar = { -- Gotta keep track of all the status bar elements
 		["text"] = { battery=batteryPercent, network=serviceProvider, time=phoneTime },
-		["image"] = { battery=batteryImage },
+		["image"] = { battery=batteryImage, unpack(signalDots) },
 	}
 	gPhone.StatusBarHeight = 15
 	
@@ -161,12 +188,12 @@ function gPhone.BuildPhone()
 	local homeIcons = {}
 	
 	-- Loads up icon positions from the oosition file
-	local txtPositions = gPhone.GetAppPositions()
+	local txtPositions = gPhone.getActiveAppPositions()
 	local newApps = {}
 	local denies = 0
 	if #txtPositions > 1 then
-		for a = 1,#gPhone.Apps do
-			local app = gPhone.Apps[a] -- name and icon
+		for a = 1,#gPhone.apps do
+			local app = gPhone.apps[a] -- name and icon
 			local name = app.name
 			denies = 0
 			
@@ -190,74 +217,168 @@ function gPhone.BuildPhone()
 			end
 		end
 		
-		gPhone.Apps = newApps
+		gPhone.apps = newApps
 	end
 	
 	-- Build the layout
-	gPhone.HomeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
-	gPhone.HomeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
-	gPhone.HomeIconLayout:SetPos( 5, 25 )
-	gPhone.HomeIconLayout.Paint = function() end
-	gPhone.CanMoveApps = true
-	gPhone.IsInFolder = false
+	gPhone.homeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
+	gPhone.homeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
+	gPhone.homeIconLayout:SetPos( 5, 25 )
+	gPhone.homeIconLayout.Paint = function() end
+	gPhone.canMoveApps = true
+	gPhone.isInFolder = false
+	gPhone.currentFolder = nil
+	gPhone.currentFolderApps = {}
 	
 	-- Handles the dropping of icons on the home screen
-	gPhone.HomeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
+	gPhone.homeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
 		if drop then
+			if not gPhone.canMoveApps then 
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps" )
+			end
 			--[[
 				// Issues //
 			Cant drag icons out of folders
 			Cant move icons inside folders
 			Folders sometimes throw lua errors due to being in the homeIcons table strangely
-			*gPhone.IsInFolder
+			*gPhone.isInFolder
 			]]
 			
 			for k, v in pairs(homeIcons) do
 				local iX, iY = v.pnl:GetPos()
 				local iW, iH = v.pnl:GetSize()
 				
-				if x >= iX + iW/3 and x <= iX + iW - iW/3 then
-					if y >= iY and y <= iY + iH then	
-						-- Create a folder
-						gPhone.CanMoveApps = false
-						local droppedData = {name="Folder", apps={}}
+				-- Moving an icon out of a folder
+				if gPhone.isInFolder then
+					local w, h = gPhone.homeIconLayout:GetWide(), gPhone.homeIconLayout:GetTall()/1.7
+					local w, h = gPhone.homeIconLayout:GetWide(), gPhone.homeIconLayout:GetTall()/1.7
+					local fW, fH = w - 10, h
+					local fX, fY = 5, gPhone.homeIconLayout:GetTall()/2 - h/2
+					
+					local heldPanel = dragndrop.GetDroppable()[1]
+					local curFolder = gPhone.currentFolder
+					if x <= fX or x >= fX + fW or y <= fY or y >= fY + fH then
+						local droppedData = {name="N/A", icon="N/A"}
+						local droppedKey = 0
+						local folderKey = 0
+						
+						-- Grab the icon we are moving
+						for k, v in pairs( gPhone.currentFolderApps ) do
+							-- [k] = pnl, icon, name
+							if heldPanel == v.pnl:GetChildren()[1] then
+								local icon = v.pnl:GetChildren()[1]
+								droppedData = {name=v.name, icon=v.icon}
+								droppedKey = k
+							end
+						end	
+						
+						-- Find the folder in the gPhone.apps table
+						for k, v in pairs( gPhone.apps ) do
+							if curFolder == v then
+								folderKey = k
+							end
+						end
+						
+						-- Remove the icon from the folder and throw it on the end of the home screen
+						table.remove(gPhone.apps[folderKey].apps, droppedKey)
+						table.insert(gPhone.apps, droppedData)
+						
+						-- Table is going to have 1 icon left, destroy it
+						if #gPhone.currentFolderApps <= 2 then
+							local leftApp = gPhone.apps[folderKey].apps[1]
+							table.remove(gPhone.apps, folderKey)
+							table.insert(gPhone.apps, folderKey, {name=leftApp.name, icon=leftApp.icon})
+						end
+
+						-- Close the folder (rebuilds the homescreen)
+						gPhone.CloseFolder()
+					else
+						print("In folder")
+						-- Move apps in the folder
+					end
+				
+				-- Creating a folder
+				elseif x >= iX + iW/3 and x <= iX + iW - iW/3 then
+					if y >= iY and y <= iY + iH and not gPhone.isInFolder then	
+						local targetKey = k 
+						local droppedData = {name="Folder", apps={}} 
 						local droppedKey = 0
 						
 						-- Get the name and image of the icon we are moving
 						for i = 1,#homeIcons do
 							if item[1] == homeIcons[i].pnl:GetChildren()[1] then
-								if gPhone.Apps[k].apps then return end -- Dont drop folders on anything
 								local droppedName = homeIcons[i].name
 								
-								for i = 1, #gPhone.Apps do
-									if gPhone.Apps[i].name == droppedName then
+								for i = 1, #gPhone.apps do
+									if gPhone.apps[i].name == droppedName then
 										droppedKey = i
 									end
 								end
 							end
 						end
 						
-						if gPhone.Apps[k] == gPhone.Apps[droppedKey] then return end
+						local droppedApp = gPhone.apps[droppedKey]
+						local targetActiveApp = gPhone.apps[targetKey]
 
-						if gPhone.Apps[k].apps != nil then -- Dropped on a folder
-							table.insert(gPhone.Apps[k].apps, {name=gPhone.Apps[droppedKey].name, icon=gPhone.Apps[droppedKey].icon})
-							table.remove(gPhone.Apps, droppedKey)
+						-- Preventing bad stuff
+						if not droppedApp then
+							gPhone.msgC( GPHONE_MSGC_WARNING, "Dropped app is not valid in the gPhone.apps table" )
+							return
+						elseif targetActiveApp.apps and #targetActiveApp.apps >= 9 then
+							gPhone.msgC( GPHONE_MSGC_WARNING, "Folder is full and cannot hold any more apps" )
+							return
+						elseif gPhone.apps[k] == droppedApp then
+							gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot drop an app on itself" )
+							return
+						elseif droppedApp.apps or droppedApp.IsFolder then 
+							gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot drop folders on icons or other folders" )
+							return
+						end
+						
+						-- Give the folder a name based on app tags
+						local droppedAppTable = gApp[droppedApp.name:lower()]
+						local targetActiveAppTable = gApp[targetActiveApp.name:lower()]
+						if droppedAppTable and targetActiveAppTable then
+							local tags = {}
+							if droppedAppTable.Data.Tags then
+								--table.Merge( tags, droppedAppTable.Data.Tags )
+								for k, v in pairs( droppedAppTable.Data.Tags ) do
+									tags[#tags+1] = v
+								end
+							end
+							if targetActiveAppTable.Data.Tags then
+								--table.Merge( tags, targetActiveAppTable.Data.Tags )
+								for k, v in pairs( targetActiveAppTable.Data.Tags ) do
+									tags[#tags+1] = v
+								end
+							end
+							
+							local tag = table.Random(tags)
+
+							droppedData.name = tag or "Folder"
+						end
+						
+						-- Table stuff
+						if gPhone.apps[k].apps != nil then -- Dropped on a folder
+							table.insert(gPhone.apps[k].apps, {name=droppedApp.name, icon=droppedApp.icon})
+							table.remove(gPhone.apps, droppedKey)
 						else
 							-- Put the 2 icons into the folder
-							table.insert(droppedData.apps, {name=gPhone.Apps[k].name, icon=gPhone.Apps[k].icon})
-							table.insert(droppedData.apps, {name=gPhone.Apps[droppedKey].name, icon=gPhone.Apps[droppedKey].icon})
+							table.insert(droppedData.apps, {name=targetActiveApp.name, icon=targetActiveApp.icon})
+							table.insert(droppedData.apps, {name=droppedApp.name, icon=droppedApp.icon})
 							
 							-- Remove the moved icon and the dropped-on icon, create a folder
-							table.remove(gPhone.Apps, droppedKey)
-							table.remove(gPhone.Apps, k)
-							table.insert(gPhone.Apps, k, droppedData)
+							table.remove(gPhone.apps, droppedKey)
+							table.remove(gPhone.apps, targetKey)
+							table.insert(gPhone.apps, targetKey, droppedData)
 						end
 						
 						-- Build a shiny new homescreen
-						gPhone.BuildHomescreen( gPhone.Apps )
-						gPhone.CanMoveApps = true
+						gPhone.buildHomescreen( gPhone.apps )
 					end
-				elseif dragndrop.GetDroppable() != nil and gPhone.CanMoveApps then
+					
+				-- Moving apps around
+				elseif dragndrop.GetDroppable() != nil and not gPhone.isInFolder then
 					-- We are not dropping in the folder area, move the apps instead
 					local prevX, prevY 
 
@@ -266,7 +387,7 @@ function gPhone.BuildPhone()
 					local heldPanel = dragndrop.GetDroppable()[1]
 					local shouldMove = false
 					-- GetDroppable doesnt return a true pos, this works just as well
-					local mX, mY = gPhone.HomeIconLayout:ScreenToLocal( gui.MouseX(), gui.MouseY() )
+					local mX, mY = gPhone.homeIconLayout:ScreenToLocal( gui.MouseX(), gui.MouseY() )
 					if x != 0 and homeIcons[k-1] != nil then
 						prevX, prevY = homeIcons[k-1].pnl:GetPos()
 						prevH, prevW = homeIcons[k-1].pnl:GetSize()		
@@ -294,9 +415,9 @@ function gPhone.BuildPhone()
 							if heldPanel == homeIcons[i].pnl:GetChildren()[1] then
 								local droppedName = homeIcons[i].name
 								
-								for i = 1, #gPhone.Apps do
-									if gPhone.Apps[i].name == droppedName then
-										droppedData = gPhone.Apps[i]
+								for i = 1, #gPhone.apps do
+									if gPhone.apps[i].name == droppedName then
+										droppedData = gPhone.apps[i]
 										droppedKey = i
 									end
 								end
@@ -307,11 +428,11 @@ function gPhone.BuildPhone()
 						dragndrop.StopDragging()
 						
 						-- Remove the icon from its old key and move it to its new key
-						table.remove(gPhone.Apps, droppedKey)
-						table.insert(gPhone.Apps, k, droppedData )
+						table.remove(gPhone.apps, droppedKey)
+						table.insert(gPhone.apps, k, droppedData )
 						
 						-- Build a shiny new homescreen
-						gPhone.BuildHomescreen( gPhone.Apps )
+						gPhone.buildHomescreen( gPhone.apps )
 					end
 				end
 			end
@@ -319,19 +440,52 @@ function gPhone.BuildPhone()
 	end, {})
 	
 	-- Populate the homescreen with apps
-	function gPhone.BuildHomescreen( tbl )
+	function gPhone.buildHomescreen( tbl )
 		-- Destroy the old homescreen 
-		for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
+		for k, v in pairs( gPhone.homeIconLayout:GetChildren() ) do
 			v:Remove()
 		end
 		homeIcons = {}
+		
+		-- Run a pass through the table to fix issues
+		for k, v in pairs( tbl ) do
+			if v.name:lower() == "n/a" then -- Invalid name 
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid app at key: "..k.."! Removing..." )
+				table.remove(tbl, k)
+			end 
+			
+			for k2, v2 in pairs( tbl ) do -- Run through the same table a different time
+				if v.apps then 
+					local strTable = tostring(v.apps)
+					for k3, v3 in pairs( v.apps ) do
+						if v2.name == v3.name and v2.icon == v3.icon then -- App exists in both folder and homescreen
+							gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at key: "..k2.." and in folder: "..strTable.." key:"..k3)
+							table.remove(tbl[k2], k)
+						end
 						
+						for k4, v4 in pairs( v.apps ) do
+							if v3.name == v4.name and v3.icon == v4.icon and k3 ~= k4 then -- Repeated app in a folder
+								gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app in folder: "..strTable..". Keys: "..k3.." and "..k4)
+								table.remove(tbl[k2].apps, k)
+							end
+						end
+					end
+				end
+				
+				if v.name == v2.name and v.icon == v2.icon and k ~= k2 then -- Repeated app
+					gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at keys: "..k.." and "..k2.."!" )
+					table.remove(tbl, k)
+				end
+			end
+		end
+		
+		-- Start building apps and folders
 		local xBuffer, yBuffer, iconCount = 0, 0, 1
 		for key, data in pairs( tbl ) do
 			local bgPanel
 			if data.icon then
 				-- Create a normal app icon
-				bgPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
+				bgPanel = vgui.Create( "DPanel", gPhone.homeIconLayout )
 				bgPanel:SetSize( 50, 45 )
 				bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
 				bgPanel.Paint = function( self, w, h )
@@ -344,25 +498,33 @@ function gPhone.BuildPhone()
 				imagePanel:SetImage( data.icon )
 				imagePanel:Droppable( "gPhoneIcon" )
 				imagePanel.DoClick = function()
-					gPhone.RunApp( string.lower(data.name) )
+					gPhone.runApp( string.lower(data.name) )
 				end
 				
 				local iconLabel = vgui.Create( "DLabel", bgPanel )
 				iconLabel:SetText( data.name )
 				iconLabel:SetFont("gPhone_12")
 				iconLabel:SizeToContents()
-				iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, imagePanel:GetTall() + 2)
-			else 
+				local y = imagePanel:GetTall() + 2
+				if iconLabel:GetWide() > bgPanel:GetWide() then
+					local w, h = iconLabel:GetSize()
+					iconLabel:SetPos( 0, y )
+					iconLabel:SetSize( bgPanel:GetWide(), h )
+				else
+					iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, y)
+				end
+			elseif #data.apps > 1 then
 				-- The fun part, create a folder
-				local folderLabel, folderName, nameEditor 
-				bgPanel = vgui.Create( "DPanel", gPhone.HomeIconLayout )
+				local folderLabel, nameEditor 
+				bgPanel = vgui.Create( "DPanel", gPhone.homeIconLayout )
 				bgPanel:SetSize( 50, 45 )
 				bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+				bgPanel.IsFolder = true
 				bgPanel.Paint = function( self, w, h )
 					if IsValid(nameEditor) and nameEditor:IsEditing() then
-						local w, h = folderName:GetSize()
-						local x, y = folderName:GetPos()
-						draw.RoundedBox(4, 0, y - 5, bgPanel:GetWide(), h + 10, Color(50, 50, 50, 150) )
+						local w, h = self:GetSize()
+						local x, y = self:GetPos()
+						draw.RoundedBox(4, 0, y + 10, bgPanel:GetWide(), 50, Color(50, 50, 50, 150) )
 					end
 				end
 				
@@ -370,11 +532,41 @@ function gPhone.BuildPhone()
 				previewPanel:SetSize( 32, 32 )
 				previewPanel:SetPos( 10, 0 )
 				previewPanel:Droppable( "gPhoneIcon" )
-				previewPanel.Paint = function( self, w, h )
-					draw.RoundedBox(4, 0, 0, w, h, Color(255, 0, 0, 255) )
+				previewPanel.IsFolder = true
+				
+				-- Set up the preview icons, updates everytime the homescreen is built
+				local drawnIcons = {}
+				local xBuffer, yBuffer, previewIconCount = 2, 2, 0
+				for k, v in pairs( data.apps ) do
+					local icon = v.icon or "error"
 					
-					draw.DrawText( #tbl[key].apps, "gPhone_18", 10, 10, color_white )
-					-- Draw icons of the other apps inside the folder
+					table.insert(drawnIcons, {x=xBuffer, y=yBuffer, icon=Material(icon), color=color_white})
+					previewIconCount = previewIconCount + 1
+					
+					if previewIconCount % 3 == 0 then
+						xBuffer = 2
+						yBuffer = yBuffer + 10
+					else
+						xBuffer = xBuffer + 10
+						yBuffer = yBuffer
+					end
+				end
+				local blur = Material("pp/blurscreen")
+				previewPanel.Paint = function( self, w, h )
+					-- Background blur
+					if not dragndrop.GetDroppable() or not dragndrop.GetDroppable()[1] == self or gPhone.isInFolder then
+						-- Vanishes when the panel is picked up or the entire screen becomes blurred
+						gPhone.drawPanelBlur( self, 3, 5, 255 )
+					end
+					
+					-- Draw the app icons for the folders contents
+					if not gPhone.isInFolder then
+						for k, v in pairs( drawnIcons ) do
+							surface.SetDrawColor( v.color )
+							surface.SetMaterial( v.icon )
+							surface.DrawTexturedRect( v.x, v.y, 8, 8 )
+						end
+					end
 				end
 				
 				local iconLabel = vgui.Create( "DLabel", bgPanel )
@@ -393,15 +585,16 @@ function gPhone.BuildPhone()
 				local oldBGSize = {bgPanel:GetSize()}
 				
 				-- Declared early because I am terrible at managing this
-				local function closeFolder() 
-					nameEditor:OnEnter()
+				function gPhone.CloseFolder() 
+					if nameEditor then
+						nameEditor:OnEnter()
+					end
 					
 					previewPanel:SetCursor( "hand" )
 					bgPanel:SetPos( unpack(oldBGPos) )
 					bgPanel:SetSize( unpack(oldBGSize) )
 					
 					nameEditor:SetVisible(false)
-					folderName:SetVisible(false)
 					
 					previewPanel:SizeTo( w, h, 0.5)
 					timer.Simple(0.5, function()
@@ -410,125 +603,105 @@ function gPhone.BuildPhone()
 						end
 					end)
 					
-					gPhone.IsInFolder = false
-					gPhone.BuildHomescreen( gPhone.Apps )
+					gPhone.currentFolder = nil
+					gPhone.currentFolderApps = {}
+					gPhone.isInFolder = false
+					gPhone.buildHomescreen( gPhone.apps )
 				end
 				
 				-- Handle the building of folders
 				previewPanel.DoClick = function( self )
-					gPhone.IsInFolder = true
+					gPhone.currentFolder = data
+					gPhone.isInFolder = true
 					previewPanel:SetCursor( "arrow" )
 						
 					-- Hide the other apps
-					for k, v in pairs( gPhone.HomeIconLayout:GetChildren() ) do
+					for k, v in pairs( gPhone.homeIconLayout:GetChildren() ) do
 						if v != bgPanel then
 							v:SetVisible(false)
 						end
 					end
 					
 					bgPanel.OnMousePressed = function()
-						if IsValid(previewPanel) and IsValid(folderName) then
-							closeFolder()
+						if IsValid(previewPanel) then
+							gPhone.CloseFolder() 
 						end
 					end
 					
 					iconLabel:SetVisible(false)
 					bgPanel:SetPos( 0, 0 )
-					bgPanel:SetSize( gPhone.HomeIconLayout:GetWide(),  gPhone.HomeIconLayout:GetTall() )
+					bgPanel:SetSize( gPhone.homeIconLayout:GetWide(),  gPhone.homeIconLayout:GetTall() )
 					
-					local w, h = gPhone.HomeIconLayout:GetWide(), gPhone.HomeIconLayout:GetTall()/1.7
-					self:SizeTo( w, h, 0.5)
-					self:MoveTo( 0, gPhone.HomeIconLayout:GetTall()/2 - h/2, 0.5)
+					local w, h = gPhone.homeIconLayout:GetWide(), gPhone.homeIconLayout:GetTall()/1.7
+					self:SizeTo( w - 10, h, 0.5)
+					self:MoveTo( 5, gPhone.homeIconLayout:GetTall()/2 - h/2, 0.5)
 					
-					folderName = vgui.Create( "DLabel", bgPanel )
-					folderName:SetText( data.name )
-					folderName:SetFont("gPhone_40")
-					folderName:SizeToContents()
-					folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15)
-					local strTable = {}
-					local nextFlash = 0
-					folderName.Paint = function( self, w , h )
-						-- Create a flashing fake carret on the Label
-						
-						if CurTime() > nextFlash and IsValid(nameEditor) then
-							-- Put all the of letters into a table
-							for i = 1, string.len(self:GetText()) do
-								strTable[i] = self:GetText()[i]
-							end
-							
-							-- Get the size from the 
-							local x = 0
-							for i = 1, nameEditor:GetCaretPos() do
-								x = x + gPhone.GetTextSize( strTable[i], self:GetFont() )
-							end
-							
-							draw.RoundedBox(0, x, 5, 2, h - 10, Color(255, 255, 255, 255) )
-							
-							timer.Simple(0.5, function()
-								nextFlash = CurTime() + 0.1
-							end)
+					-- Reskin my DTextEntry to only show the text, highlight, and caret. 
+					local oldTextEntryPaint = SKIN.PaintTextEntry
+					function SKIN:PaintTextEntry( panel, w, h )
+						if panel.IsNameEditor then
+							panel:DrawTextEntryText( color_white, Color(27,161,226), color_white )
+						else
+							oldTextEntryPaint(panel, w, h)
 						end
 					end
-						
+					
+					-- Inivisible label to get the size of the DTextEntry
+					local sizeLabel = vgui.Create( "DLabel", bgPanel )
+					sizeLabel:SetText( data.name )
+					sizeLabel:SetFont("gPhone_36")
+					sizeLabel:SizeToContents()
+					sizeLabel:SetVisible( false )
+					
 					nameEditor = vgui.Create( "DTextEntry", bgPanel )
 					nameEditor:SetText( data.name )
 					nameEditor:SetFont( "gPhone_36" )
-					nameEditor:SizeToContents()
-					nameEditor.Paint = function() end
-					nameEditor.Think = function()
+					nameEditor:SetSize( sizeLabel:GetSize() )
+					nameEditor:SetPos( 0, 15 ) 
+					nameEditor.IsNameEditor = true
+					nameEditor.Think = function( self )
 						-- Size and position the editor on top of the label
-						local x, y = folderName:GetPos()
-						nameEditor:SetPos( x, y )
-						nameEditor:SetSize(folderName:GetSize())
+						local x, y = self:GetPos()
+						self:SetPos( bgPanel:GetWide()/2 - self:GetWide()/2, 15 )
 						
 						if self.Opened == false then
-							nameEditor:Remove()
-						end
-						
-						if folderName:GetWide() <= bgPanel:GetWide() then
-							folderName:SizeToContents()
-							local w, h = folderName:GetSize()
-							folderName:SetSize( w + 10, h )
-						end
-						
-						if IsValid( nameEditor.Menu ) then
-							nameEditor.Menu:Remove()
+							self:Remove()
 						end
 					end
-					nameEditor.OnChange = function()
-						-- Position the label based on the text
-						folderName:SetText( nameEditor:GetText() or data.name )
-						if folderName:GetWide() <= bgPanel:GetWide() then
-							folderName:SizeToContents()
-							local w, h = folderName:GetSize()
-							folderName:SetSize( w + 10, h )
-						end
-						folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15 )
+					nameEditor.OnChange = function( self )
+						local text = self:GetText()
+						sizeLabel:SetText(text)
+						sizeLabel:SizeToContents()
+						
+						local w, h = sizeLabel:GetSize()
+						self:SetSize( math.Clamp(w + 10, 0, bgPanel:GetWide()), h )
+						self:SetPos( bgPanel:GetWide()/2 - self:GetWide()/2, 15 )
 					end
-					nameEditor.OnEnter = function()
-						-- Set the name of the folder based on the text
-						local text = folderName:GetText()
-						if text == "" then
-							folderName:SetText("Folder")
-							folderName:SizeToContents()
-							
-							local w, h = folderName:GetSize()
-							folderName:SetSize( w + 10, h )
-							folderName:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 15 )
-							nameEditor:SetPos( bgPanel:GetWide()/2 - folderName:GetWide()/2, 55 )
-							return
+					nameEditor.OnEnter = function( self )
+						local text = string.Trim( self:GetText() )
+						if text != "" then
+							data.name = self:GetText()
+						else
+							self:SetText("Invalid")
 						end
-						data.name = folderName:GetText()
+					end
+					-- Why doesn't the text entry have a variable or function for that?
+					nameEditor.HasFocus = false
+					nameEditor.OnGetFocus = function( self )
+						self.HasFocus = true
+					end
+					nameEditor.OnLoseFocus = function( self )
+						self.HasFocus = true
 					end
 					
 					-- Create the folder's app icons
 					local xBuffer, yBuffer = 0,0
-					local folderIconCount = 0
+					local folderIconCount = 1
 					for k, v in pairs( tbl[key].apps ) do
 						-- Create a normal app icon
 						local bgPanel = vgui.Create( "DPanel", previewPanel )
 						bgPanel:SetSize( 50, 45 )
-						bgPanel:SetPos( 0 + xBuffer, 10 + yBuffer )
+						bgPanel:SetPos( 15 + xBuffer, 15 + yBuffer )
 						bgPanel.Paint = function( self, w, h )
 						end
 						
@@ -538,7 +711,7 @@ function gPhone.BuildPhone()
 						imagePanel:SetImage( v.icon )
 						imagePanel:Droppable( "gPhoneIcon" )
 						imagePanel.DoClick = function()
-							gPhone.RunApp( string.lower(v.name) )
+							gPhone.runApp( string.lower(v.name) )
 						end
 						
 						local iconLabel = vgui.Create( "DLabel", bgPanel )
@@ -553,14 +726,16 @@ function gPhone.BuildPhone()
 						folderLabel:SizeToContents()
 						folderLabel:SetPos( bgPanel:GetWide()/2 - folderLabel:GetWide()/2, 34)
 						
-						if folderIconCount % 4 == 0 then
+						if folderIconCount % 3 == 0 then
 							xBuffer = 0
-							yBuffer = yBuffer + 75
+							yBuffer = yBuffer + bgPanel:GetTall() + 30
 						else
-							xBuffer = xBuffer + 55
+							xBuffer = xBuffer + bgPanel:GetWide() + 10
 							yBuffer = yBuffer
 						end
 						folderIconCount = folderIconCount+ 1
+
+						gPhone.currentFolderApps[k] = {pnl=bgPanel, name=v.name, icon=v.icon}
 					end
 				end
 			end
@@ -578,13 +753,13 @@ function gPhone.BuildPhone()
 		end
 		
 		-- Save the app positions
-		--gPhone.SetAppPositions( gPhone.Apps ) -- TEMP FOR TESTING
+		--gPhone.saveAppPositions( gPhone.apps ) -- TEMP FOR TESTING
 	end
-	gPhone.BuildHomescreen( gPhone.Apps )
+	gPhone.buildHomescreen( gPhone.apps )
 	
 	-- Assorted stuff
-	gPhone.PhoneExists = true
-	gPhone.Config.PhoneColor.a = 100
+	gPhone.phoneExists = true
+	gPhone.config.PhoneColor.a = 100
 	
 	-- Check cache
 	local files = file.Find( "gphone/cache/*.txt", "DATA" )
@@ -606,24 +781,24 @@ function gPhone.BuildPhone()
 end
 
 --// Moves the phone up into visiblity
-function gPhone.ShowPhone()
+function gPhone.showPhone()
 	if gPhone and gPhone.phoneBase then
 		local pWidth, pHeight = gPhone.phoneBase:GetSize()
 		gPhone.phoneBase:MoveTo( ScrW()-pWidth, ScrH()-pHeight, 0.7, 0, 2, function()
 			gPhone.phoneBase:MakePopup()
 		end)
 		
-		gPhone.Config.PhoneColor.a = 255
+		gPhone.config.PhoneColor.a = 255
 		
 		if firstTimeUsed:GetBool() then
-			gPhone.BootUp()
+			gPhone.bootUp()
 			LocalPlayer():ConCommand("gphone_firsttime 0")
 		end
 		
-		gPhone.BuildLockScreen()
+		gPhone.buildLockScreen()
 		
-		gPhone.IsOnHomeScreen = true
-		gPhone.PhoneActive = true
+		gPhone.isOnHomeScreen = true
+		gPhone.phoneActive = true
 		
 		-- Tell the server we are done and the phone is ready to be used
 		net.Start("gPhone_DataTransfer")
@@ -633,7 +808,7 @@ function gPhone.ShowPhone()
 end
 
 --// Moves the phone down and disables it
-function gPhone.HidePhone()
+function gPhone.hidePhone()
 	if gPhone and gPhone.phoneBase then
 		local x, y = gPhone.phoneBase:GetPos()
 		
@@ -641,12 +816,12 @@ function gPhone.HidePhone()
 		gPhone.phoneBase:SetKeyboardInputEnabled( false )
 		
 		gPhone.phoneBase:MoveTo( x, ScrH()-40, 0.7, 0, 2, function()
-			gPhone.Config.PhoneColor.a = 100 -- Fade the alpha
+			gPhone.config.PhoneColor.a = 100 -- Fade the alpha
 		end)
 		
-		gPhone.PhoneActive = false
+		gPhone.phoneActive = false
 		
-		gApp.RemoveTickers()
+		gApp.removeTickers()
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
@@ -659,15 +834,15 @@ function gPhone.HidePhone()
 end
 
 --// Completely removes the phone from the game
-function gPhone.DestroyPhone()
+function gPhone.destroyPhone()
 	if gPhone and gPhone.phoneBase then
 		gPhone.phoneBase:Close()
 		gPhone.phoneBase = nil
 		
-		gPhone.PhoneActive = false
-		gPhone.PhoneExists = false
+		gPhone.phoneActive = false
+		gPhone.phoneExists = false
 		
-		gApp.RemoveTickers()
+		gApp.removeTickers()
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
@@ -685,15 +860,15 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 	local header = data.header
 	
 	if header == GPHONE_BUILD then
-		gPhone.BuildPhone()
+		gPhone.buildPhone()
 	elseif header == GPHONE_NOTIFY_GAME then
 		local sender = data.sender
 		local game = data.text
 		
 		local msg = sender:Nick().." has invited you to play "..game
 		
-		if not gPhone.PhoneActive then
-			gPhone.Vibrate()
+		if not gPhone.phoneActive then
+			gPhone.vibrate()
 			gPhone.Notification( msg, {game=game} )
 		else
 			gPhone.Notification( msg, {game=game} )
@@ -724,7 +899,7 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 				end
 			end
 		end
-		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to run application function "..func.."!" )
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to run application function "..func.."!" )
 	elseif header == GPHONE_RUN_FUNC then
 		local func = data.func
 		local args = data.args
@@ -736,7 +911,7 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			end
 		end
 		
-		gPhone.MsgC( GPHONE_MSGC_WARNING, "Unable to run phone function "..func.."!")
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to run phone function "..func.."!")
 	elseif header == GPHONE_MONEY_CONFIRMED then
 		local writeTable = {}
 		data.header = nil
@@ -761,9 +936,9 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			--local key = #writeTable+1
 			table.insert( writeTable, 1, {amount=data.amount, target=data.target, time=data.time} )
 			--writeTable[key] = {amount=data.amount, target=data.target, time=data.time}
-			gPhone.MsgC( GPHONE_MSGC_NONE, "Appending new transaction log into table")
+			gPhone.msgC( GPHONE_MSGC_NONE, "Appending new transaction log into table")
 		else
-			gPhone.MsgC( GPHONE_MSGC_WARNING, "No transaction file, creating one...")
+			gPhone.msgC( GPHONE_MSGC_WARNING, "No transaction file, creating one...")
 			writeTable[1] = {amount=data.amount, target=data.target, time=data.time}
 			PrintTable(writeTable)
 		end
@@ -773,23 +948,54 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		file.CreateDir( "gphone" )
 		file.Write( "gphone/transaction_log.txt", json)
 	elseif header == GPHONE_TEXT_MSG then
-		gPhone.ReceiveTextMessage( data.data )
+		gPhone.receiveTextMessage( data.data )
+	end
+end)
+
+--// Fake signal strength for the phone based on distance from the map's origin
+local mapOrigin = Vector(0,0,0)
+function gPhone.updateSignalStrength()
+	-- If I ever scrap Distance() and make my own, make the Z axis have more weight 
+	local distFromOrigin = mapOrigin:Distance( LocalPlayer():GetPos() ) 
+
+	-- rp_Downtown_v2 is 7000 units at its longest point
+	if distFromOrigin <= 1000 then
+		gPhone.SignalStrength = 5
+	elseif distFromOrigin <= 2000 then
+		gPhone.SignalStrength = 4
+	elseif distFromOrigin <= 4000 then
+		gPhone.SignalStrength = 3
+	elseif distFromOrigin <= 6000 then
+		gPhone.SignalStrength = 2
+	else
+		gPhone.SignalStrength = 1
+	end
+end
+
+--// Updates the signal strength
+local nextUpdate = 0
+hook.Add( "Think", "gPhone_SignalStrength", function()
+	if CurTime() > nextUpdate then
+		-- Its purely for looks and players don't normally move 1-2k units in 5 seconds
+		gPhone.updateSignalStrength()
+		nextUpdate = CurTime() + 5 
 	end
 end)
 
 --// Logic for opening the phone by holding down a key
 local keyStartTime = 0
 hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
-	if input.IsKeyDown( gPhone.Config.OpenKey ) then
+	if input.IsKeyDown( gPhone.config.OpenKey ) then
 		if keyStartTime == 0 then
 			keyStartTime = CurTime()
 		end
 		
-		if CurTime() - keyStartTime >= gPhone.Config.KeyHoldTime and not gPhone.IsInAnimation then
-			if gPhone.PhoneActive != true then
-				gPhone.ShowPhone()
+		-- Key has been held down long enough and the phone is not animating
+		if CurTime() - keyStartTime >= gPhone.config.KeyHoldTime and not gPhone.isInAnimation then
+			if gPhone.phoneActive != true then
+				gPhone.showPhone()
 			else
-				gPhone.HidePhone()
+				gPhone.hidePhone()
 			end
 			
 			keyStartTime = 0

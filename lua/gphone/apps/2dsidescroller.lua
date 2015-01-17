@@ -21,8 +21,8 @@ local gravity = 0.2
 local jumpTime = 0
 
 function APP.Run( objects, screen )
-	gPhone.RotateToLandscape()
-	gPhone.HideStatusBar()
+	gPhone.rotateToLandscape()
+	gPhone.hideStatusBar()
 	
 	groundLevel = screen:GetTall() - screen:GetTall()/4
 	gameRunning = false
@@ -55,7 +55,7 @@ function APP.Run( objects, screen )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_22")
 	title:SizeToContents()
-	gPhone.SetTextAndCenter(title, titleButton, true)
+	gPhone.setTextAndCenter(title, titleButton, true)
 	
 	--[[local fake = objects.Layout:Add("DPanel")
 	fake:SetSize(screen:GetWide(), 50)
@@ -96,7 +96,7 @@ function APP.Run( objects, screen )
 		title:SetTextColor( color_white )
 		title:SetFont("gPhone_22")
 		title:SizeToContents()
-		gPhone.SetTextAndCenter(title, titleButton, true)
+		gPhone.setTextAndCenter(title, titleButton, true)
 	end
 	
 end
@@ -361,4 +361,4 @@ function APP.Paint( screen )
 end
 
 
-gPhone.AddApp(APP)
+--gPhone.addApp(APP)

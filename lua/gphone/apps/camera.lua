@@ -2,9 +2,10 @@ local APP = {}
 
 APP.PrintName = "Camera"
 APP.Icon = "vgui/gphone/camera.png"
+APP.Tags = {"Photos", "Images", "Selfies"}
 
 function APP.Run( objects, screen )
-	gPhone.HideStatusBar()
+	gPhone.hideStatusBar()
 	
 	objects.TakePicture = vgui.Create( "DImageButton", screen )
 	objects.TakePicture:SetText( "" )
@@ -63,4 +64,4 @@ function APP.Paint(screen)
 	cam.End2D()
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

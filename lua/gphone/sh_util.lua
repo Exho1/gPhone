@@ -25,15 +25,15 @@ GPHONE_TEXT_MSG = 17
 
 local plymeta = FindMetaTable( "Player" )
 
-function plymeta:HasPhoneOpen()
+function plymeta:hasPhoneOpen()
 	return self:GetNWBool("gPhone_Open", false)
 end
 
-function plymeta:GetApp()
+function plymeta:getActiveApp()
 	return string.Trim( self:GetNWString("gPhone_CurApp", nil) )
 end
 
-function plymeta:GetPhoneNumber()
+function plymeta:getPhoneNumber()
 	if SERVER then
 		return self:GetPData( "gPhone_Number", 0 )
 	else
@@ -41,12 +41,18 @@ function plymeta:GetPhoneNumber()
 	end
 end
 
-function gPhone.SteamIDToPhoneNumber( ply )
-	if ply:SteamID() == "BOT" then
+function gPhone.steamIDToPhoneNumber( plyOrID )
+	local bPlayer = type(plyOrID) != "string"
+	if bPlayer and plyOrID:SteamID() == "BOT" then
 		return "BOT" 
 	end
 	
-	local idFragments = string.Explode( ":", ply:SteamID() )
+	local idFragments
+	if bPlayer then
+		idFragments = string.Explode( ":", ply:SteamID() )
+	else
+		idFragments = string.Explode( ":", plyOrID )
+	end
 	
 	--local areaCode = idFragments[2]
 	local number = idFragments[3]
@@ -60,14 +66,16 @@ end
 
 --// Sends a colored message to console
 GPHONE_MSGC_WARNING = 1
-GPHONE_MSGC_NONE = 2
-function gPhone.MsgC( enum, ... )
+GPHONE_MSGC_NOTIFY = 2
+GPHONE_MSGC_NONE = 3
+local lastMsg, repeatCount = nil, 0
+function gPhone.msgC( enum, ... )
 	local side = nil
 	local col = nil
 	if SERVER then 
 		col = Color( 0, 128, 255 )
 	else 
-		if gPhone.Config.ShowRunTimeConsoleMessages == true then return end -- Should we write to console for this?!?!
+		if gPhone.config.ShowRunTimeConsoleMessages == true then return end -- Should we write to console for this?!?!
 		col = Color( 255, 255, 100 )
 	end
 
@@ -77,15 +85,34 @@ function gPhone.MsgC( enum, ... )
 		args[i] = tostring(args[i])
 	end
 	
-	if enum == GPHONE_MSGC_WARNING then
-		MsgC( col, "[gPhone]: ", Color(220,80,80), table.concat( args, "   " ), "\n" )
+	-- Stop spam of repeated messages except when the repeating is divisible by 10
+	if table.concat( args, "   " ) != lastMsg then
+		lastMsg = table.concat( args, "   " )
+		if repeatCount > 5 then 
+			MsgC( col, "[gPhone]: ", Color(220,80,80), "To prevent spam, the last "..repeatCount.." messages have been ignored", "\n" )
+			repeatCount = 0 
+		end
 	else
-		MsgC( col, "[gPhone]: ", Color(80,220,80), table.concat( args, "   " ), "\n" )
+		repeatCount = repeatCount + 1
+		if repeatCount % 10 != 0 then
+			return
+		end
 	end
+	
+	local textColor
+	if enum == GPHONE_MSGC_WARNING then
+		textColor = Color(220,80,80)
+	elseif enum == GPHONE_MSGC_NOTIFY then
+		textColor = Color(27,161,226)
+	else
+		textColor = Color(80,220,80)
+	end
+	
+	MsgC( col, "[gPhone]: ", textColor, table.concat( args, "   " ), "\n" )
 end
 
 --// Utility function to grab a player object from a string
-function util.GetPlayerByNick( name, bExact )
+function util.getPlayerByNick( name, bExact )
 	for k, v in pairs(player.GetAll()) do
 		if bExact then 
 			if v:Nick() == name then
@@ -99,12 +126,11 @@ function util.GetPlayerByNick( name, bExact )
 	end
 end
 
-function util.GetPlayerByID( id )
+function util.getPlayerByID( id )
 	for k, v in pairs(player.GetAll()) do
 		if v:SteamID() == id then
 			return v
 		end
 	end
-	return id
 end
 

@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Phone"
 APP.Icon = "vgui/gphone/phone.png"
+APP.Tags = {"Calling", "Contact", "Communication"}
 
 function APP.Run( objects, screen )
 	
@@ -12,4 +13,4 @@ function APP.Paint( screen )
 	
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)

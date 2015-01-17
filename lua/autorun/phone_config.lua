@@ -13,7 +13,7 @@
 	- App notifications, red and white circles
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
-		objects.Back:SetTextColor( gPhone.Config.ColorBlue )
+		objects.Back:SetTextColor( gPhone.config.ColorBlue )
 		objects.Back:SetPos( )
 ]]
 
@@ -21,13 +21,15 @@ gPhone = gPhone or {}
 
 if SERVER then
 	--// Serverside config
-	gPhone.Config = {
-		
+	gPhone.config = {
+		AntiSpamTimeframe = 5,
+		TextPerTimeframeLimit = 5,
+		TextSpamCooldown = 15, 
 
 	}
 else
 	--// Clientside config
-	gPhone.Config = {
+	gPhone.config = {
 		ShowRunTimeConsoleMessages = true,
 		ShowUnusableApps = true,
 		
@@ -43,7 +45,7 @@ else
 		OpenLockDelay = 1,
 		
 		ColorBlue = Color(20,80,200),
-		PhoneColor = Color(255,255,255,255),
+		phoneColor = Color(255,255,255,255),
 	}
 end
 
@@ -83,7 +85,7 @@ if CLIENT then
 	include("gphone/sh_multiplayer.lua")
 	include("vgui/backbutton.lua")
 	
-	gPhone.LoadClientConfig()
+	gPhone.loadClientConfig()
 	
 	print("Loaded!")
 end

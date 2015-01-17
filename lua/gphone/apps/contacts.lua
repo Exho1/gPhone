@@ -2,10 +2,11 @@ local APP = {}
 
 APP.PrintName = "Contacts"
 APP.Icon = "vgui/gphone/contacts.png"
+APP.Tags = {"Contacts", "Lists", "Players"}
 
 function APP.Run( objects, screen )
 	
-	gPhone.DarkenStatusBar()
+	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Contacts" )
@@ -133,7 +134,7 @@ function APP.AddContact( layout, pnlTable, nick )
 end
 
 function APP.ContactInfo( name )
-	local ply = util.GetPlayerByNick( name )
+	local ply = util.getPlayerByNick( name )
 	if not IsValid(ply) then return end
 	
 	local objects = gApp["_children_"]
@@ -151,10 +152,10 @@ function APP.ContactInfo( name )
 	objects.Back = vgui.Create("DButton", screen)
 	objects.Back:SetText("Back")
 	objects.Back:SetFont("gPhone_18Lite")
-	objects.Back:SetTextColor( gPhone.Config.ColorBlue )
+	objects.Back:SetTextColor( gPhone.config.ColorBlue )
 	objects.Back:SetPos( 10, tY )
 	objects.Back.Paint = function() end
-	objects.Back:SetSize( gPhone.GetTextSize("Back", "gPhone_18Lite") )
+	objects.Back:SetSize( gPhone.getTextSize("Back", "gPhone_18Lite") )
 	objects.Back.DoClick = function()
 		objects.Back:Remove()
 		
@@ -196,13 +197,13 @@ function APP.ContactInfo( name )
 	
 	local text = vgui.Create( "DLabel", numberPanel )
 	text:SetText( "Number" )
-	text:SetTextColor( gPhone.Config.ColorBlue )
+	text:SetTextColor( gPhone.config.ColorBlue )
 	text:SetFont("gPhone_14")
 	text:SizeToContents()
 	text:SetPos( 10, 10 )
 	
 	local contactNumber = vgui.Create( "DLabel", numberPanel )
-	contactNumber:SetText( ply:GetPhoneNumber() )
+	contactNumber:SetText( ply:getPhoneNumber() )
 	contactNumber:SetTextColor(Color(0,0,0))
 	contactNumber:SetFont("gPhone_18")
 	contactNumber:SizeToContents()
@@ -212,20 +213,20 @@ function APP.ContactInfo( name )
 	textContact:SetSize( 24, 24 )
 	textContact:SetPos( numberPanel:GetWide() - textContact:GetWide() - 15, 10 )
 	textContact:SetImage( "vgui/gphone/text.png"  )	
-	textContact:SetColor( gPhone.Config.ColorBlue )
+	textContact:SetColor( gPhone.config.ColorBlue )
 	textContact.DoClick = function()
-		gPhone.ToHomeScreen()
-		gPhone.RunApp( "messages" )
+		gPhone.toHomeScreen()
+		gPhone.runApp( "messages" )
 	end
 	
 	local callContact = vgui.Create( "DImageButton", numberPanel ) 
 	callContact:SetSize( 24, 24 )
 	callContact:SetPos( numberPanel:GetWide() - callContact:GetWide() - textContact:GetWide() - 20, 10 )
 	callContact:SetImage( "vgui/gphone/phone.png"  )		
-	callContact:SetColor( gPhone.Config.ColorBlue )
+	callContact:SetColor( gPhone.config.ColorBlue )
 	callContact.DoClick = function()
-		gPhone.ToHomeScreen()
-		gPhone.RunApp( "phone" )
+		gPhone.toHomeScreen()
+		gPhone.runApp( "phone" )
 	end
 end
 
@@ -236,4 +237,4 @@ function APP.Paint( screen )
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))
 end
 
-gPhone.AddApp(APP)
+gPhone.addApp(APP)
