@@ -22,6 +22,8 @@ gApp["_init_"] = function()
 	oldScreenMousePressed = gPhone.phoneScreen.OnMousePressed
 	
 	gPhone.homeIconLayout:SetVisible( false )
+	
+	gPhone.isInApp = true
 end
 
 -- Removes application panels and restores the home screen
@@ -60,7 +62,10 @@ gApp["_close_"] = function( app )
 	end
 	gPhone.showStatusBar()
 	
-	gPhone.isOnHomeScreen = false
+	gApp["_active_"] = {}
+	
+	gPhone.isOnHomeScreen = true
+	gPhone.isInApp = false
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
@@ -80,6 +85,7 @@ function gPhone.importApps()
 	for k, v in pairs(files) do
 		include("gphone/apps/"..v)
 	end
+	gApp["_active_"] = {}
 end
 
 --// Adds an application table to the phone
@@ -174,6 +180,14 @@ function gPhone.runApp(name)
 		error(string.format("App '%s' does not exist in the Application table, aborting", name))
 		gPhone.toHomeScreen()
 	end
+end
+
+--// Opens an app from another app
+function gPhone.switchApps( newApp )
+	gPhone.toHomeScreen()
+	timer.Simple(0.3, function()
+		gPhone.runApp( newApp )
+	end)
 end
 
 --// Denies the user access to an app without breaking everything

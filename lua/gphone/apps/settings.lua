@@ -4,8 +4,26 @@ APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
 APP.Tags = {"Useful", "Config"}
 
+local topLevelTabs = {
+	"General",
+	"Wallpaper",
+	"_SPACE_", -- Moves the next entry down one button height (not an actual tab)
+	"Text",
+	"Phone",
+	"Contacts",
+}
+
+local generalLevelTabs = {
+	"About",
+	"Update",
+	"_SPACE_",
+	"Color",
+}
+
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
+	
+	gPhone.checkUpdate()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Settings" )
@@ -14,12 +32,17 @@ function APP.Run( objects, screen )
 	objects.Title:SizeToContents()
 	objects.Title:SetPos( screen:GetWide()/2 - objects.Title:GetWide()/2, 25 )
 	
+	objects.Back = vgui.Create("gPhoneBackButton", screen)
+	objects.Back:SetTextColor( gPhone.config.ColorBlue )
+	objects.Back:SetPos( 10, 25 )
+	objects.Back:SetVisible( false )
+	
 	objects.Layout = vgui.Create( "DIconLayout", screen)
 	objects.Layout:SetSize( screen:GetWide(), screen:GetTall() - 50 )
 	objects.Layout:SetPos( 0, 80 )
 	objects.Layout:SetSpaceY( 0 )
 	
-	for key, name in pairs(gPhone.settingsTabs) do
+	for key, name in pairs( topLevelTabs ) do
 		if name == "_SPACE_" then
 			local fake = objects.Layout:Add("DPanel")
 			fake:SetSize(screen:GetWide(), 30)
@@ -38,7 +61,7 @@ function APP.Run( objects, screen )
 				draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, Color(150, 150, 150))
 			end
 			layoutButton.DoClick = function()
-				APP.OpenTab( name, objects, screen )
+				APP.OpenTab( name )
 			end
 			
 			local title = vgui.Create( "DLabel", layoutButton )
@@ -51,36 +74,45 @@ function APP.Run( objects, screen )
 	end
 end
 
+--// Sets the title and hides old panels, called by nearly all tabs
+function APP.PrepareNewTab( name )
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
+	gPhone.setTextAndCenter(objects.Title, name, screen)
+	
+	-- Hide the app's home screen
+	for k, v in pairs(objects.Layout:GetChildren()) do
+		v:SetVisible(false)
+	end
+end
+
+--// Returns to the main screen, called by top level tabs
+function APP.ToMainScreen()
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
+	
+	objects.Back:SetVisible( false )
+	gPhone.setTextAndCenter(objects.Title, "Settings", screen)
+	
+	for k, pnl in pairs( objects ) do
+		pnl:Remove()
+	end
+	
+	APP.Run( objects, screen )
+end
+
 --// Custom function to handle the opening of setting tabs
-function APP.OpenTab( name, objects, screen )
-	if name == "Wallpaper" then
-		gPhone.setTextAndCenter(objects.Title, screen)
+function APP.OpenTab( name )
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
+	name = string.lower( name )
+	
+	if name == "wallpaper" then
+		APP.PrepareNewTab( "Wallpaper" )
 		
-		-- Hide the app's home screen
-		for k, v in pairs(objects.Layout:GetChildren()) do
-			v:SetVisible(false)
-		end
-		
-		local tX, tY = objects.Title:GetPos()
-		
-		objects.Back = vgui.Create("DButton", screen)
-		objects.Back:SetText("Back")
-		objects.Back:SetFont("gPhone_18Lite")
-		objects.Back:SetTextColor( gPhone.config.ColorBlue )
-		objects.Back:SetPos( 10, tY )
-		objects.Back.Paint = function() end
-		objects.Back:SetSize( gPhone.getTextSize("Back", "gPhone_18Lite") )
+		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
-			objects.Back:Remove()
-			gPhone.setTextAndCenter(objects.Title, screen)
-			
-			for k, pnl in pairs(objects.Layout:GetChildren()) do
-				if pnl:IsVisible() then
-					pnl:Remove()
-				else
-					pnl:SetVisible(true)
-				end
-			end
+			APP.ToMainScreen()
 		end
 		
 		local newBG = objects.Layout:Add("DButton")
@@ -208,6 +240,192 @@ function APP.OpenTab( name, objects, screen )
 				gPhone.setWallpaper( true, selectedImage )
 				gPhone.saveClientConfig()
 			end
+		end
+	elseif name == "general" then
+		APP.PrepareNewTab( "General" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.ToMainScreen()
+		end
+		
+		for key, tabName in pairs( generalLevelTabs ) do
+			if tabName == "_SPACE_" then
+				local fake = objects.Layout:Add("DPanel")
+				fake:SetSize(screen:GetWide(), 30)
+				fake.Paint = function() end
+			else
+				local layoutButton = objects.Layout:Add("DButton")
+				layoutButton:SetSize(screen:GetWide(), 30)
+				layoutButton:SetText("")
+				layoutButton.Paint = function()
+					if not layoutButton:IsDown() then
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(250, 250, 250))
+					else
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(230, 230, 230))
+					end
+					
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, Color(150, 150, 150))
+				end
+				layoutButton.DoClick = function()
+					APP.OpenLowerTab( tabName, name )
+				end
+				
+				local title = vgui.Create( "DLabel", layoutButton )
+				title:SetText( tabName )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			end
+		end
+	end
+end
+
+function APP.OpenLowerTab( name, upperTabName )
+	local objects = gApp["_children_"]
+	local screen = gPhone.phoneScreen
+	name = string.lower(name)
+	
+	if name == "about" then
+		APP.PrepareNewTab( "About" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		local background = objects.Layout:Add("DPanel")
+		background:SetSize(screen:GetWide(), screen:GetTall()/1.5)
+		background:SetText("")
+		background.Paint = function( self )
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+		end
+		
+		local titleLabel = vgui.Create( "DLabel", background )
+		titleLabel:SetTextColor(Color(0,0,0))
+		titleLabel:SetFont("gPhone_20")
+		titleLabel:SizeToContents()
+		titleLabel:SetPos( 0, 5 )
+		gPhone.setTextAndCenter( titleLabel, "The Garry Phone", background )
+		
+		-- Center the Garry Phone
+		local aboutText = [[
+Contact:
+exho.steam@gmail.com
+STEAM_0:0:53332328
+
+Source: 
+https://github.com/Exho1/gPhone
+
+Credits:
+Derma blur - STEAM_0:0:19766778
+Phone image - 
+https://creativemarket.com/buatoom
+Icon images - http://www.flaticon.com/
+]]
+
+		local aboutLabel = vgui.Create( "DLabel", background )
+		aboutLabel:SetText( aboutText )
+		aboutLabel:SetTextColor(Color(0,0,0))
+		aboutLabel:SetFont("gPhone_14")
+		local x, y = titleLabel:GetPos()
+		aboutLabel:SetPos( 10, y + titleLabel:GetTall() + 10 )
+		
+		gPhone.WordWrap( aboutLabel, background:GetWide(), 10 )
+		
+	elseif name == "update" then
+		APP.PrepareNewTab( "Update" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		--{update=Bool, version=String, description=String}
+		local uData = gPhone.updateTable
+		
+		if uData.update then
+			local background = objects.Layout:Add("DPanel")
+			background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
+			background:SetText("")
+			background.Paint = function( self )
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+			end
+			
+			local appIcon = vgui.Create("DImage", background)
+			appIcon:SetSize( 64, 64 )
+			appIcon:SetPos( 10, 10)
+			appIcon:SetImage( APP.Icon )
+			appIcon:SetImageColor( Color(0, 0, 0) )
+			
+			local versionLabel = vgui.Create( "DLabel", background )
+			versionLabel:SetText( "gOS "..(uData.version or "N/A") )
+			versionLabel:SetTextColor(Color(0,0,0))
+			versionLabel:SetFont("gPhone_20")
+			versionLabel:SizeToContents()
+			local x, y = appIcon:GetPos()
+			versionLabel:SetPos( x + appIcon:GetWide() + 15, y )
+			
+			local providerLabel = vgui.Create( "DLabel", background )
+			providerLabel:SetText( "Exho" )
+			providerLabel:SetTextColor(Color(0,0,0))
+			providerLabel:SetFont("gPhone_16")
+			providerLabel:SizeToContents()
+			providerLabel:SetPos( x + appIcon:GetWide() + 15, y + versionLabel:GetTall() + 3 )
+			
+			local dateLabel = vgui.Create( "DLabel", background )
+			dateLabel:SetText( uData.date or "N/A" )
+			dateLabel:SetTextColor(Color(0,0,0))
+			dateLabel:SetFont("gPhone_16")
+			dateLabel:SizeToContents()
+			local _, y = providerLabel:GetPos()
+			dateLabel:SetPos( x + appIcon:GetWide() + 15, y + providerLabel:GetTall() + 3 )
+			
+			local descriptionLabel = vgui.Create( "DLabel", background )
+			descriptionLabel:SetText( uData.description or "No description provided" )
+			descriptionLabel:SetTextColor(Color(0,0,0))
+			descriptionLabel:SetFont("gPhone_14")
+			local x, y = appIcon:GetPos()
+			descriptionLabel:SetPos( x, y + appIcon:GetTall() + 5)
+			
+			gPhone.WordWrap( descriptionLabel, background:GetWide(), 10 )
+			
+			-- Shrink the DPanel to match the content of the text
+			local _, dY = descriptionLabel:GetPos()
+			dY = dY + descriptionLabel:GetTall()
+			
+			local w, h = background:GetSize()
+			background:SetSize( w, dY + 10 )
+			
+			local fake = objects.Layout:Add("DPanel")
+			fake:SetSize(screen:GetWide(), 30)
+			fake.Paint = function() end
+				
+			local layoutButton = objects.Layout:Add("DButton")
+			layoutButton:SetSize(screen:GetWide(), 30)
+			layoutButton:SetText("")
+			layoutButton.Paint = function()
+				if not layoutButton:IsDown() then
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(250, 250, 250))
+				else
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(230, 230, 230))
+				end
+				
+			end
+			layoutButton.DoClick = function()
+				-- TEMP: Replace later with a link to the workshop page
+				gui.OpenURL( "http://steamcommunity.com/id/Exho1/myworkshopfiles/?appid=4000" )
+			end
+			
+			local title = vgui.Create( "DLabel", layoutButton )
+			title:SetText( "Install Update" )
+			title:SetTextColor( gPhone.config.ColorBlue )
+			title:SetFont("gPhone_18")
+			title:SizeToContents()
+			title:SetPos( 10, 5 )
+		else
+			-- Your software is up to date
 		end
 	end
 end

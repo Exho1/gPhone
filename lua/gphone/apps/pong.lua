@@ -67,11 +67,10 @@ function APP.Run( objects, screen )
 	end
 	
 	local title = vgui.Create( "DLabel", titleButton)
-	title:SetText( "gPong" )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_22")
 	title:SizeToContents()
-	gPhone.setTextAndCenter(title, titleButton, true)
+	gPhone.setTextAndCenter(title, "gPong", titleButton, true)
 	
 	local fake = objects.Layout:Add("DPanel")
 	fake:SetSize(screen:GetWide(), 50)
@@ -362,16 +361,15 @@ function APP.SetUpGame( type )
 	end
 	
 	local statusLabel = vgui.Create("DLabel", objects.StatusPanel)
-	statusLabel:SetText("")
 	statusLabel:SetTextColor( color_white )
 	statusLabel:SetFont( "gPhone_18" )
 	statusLabel.Think = function()
 		statusLabel:SizeToContents()
-		gPhone.setTextAndCenter( statusLabel, objects.StatusPanel, true )
+		gPhone.setTextAndCenter( statusLabel, nil, objects.StatusPanel, true )
 		
 		if timer.Exists( "gPong_StartDelay" ) then
 			local time = math.Round( timer.TimeLeft("gPong_StartDelay") )
-			statusLabel:SetText( time )
+			gPhone.setTextAndCenter( statusLabel, time, objects.StatusPanel, true )
 		end
 	end
 	

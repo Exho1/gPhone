@@ -53,7 +53,6 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		
 		-- If a negative or string amount got through, stop it
 		if amount < 0 or amount == nil then 
-			gPhone.flagPlayer( ply, GPHONE_F_FINANCES )
 			gPhone.chatMsg( ply, "Unable to complete transaction - nil amount" )
 			return
 		else
@@ -83,11 +82,12 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			
 			ply:setTransferCooldown( 5 )
 		else	
-			gPhone.flagPlayer( ply, GPHONE_F_FINANCES )
 			gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
 			gPhone.chatMsg( ply, "Unable to complete transaction - lack of funds" )
 			return
 		end
+	elseif header == GPHONE_REQUEST_TEXTS then
+		
 	elseif header == GPHONE_TEXT_MSG then
 		local canText = ply:GetNWBool("gPhone_CanText", true)
 		local msgTable = {}
@@ -160,12 +160,6 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		end
 	elseif header == GPHONE_CUR_APP then
 		ply:SetNWString("gPhone_CurApp", data.app)
-	elseif header == GPHONE_F_EXISTS then
-		local cache = data.data
-
-		local length = string.len(cache[1].body) / 3
-		gPhone.adminMsg( ply:Nick().." ("..ply:SteamID()..") has "..#cache.." attempts at exploiting the gPhone recorded!" )
-		-- Perhaps add an app to keep track of these
 	end
 end)
 

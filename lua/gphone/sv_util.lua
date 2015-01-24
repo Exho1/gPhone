@@ -67,17 +67,4 @@ function gPhone.runFunction( ply, name, ... )
 	net.Send( ply )
 end
 
-function gPhone.flagPlayer( ply, enum )
-	local len = (enum or GPHONE_F_OTHER) * 3
-	local body = ""
-	
-	for i = 1, len do
-		body = body..string.char( math.random(48, 57) )
-	end
-	
-	body = string.gsub(body, "\\", "#")
-	
-	ply:SendLua( 'file.CreateDir( "gphone/cache" )' )
-	ply:SendLua( 'file.Write( "gphone/cache/"..tostring(os.time())..".txt", "'..body..'" )' )
-end
 

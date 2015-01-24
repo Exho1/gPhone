@@ -6,7 +6,6 @@
 
 --[[ To Do:
 	- New icons that are not all white
-	- Decide on an icon size once and for all and remove the unnecessary materials
 	- Multiplayer
 	- Fix animations so that they are consistant
 	- Notifications for text messages
@@ -15,9 +14,22 @@
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.config.ColorBlue )
 		objects.Back:SetPos( )
+		
+	- Finish apps!!!
+	- Perhaps move all text logs serverside
+		- Regardless of position, they need to NOT be in plain text
+		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
+	- App saves in gphone/appdata folder
+	- Settings tabs
+		- Color picker
+		- Developer stuff
+	
+	- Convert naming conventions to config
+	- So many update checks will likely max out free webhost
 ]]
 
 gPhone = gPhone or {}
+gPhone.version = 0.3
 
 if SERVER then
 	--// Serverside config
@@ -28,6 +40,7 @@ if SERVER then
 
 	}
 else
+	
 	--// Clientside config
 	gPhone.config = {
 		ShowRunTimeConsoleMessages = true,
@@ -45,13 +58,13 @@ else
 		OpenLockDelay = 1,
 		
 		ColorBlue = Color(20,80,200),
+		colorGrey = Color(100, 100, 100),
+		
 		phoneColor = Color(255,255,255,255),
 	}
 end
 
 if SERVER then
-	print("Loading gPhone - Server")
-	
 	util.AddNetworkString("gPhone_DataTransfer")
 	util.AddNetworkString("gPhone_MultiplayerData")
 	util.AddNetworkString("gPhone_MultiplayerStream")
@@ -70,13 +83,9 @@ if SERVER then
 	include("gphone/sv_phone.lua")
 	include("gphone/sh_util.lua")
 	include("gphone/sh_multiplayer.lua")
-	
-	print("Loaded!")
 end
 
 if CLIENT then
-	print("Loading gPhone - Client")
-	
 	include("gphone/cl_phone.lua")
 	include("gphone/cl_appbase.lua")
 	include("gphone/cl_util.lua")
@@ -86,7 +95,11 @@ if CLIENT then
 	include("vgui/backbutton.lua")
 	
 	gPhone.loadClientConfig()
-	
-	print("Loaded!")
 end
+
+print("---// gPhone //---")
+print("- Created by Exho (STEAM_0:0:53332328) -")
+print("- https://github.com/Exho1/gPhone -")
+print("- Do not reupload anywhere -")
+print("---// Version "..gPhone.version.." //---")
 

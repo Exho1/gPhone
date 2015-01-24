@@ -51,11 +51,10 @@ function APP.Run( objects, screen )
 	end
 	
 	local title = vgui.Create( "DLabel", titleButton)
-	title:SetText( "My 2D Game" )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_22")
 	title:SizeToContents()
-	gPhone.setTextAndCenter(title, titleButton, true)
+	gPhone.setTextAndCenter(title, "My 2D Game", titleButton, true)
 	
 	--[[local fake = objects.Layout:Add("DPanel")
 	fake:SetSize(screen:GetWide(), 50)
@@ -92,11 +91,10 @@ function APP.Run( objects, screen )
 		end
 		
 		local title = vgui.Create( "DLabel", titleButton)
-		title:SetText( text )
 		title:SetTextColor( color_white )
 		title:SetFont("gPhone_22")
 		title:SizeToContents()
-		gPhone.setTextAndCenter(title, titleButton, true)
+		gPhone.setTextAndCenter(title, text, titleButton, true)
 	end
 	
 end

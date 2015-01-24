@@ -8,26 +8,21 @@ local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)
 function gPhone.buildPhone()
 	gPhone.loadClientConfig()
 
+	gPhone.badgeIDs = {}
 	gPhone.apps = {}
 	gPhone.importApps()
-	gPhone.settingsTabs = {
-		"General",
-		"Updates", 
-		"Wallpaper",
-		"_SPACE_", -- Moves the next entry down one button height (not an actual tab)
-		"Text",
-		"Phone",
-		"Contacts",
-	}
 	
 	-- Dimensions
 	local pWidth, pHeight = 300, 600 -- Phone
 	local sWidth, sHeight = 234, 416 -- Screen
 	local hWidth, hHeight = 45, 45 -- Home button
 	
-	gPhone.isPortrait = true
 	gPhone.rotation = 0
+	
+	gPhone.isPortrait = true
 	gPhone.isInAnimation = false
+	gPhone.isOnHomescreen = false
+	gPhone.isOnLockscreen = true
 	gPhone.shouldUnlock = true
 	
 	-- Create the phone 
@@ -173,7 +168,7 @@ function gPhone.buildPhone()
 	gPhone.homeButton:SetText( "" )
 	gPhone.homeButton.Paint = function() end
 	gPhone.homeButton.DoClick = function()
-		if gPhone.isOnHomeScreen != true and gPhone.isInAnimation != true then
+		if not gPhone.isOnHomeScreen and not gPhone.isInAnimation and not gPhone.isOnLockscreen then
 			gPhone.toHomeScreen()
 		end
 	end
@@ -186,6 +181,7 @@ function gPhone.buildPhone()
 	
 	--// Homescreen
 	local homeIcons = {}
+	local appBadges = {}
 	
 	-- Loads up icon positions from the oosition file
 	local txtPositions = gPhone.getActiveAppPositions()
@@ -200,12 +196,7 @@ function gPhone.buildPhone()
 			-- Checks if an app exists in the config file and at which key
 			for i = 1,#txtPositions do
 				if name == txtPositions[i].name then
-					if app.icon == txtPositions[i].icon then -- Config icon matches app's set icon path
-						newApps[i] = txtPositions[i]
-					else -- Use the app's icon path anyways
-						newApps[i] = txtPositions[i]
-						newApps[i].icon = app.icon
-					end
+					table.insert(newApps, txtPositions[i])
 				else
 					denies = denies + 1
 				end
@@ -215,7 +206,7 @@ function gPhone.buildPhone()
 			if denies == #txtPositions then
 				table.insert(newApps, app)
 			end
-		end
+		end 
 		
 		gPhone.apps = newApps
 	end
@@ -225,25 +216,52 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
 	gPhone.homeIconLayout:SetPos( 5, 25 )
 	gPhone.homeIconLayout.Paint = function() end
+	
+	-- App badges
+	gPhone.homeIconLayout.PaintOver = function() 
+		if gPhone.IsInFolder then return end -- App badges in folders?
+		
+		for name, data in pairs( appBadges ) do
+			if data.num and data.num > 0 then
+				if #gPhone.badgeIDs[name] != data.num then
+					-- badgeIDs is updated upon number change
+					-- appBadges is updated upon homescreen recreation
+					data.num = #gPhone.badgeIDs[name]
+				end
+				
+				local text, font = tostring(data.num), "gPhone_12"
+				local width, height = gPhone.getTextSize(text, font) -- X, 12
+				width = width + height/2
+				
+				local pnl 
+				for k, v in pairs(homeIcons) do
+					if string.lower(v.name) == string.lower(name) then
+						pnl = v.pnl
+					end
+				end
+				
+				if IsValid(pnl) then
+					local x, y = pnl:GetPos()
+					local tX, tY = x + data.w - width + 3, y
+					
+					draw.RoundedBox(6, x + data.w - width + height/4, y - height/4, width, height, Color(240, 5, 5) )
+					draw.DrawText( text, font, tX + height/4, tY - height/4, color_white )
+				end
+			end
+		end
+	end
+	
 	gPhone.canMoveApps = true
 	gPhone.isInFolder = false
 	gPhone.currentFolder = nil
 	gPhone.currentFolderApps = {}
-	
 	-- Handles the dropping of icons on the home screen
 	gPhone.homeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
 		if drop then
 			if not gPhone.canMoveApps then 
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps" )
 			end
-			--[[
-				// Issues //
-			Cant drag icons out of folders
-			Cant move icons inside folders
-			Folders sometimes throw lua errors due to being in the homeIcons table strangely
-			*gPhone.isInFolder
-			]]
-			
+
 			for k, v in pairs(homeIcons) do
 				local iX, iY = v.pnl:GetPos()
 				local iW, iH = v.pnl:GetSize()
@@ -308,10 +326,10 @@ function gPhone.buildPhone()
 						for i = 1,#homeIcons do
 							if item[1] == homeIcons[i].pnl:GetChildren()[1] then
 								local droppedName = homeIcons[i].name
-								
-								for i = 1, #gPhone.apps do
-									if gPhone.apps[i].name == droppedName then
-										droppedKey = i
+
+								for p = 1, #gPhone.apps do
+									if gPhone.apps[p].name == droppedName then
+										droppedKey = p
 									end
 								end
 							end
@@ -354,6 +372,12 @@ function gPhone.buildPhone()
 							end
 							
 							local tag = table.Random(tags)
+							for k, v in pairs(gPhone.apps) do
+								print(v.name, tag)
+								if v.name == tag then
+									tag = table.Random(tags)
+								end
+							end
 
 							droppedData.name = tag or "Folder"
 						end
@@ -415,10 +439,10 @@ function gPhone.buildPhone()
 							if heldPanel == homeIcons[i].pnl:GetChildren()[1] then
 								local droppedName = homeIcons[i].name
 								
-								for i = 1, #gPhone.apps do
-									if gPhone.apps[i].name == droppedName then
-										droppedData = gPhone.apps[i]
-										droppedKey = i
+								for p = 1, #gPhone.apps do
+									if gPhone.apps[p].name == droppedName then
+										droppedData = gPhone.apps[p]
+										droppedKey = p
 									end
 								end
 							end
@@ -441,6 +465,8 @@ function gPhone.buildPhone()
 	
 	-- Populate the homescreen with apps
 	function gPhone.buildHomescreen( tbl )
+		if not gPhone.isOnHomescreen or not gPhone.phoneActive or not gPhone.phoneExists then return end
+		
 		-- Destroy the old homescreen 
 		for k, v in pairs( gPhone.homeIconLayout:GetChildren() ) do
 			v:Remove()
@@ -448,41 +474,13 @@ function gPhone.buildPhone()
 		homeIcons = {}
 		
 		-- Run a pass through the table to fix issues
-		for k, v in pairs( tbl ) do
-			if v.name:lower() == "n/a" then -- Invalid name 
-				gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid app at key: "..k.."! Removing..." )
-				table.remove(tbl, k)
-			end 
-			
-			for k2, v2 in pairs( tbl ) do -- Run through the same table a different time
-				if v.apps then 
-					local strTable = tostring(v.apps)
-					for k3, v3 in pairs( v.apps ) do
-						if v2.name == v3.name and v2.icon == v3.icon then -- App exists in both folder and homescreen
-							gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at key: "..k2.." and in folder: "..strTable.." key:"..k3)
-							table.remove(tbl[k2], k)
-						end
-						
-						for k4, v4 in pairs( v.apps ) do
-							if v3.name == v4.name and v3.icon == v4.icon and k3 ~= k4 then -- Repeated app in a folder
-								gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app in folder: "..strTable..". Keys: "..k3.." and "..k4)
-								table.remove(tbl[k2].apps, k)
-							end
-						end
-					end
-				end
-				
-				if v.name == v2.name and v.icon == v2.icon and k ~= k2 then -- Repeated app
-					gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at keys: "..k.." and "..k2.."!" )
-					table.remove(tbl, k)
-				end
-			end
-		end
+		gPhone.fixHomescreen( tbl )
 		
 		-- Start building apps and folders
 		local xBuffer, yBuffer, iconCount = 0, 0, 1
 		for key, data in pairs( tbl ) do
 			local bgPanel
+			
 			if data.icon then
 				-- Create a normal app icon
 				bgPanel = vgui.Create( "DPanel", gPhone.homeIconLayout )
@@ -588,13 +586,11 @@ function gPhone.buildPhone()
 				function gPhone.CloseFolder() 
 					if nameEditor then
 						nameEditor:OnEnter()
+						nameEditor:SetVisible(false)
 					end
 					
 					previewPanel:SetCursor( "hand" )
 					bgPanel:SetPos( unpack(oldBGPos) )
-					bgPanel:SetSize( unpack(oldBGSize) )
-					
-					nameEditor:SetVisible(false)
 					
 					previewPanel:SizeTo( w, h, 0.5)
 					timer.Simple(0.5, function()
@@ -636,33 +632,26 @@ function gPhone.buildPhone()
 					self:SizeTo( w - 10, h, 0.5)
 					self:MoveTo( 5, gPhone.homeIconLayout:GetTall()/2 - h/2, 0.5)
 					
-					-- Reskin my DTextEntry to only show the text, highlight, and caret. 
-					local oldTextEntryPaint = SKIN.PaintTextEntry
-					function SKIN:PaintTextEntry( panel, w, h )
-						if panel.IsNameEditor then
-							panel:DrawTextEntryText( color_white, Color(27,161,226), color_white )
-						else
-							oldTextEntryPaint(panel, w, h)
-						end
-					end
-					
 					-- Inivisible label to get the size of the DTextEntry
 					local sizeLabel = vgui.Create( "DLabel", bgPanel )
 					sizeLabel:SetText( data.name )
 					sizeLabel:SetFont("gPhone_36")
 					sizeLabel:SizeToContents()
 					sizeLabel:SetVisible( false )
+					sizeLabel:SetPos( bgPanel:GetWide()/2 - sizeLabel:GetWide()/2, 15 )
 					
 					nameEditor = vgui.Create( "DTextEntry", bgPanel )
 					nameEditor:SetText( data.name )
 					nameEditor:SetFont( "gPhone_36" )
-					nameEditor:SetSize( sizeLabel:GetSize() )
-					nameEditor:SetPos( 0, 15 ) 
-					nameEditor.IsNameEditor = true
+					nameEditor:SetSize( bgPanel:GetWide(), sizeLabel:GetTall() )
+					nameEditor:SetPos( sizeLabel:GetPos() ) 
+					nameEditor:SetTextColor( color_white )
+					nameEditor:SetDrawBorder( false )
+					nameEditor:SetDrawBackground( false )
+					nameEditor:SetCursorColor( color_white )
+					nameEditor:SetHighlightColor( Color(27,161,226) )
 					nameEditor.Think = function( self )
-						-- Size and position the editor on top of the label
-						local x, y = self:GetPos()
-						self:SetPos( bgPanel:GetWide()/2 - self:GetWide()/2, 15 )
+						draw.RoundedBox(4, 0, 0, self:GetWide(), self:GetTall(), Color(255, 255, 255) )
 						
 						if self.Opened == false then
 							self:Remove()
@@ -672,10 +661,9 @@ function gPhone.buildPhone()
 						local text = self:GetText()
 						sizeLabel:SetText(text)
 						sizeLabel:SizeToContents()
+						sizeLabel:SetPos( bgPanel:GetWide()/2 - sizeLabel:GetWide()/2, 15 )
 						
-						local w, h = sizeLabel:GetSize()
-						self:SetSize( math.Clamp(w + 10, 0, bgPanel:GetWide()), h )
-						self:SetPos( bgPanel:GetWide()/2 - self:GetWide()/2, 15 )
+						self:SetPos( sizeLabel:GetPos() )
 					end
 					nameEditor.OnEnter = function( self )
 						local text = string.Trim( self:GetText() )
@@ -740,6 +728,7 @@ function gPhone.buildPhone()
 				end
 			end
 		
+			-- Properly align the icons
 			if iconCount % 4 == 0 then
 				xBuffer = 0
 				yBuffer = yBuffer + 75
@@ -748,8 +737,17 @@ function gPhone.buildPhone()
 				yBuffer = yBuffer
 			end
 			
+			-- Set any notifications to be drawn
+			if data.badge and data.badge > 0 then
+				local x, y = bgPanel:GetPos()
+				local w, h = bgPanel:GetSize()
+				
+				--table.insert( appBadges, {x=x,y=y,w=w,h=h,num=data.badge} )
+				appBadges[data.name] = {x=x,y=y,w=w,h=h,num=data.badge}
+			end
+			
 			iconCount = iconCount + 1
-			table.insert(homeIcons, {name=data.name, pnl=bgPanel })
+			table.insert( homeIcons, {name=data.name, pnl=bgPanel} )
 		end
 		
 		-- Save the app positions
@@ -761,23 +759,8 @@ function gPhone.buildPhone()
 	gPhone.phoneExists = true
 	gPhone.config.PhoneColor.a = 100
 	
-	-- Check cache
-	local files = file.Find( "gphone/cache/*.txt", "DATA" )
-	if #files > 0 then
-		local tbl = {}
-		for k, name in pairs(files) do
-			local body = file.Read( "gphone/cache/"..name, "DATA" )
-			-- Only need the important stuff here
-			local title = string.gsub(name, ".txt", "")
-			title = string.gsub(title, "app_", "")
-			
-			table.insert(tbl, {name=title, body=body})
-		end
-		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_F_EXISTS, data=tbl})
-		net.SendToServer()
-	end
+	-- Check for updates from my website
+	gPhone.checkUpdate()
 end
 
 --// Moves the phone up into visiblity
@@ -867,11 +850,14 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		
 		local msg = sender:Nick().." has invited you to play "..game
 		
-		if not gPhone.phoneActive then
-			gPhone.vibrate()
-			gPhone.Notification( msg, {game=game} )
+		if gPhone.isInApp then
+			gPhone.notifyPassive( msg, {game=game} )
 		else
-			gPhone.Notification( msg, {game=game} )
+			if not gPhone.phoneActive then
+				gPhone.vibrate()
+			end
+			
+			gPhone.notifyInteract( {msg=msg, app=game, options={"Accept", "Deny"}} )
 		end
 	elseif header == GPHONE_RETURNAPP then
 		local name, active = nil, gApp["_active_"]
@@ -925,12 +911,12 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		No limit on logs
 		]]
 		
-		if file.Exists( "gphone/transaction_log.txt", "DATA" ) then
-			local readFile = file.Read( "gphone/transaction_log.txt", "DATA" )
+		if file.Exists( "gphone/appdata/t_log.txt", "DATA" ) then
+			local readFile = file.Read( "gphone/appdata/t_log.txt", "DATA" )
 			print("File exists", readFile)
-			local readTable = util.JSONToTable( readFile ) 
+			local readTable = util.JSONToTable( gPhone.unscrambleJSON( readFile ) ) 
 			
-			--table.Add( tbl, readTable )/
+			--table.Add( tbl, readTable )
 			writeTable = readTable
 			
 			--local key = #writeTable+1
@@ -940,13 +926,15 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "No transaction file, creating one...")
 			writeTable[1] = {amount=data.amount, target=data.target, time=data.time}
+			
 			PrintTable(writeTable)
 		end
 		
 		local json = util.TableToJSON( writeTable )
+		json = gPhone.scrambleJSON( json )
 	
 		file.CreateDir( "gphone" )
-		file.Write( "gphone/transaction_log.txt", json)
+		file.Write( "gphone/appdata/t_log.txt", json)
 	elseif header == GPHONE_TEXT_MSG then
 		gPhone.receiveTextMessage( data.data )
 	end

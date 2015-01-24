@@ -82,12 +82,11 @@ function APP.Run( objects, screen )
 				end
 				
 				title = vgui.Create( "DLabel", background )
-				title:SetText( name )
 				title:SetTextColor(Color(0,0,0))
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 0, 5 )
-				gPhone.setTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, name, background)
 			else
 				background = objects.Layout:Add("DPanel")
 				background:SetSize(pnlWidth, 30)
@@ -97,12 +96,11 @@ function APP.Run( objects, screen )
 				end
 				
 				title = vgui.Create( "DLabel", background )
-				title:SetText( name )
 				title:SetTextColor(Color(0,0,0))
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 10, 5 )
-				gPhone.setTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, name, background)
 			end
 		end
 	end
@@ -191,12 +189,11 @@ function APP.ButtonClick( objects, name )
 		end
 		
 		local title = vgui.Create( "DLabel", sendMoney )
-		title:SetText( "Transfer" )
 		title:SetTextColor(Color(0,0,0))
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
-		gPhone.setTextAndCenter(title, sendMoney)
+		gPhone.setTextAndCenter(title, "Transfer", sendMoney)
 		
 		local cancelTransaction = objects.Layout:Add("DButton")
 		cancelTransaction:SetSize(pnlWidth, 30)
@@ -219,20 +216,19 @@ function APP.ButtonClick( objects, name )
 		end
 		
 		local title = vgui.Create( "DLabel", cancelTransaction )
-		title:SetText( "Cancel" )
 		title:SetTextColor(Color(0,0,0))
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
-		gPhone.setTextAndCenter(title, cancelTransaction)
+		gPhone.setTextAndCenter(title, "Cancel", cancelTransaction)
 	elseif name == "Transaction Log" then
 		for k, v in pairs(objects.Layout:GetChildren()) do
 			v:SetVisible( false )
 		end
 		
-		if file.Exists( "gphone/transaction_log.txt", "DATA" ) then 
-			local readFile = file.Read( "gphone/transaction_log.txt", "DATA" )
-			local readTable = util.JSONToTable( readFile ) 
+		if file.Exists( "gphone/appdata/t_log.txt", "DATA" ) then 
+			local readFile = file.Read( "gphone/appdata/t_log.txt", "DATA" )
+			local readTable = util.JSONToTable( gPhone.unscrambleJSON( readFile ) ) 
 			
 			for key, tbl in pairs( readTable ) do
 				local background = objects.Layout:Add("DPanel")
@@ -243,12 +239,11 @@ function APP.ButtonClick( objects, name )
 				end
 				
 				local title = vgui.Create( "DLabel", background )
-				title:SetText( tbl.time )
 				title:SetTextColor(Color(0,0,0))
 				title:SetFont("gPhone_12")
 				title:SizeToContents()
 				title:SetPos( 10, 15 )
-				gPhone.setTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, tbl.time, background)
 				
 				local title = vgui.Create( "DLabel", background )
 				title:SetText( tbl.target.." - $"..tbl.amount )
@@ -256,7 +251,7 @@ function APP.ButtonClick( objects, name )
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 10, 0 )
-				gPhone.setTextAndCenter(title, background)
+				gPhone.setTextAndCenter(title, nil, background)
 				
 				local fake = objects.Layout:Add("DPanel")
 				fake:SetSize(screen:GetWide()-60, 5)

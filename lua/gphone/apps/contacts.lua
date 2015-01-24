@@ -202,12 +202,21 @@ function APP.ContactInfo( name )
 	text:SizeToContents()
 	text:SetPos( 10, 10 )
 	
-	local contactNumber = vgui.Create( "DLabel", numberPanel )
+	local number = ply:getPhoneNumber()
+	local contactNumber = vgui.Create( "DTextEntry", numberPanel )
 	contactNumber:SetText( ply:getPhoneNumber() )
 	contactNumber:SetTextColor(Color(0,0,0))
 	contactNumber:SetFont("gPhone_18")
-	contactNumber:SizeToContents()
+	local w, h = gPhone.getTextSize( number, "gPhone_18" )
+	contactNumber:SetSize( w + 15, h )
 	contactNumber:SetPos( 15, 25 )
+	
+	-- Make it look like a label and not be editable
+	contactNumber:SetDrawBackground(false)
+	contactNumber:SetDrawBorder(false)
+	contactNumber.OnTextChanged = function( self )
+		self:SetText( number )
+	end
 	
 	local textContact = vgui.Create( "DImageButton", numberPanel ) 
 	textContact:SetSize( 24, 24 )
@@ -216,7 +225,7 @@ function APP.ContactInfo( name )
 	textContact:SetColor( gPhone.config.ColorBlue )
 	textContact.DoClick = function()
 		gPhone.toHomeScreen()
-		gPhone.runApp( "messages" )
+		gPhone.switchApps( "messages" )
 	end
 	
 	local callContact = vgui.Create( "DImageButton", numberPanel ) 
@@ -226,7 +235,7 @@ function APP.ContactInfo( name )
 	callContact:SetColor( gPhone.config.ColorBlue )
 	callContact.DoClick = function()
 		gPhone.toHomeScreen()
-		gPhone.runApp( "phone" )
+		gPhone.switchApps( "phone" )
 	end
 end
 

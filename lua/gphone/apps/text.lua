@@ -121,7 +121,7 @@ function APP.PopulateMain( layout )
 		end
 		
 		local senderNick
-		if IsValid(  util.getPlayerByID( id ) ) then
+		if IsValid( util.getPlayerByID( id ) ) then
 			isPlayerOnline = true
 			senderNick = util.getPlayerByID( id ):Nick()
 		else
@@ -140,8 +140,8 @@ function APP.PopulateMain( layout )
 		senderName:SetPos( 25, 2 )
 		
 		-- Create a time or date stamp 
-		local dateStamp = tbl[1].date
-		local timeStamp = tbl[1].time
+		local dateStamp = tbl[#tbl].date
+		local timeStamp = tbl[#tbl].time
 		if curDate != dateStamp then
 			local dateFrags = string.Explode( "/", curDate )
 			local stampFrags = string.Explode( "/", dateStamp )
@@ -150,7 +150,7 @@ function APP.PopulateMain( layout )
 				local yearDif = tonumber(dateFrags[3]) - tonumber(stampFrags[3]) 
 				if yearDif == 1 then
 					timeStamp = "Last Year"
-				else -- HA, like this will ever happen
+				else -- Ha, like this will ever happen.
 					timeStamp = yearDif.." Years Ago"
 				end
 			end
@@ -190,7 +190,7 @@ end
 --// Update the messages from outside the application
 function APP.UpdateMessages( id )
 	id = gPhone.formatToSteamID( id )
-	print("Update messages using id: "..id)
+	gPhone.msgC( GPHONE_MSGC_NONE, "Updating phone messages for conversation "..id)
 	APP.PopulateMessages( id )
 end
 
@@ -200,6 +200,8 @@ function APP.PopulateMessages( id )
 	local screen = gPhone.phoneScreen
 	objects.Back:SetVisible( true )
 	objects.NewText:SetVisible( false ) 
+	
+	gPhone.decrementBadge( "Messages", true, gPhone.steamIDToFormat(id) .."_message" )
 	
 	local oldPaint = objects.LayoutScroll.Paint
 	local oldW, oldH = objects.LayoutScroll:GetSize()
@@ -213,7 +215,7 @@ function APP.PopulateMessages( id )
 		objects.Back:SetVisible( false )
 		objects.NewText:SetVisible( true )
 		objects.LayoutScroll.Paint = oldPaint
-		gPhone.setTextAndCenter(objects.Title, screen)
+		gPhone.setTextAndCenter(objects.Title, nil, screen)
 		objects.LayoutScroll:SetSize( oldW, oldH )
 		
 		objects.WritePanel:SetVisible( false )
@@ -239,7 +241,7 @@ function APP.PopulateMessages( id )
 	end
 	
 	textBox = vgui.Create( "DTextEntry", objects.WritePanel )
-	textBox:SetText( "gMessage" )
+	textBox:SetText( "" )
 	textBox:SetTextColor(Color(0,0,0))
 	textBox:SetFont("gPhone_14")
 	textBox:SetSize( screen:GetWide()/3 * 2, 20 )
@@ -294,7 +296,7 @@ function APP.PopulateMessages( id )
 			background = vgui.Create("DPanel", objects.LayoutScroll)
 			background:SetSize(150, 50)
 			background.Paint = function( self, w, h )
-				draw.RoundedBox(4, 0, 0, w, h, col)
+				draw.RoundedBox(6, 0, 0, w, h, col)
 			end
 			
 			local message = vgui.Create( "DLabel", background )
@@ -305,35 +307,7 @@ function APP.PopulateMessages( id )
 			message:SetPos( 5, 5 )
 			message.Paint = function() end
 			
-			local w, h = message:GetSize()
-			if w - 10 >= background:GetWide() then -- Gmod's word wrapping is meh, I'll make my own
-				local text = message:GetText()
-				surface.SetFont(message:GetFont())
-				
-				-- Split the text by letter into a table
-				local frags = string.Explode( "", text )
-				local width, lineBreaks = 0, 1
-				for k, v in pairs( frags ) do
-					width = width + surface.GetTextSize(v)
-					
-					-- The string is longer than the message's width (minus a buffer)
-					if width >= background:GetWide() - 10 then 
-						table.insert(frags, k, "\r\n")
-						lineBreaks = lineBreaks + 1
-						width = 0 
-					end
-				end
-				
-				-- Reassemble the text 
-				text = table.concat( frags, "" )
-				message:SetText( text )
-				
-				-- Size the message box's background according to the number of line breaks
-				local wid, heig = background:GetSize()
-				message:SetSize( wid - 10, h * (lineBreaks)) 
-			else
-				message:SizeToContents()
-			end
+			gPhone.WordWrap( message, background:GetWide(), 10 )
 
 			-- Clamp the width to 2/3s of the screen width and the height to the screen height
 			local w, h = message:GetSize()
@@ -371,8 +345,7 @@ function APP.NewConversation()
 	objects.NewText:SetVisible( false )
 	objects.Back:SetVisible( true )
 	gPhone.hideChildren( objects.Layout )
-	objects.Title:SetText( "New Message" )
-	gPhone.setTextAndCenter( objects.Title, screen )
+	gPhone.setTextAndCenter( objects.Title, "New Message", screen )
 	
 	local oldPaint = objects.LayoutScroll.Paint
 	local oldW, oldH = objects.LayoutScroll:GetSize()
@@ -381,7 +354,7 @@ function APP.NewConversation()
 		objects.NewText:SetVisible( true )
 		objects.Back:SetVisible( false )
 		objects.LayoutScroll.Paint = oldPaint
-		gPhone.setTextAndCenter(objects.Title, screen)
+		gPhone.setTextAndCenter(objects.Title, nil, screen)
 		objects.LayoutScroll:SetSize( oldW, oldH )
 		
 		for k, v in pairs(objects) do
@@ -527,8 +500,7 @@ function APP.NewConversation()
 	sendButton.DoClick = function()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
-			objects.Title:SetText("Messages")
-			gPhone.setTextAndCenter(objects.Title, screen)
+			gPhone.setTextAndCenter(objects.Title, "Messages",  screen)
 			
 			gPhone.sendTextMessage( messageTarget:GetText(), messageBox:GetText() ) 
 			messageBox:SetText("")

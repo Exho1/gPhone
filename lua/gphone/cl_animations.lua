@@ -13,7 +13,9 @@ function gPhone.toHomeScreen()
 	end
 	
 	gApp["_close_"]( gApp["_active_"] )
-	gPhone.isOnHomeScreen = false
+	gPhone.isOnHomeScreen = true
+	
+	gPhone.buildHomescreen( gPhone.apps )
 end
 
 --// Rotate the phone to a landscape position
@@ -248,6 +250,8 @@ function gPhone.unlockLockScreen( callback )
 			callback()
 		end
 		
+		gPhone.isOnHomescreen = true
+		gPhone.isOnLockscreen = false
 		gPhone.isInAnimation = false
 	end)
 end
@@ -255,6 +259,8 @@ end
 --// Build the actual lock screen with all the info
 -- Set 'gPhone.shouldUnlock' to false to cancel the default timed unlock
 function gPhone.buildLockScreen()
+	gPhone.isOnLockscreen = true
+
 	local screen = gPhone.phoneScreen
 	
 	-- Hide the default home screen
@@ -310,28 +316,31 @@ function gPhone.buildLockScreen()
 	
 	timer.Simple(gPhone.config.OpenLockDelay, function()
 		if gPhone.shouldUnlock then 
-			print("Unlock") 
 			gPhone.unlockLockScreen()
+		else	
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Unlock prohibited, waiting for override." )
+			hook.Add("Think", "gPhone_waitForUnlock", function()
+				if gPhone.shouldUnlock then
+					gPhone.unlockLockScreen()
+					hook.Remove("Think", "gPhone_waitForUnlock")
+				end
+			end)
 		end
 	end)
 end
 
---[[
-	// Plan for passive //
-1. vibrate phone
-2. On open, cancel the default timed unlock
-3. Create a Derma panel with Accept/Deny buttons
-4. On clicked, close the notification and finish the unlocking
-5. Jump to app if Accepted
-
-]]
-
-function gPhone.notification( text, otherStuff )
+--// Opens a notification which the player has to select 1 of 2 options to close
+function gPhone.notifyInteract( tbl )
+	-- tbl = {appName, msgText, options={yes,no}}
 	gPhone.shouldUnlock = false
 	
-	print("Create notification", text)
+	if gPhone.isPortrait then
 	
-	--PrintTable(arg)
+	else
+	
+	end
+	
+	--gPhone.switchApps( newApp )
 	
 	--[[
 	if accepted then
@@ -346,4 +355,10 @@ function gPhone.notification( text, otherStuff )
 	
 	gPhone.shouldUnlock = true
 	]]
+end
+
+--// Opens a notification which requires no user input (but can be clicked) and goes away automatically
+function gPhone.notifyPassive( tbl )
+	-- tbl = {appName, msgText}
+
 end
