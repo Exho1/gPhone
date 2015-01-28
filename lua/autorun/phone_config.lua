@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 12/31/14
+-- Version: 1/27/14
 -- Phone source: https://creativemarket.com/buatoom/6422-iPhone5-Flat-Template
 -- Icon sources: http://www.flaticon.com/
 
@@ -9,23 +9,24 @@
 	- Multiplayer
 	- Fix animations so that they are consistant
 	- Notifications for text messages
-	- App notifications, red and white circles
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
-		objects.Back:SetTextColor( gPhone.config.ColorBlue )
+		objects.Back:SetTextColor( gPhone.config.colorBlue )
 		objects.Back:SetPos( )
-		
 	- Finish apps!!!
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
-	- App saves in gphone/appdata folder
 	- Settings tabs
-		- Color picker
 		- Developer stuff
-	
 	- Convert naming conventions to config
 	- So many update checks will likely max out free webhost
+	- Moving apps in folders
+	- Some system to make sure we don't have too many apps on the screen
+		- Throw em into folders
+		- Or allow scrolling down
+	- App saves in gphone/appdata folder
+		- saveAppData/loadAppData functions
 ]]
 
 gPhone = gPhone or {}
@@ -34,32 +35,45 @@ gPhone.version = 0.3
 if SERVER then
 	--// Serverside config
 	gPhone.config = {
-		AntiSpamTimeframe = 5,
-		TextPerTimeframeLimit = 5,
-		TextSpamCooldown = 15, 
-
+		-- Time to count text messages in order to check for spam
+		antiSpamTimeframe = 5,
+		-- Max amount of texts allowed in the above declared time
+		textPerTimeframeLimit = 5,
+		-- Time to prevent another text from being sent after a player is flagged as a spammer
+		textSpamCooldown = 10, 
+		
+		-- Admin groups 
+		adminGroups = {"owner", "superadmin", "admin"}
 	}
 else
 	
 	--// Clientside config
 	gPhone.config = {
-		ShowRunTimeConsoleMessages = true,
+		-- Should we display debug console messages called with the msgC function? 
+		showConsoleMessages = true,
+		-- Should apps that we cannot use be shown on the home screen?
 		ShowUnusableApps = true,
+		-- Should the status bar be darkened on the homescreen for white wallpapers?
+		darkStatusBar = false,
 		
-		DarkenStatusBar = false,
+		-- Default homescreen wallpaper
+		homeWallpaper = "vgui/gphone/wallpapers/greyfabric.png",
+		-- Default lockscreen wallpaper
+		lockWallpaper = "vgui/gphone/wallpapers/greyfabric.png",
+		-- Fallback in case either wallpaper is nil
+		fallbackWallpaper = "vgui/gphone/wallpapers/wood.png",
 		
-		HomeWallpaper = "vgui/gphone/wallpapers/greyfabric.png",
-		LockWallpaper = "vgui/gphone/wallpapers/greyfabric.png",
-		FallbackWallpaper = "vgui/gphone/wallpapers/wood.png",
+		-- Held key to open/close the gPhone
+		openKey = KEY_G, 
+		-- Time to hold the key in order to open/close the gPhone
+		keyHoldTime = 0.75,
+		-- Time after showing the homescreen to unlock it 
+		openLockDelay = 1,
 		
-		OpenKey = KEY_G, 
-		KeyHoldTime = 0.75,
-		
-		OpenLockDelay = 1,
-		
-		ColorBlue = Color(20,80,200),
+		-- Colors
+		colorBlue = Color(20,80,200),
+		colorRed = Color(220, 27, 23),
 		colorGrey = Color(100, 100, 100),
-		
 		phoneColor = Color(255,255,255,255),
 	}
 end
@@ -71,30 +85,15 @@ if SERVER then
 	util.AddNetworkString("gPhone_ChatMsg")
 	
 	AddCSLuaFile()
-	AddCSLuaFile("gphone/cl_phone.lua")
-	AddCSLuaFile("gphone/cl_appbase.lua")
-	AddCSLuaFile("gphone/cl_util.lua")
-	AddCSLuaFile("gphone/cl_animations.lua")
-	AddCSLuaFile("gphone/sh_util.lua")
-	AddCSLuaFile("gphone/sh_multiplayer.lua")
+	gPhone.addCSLuaFile( "gphone" )
 	AddCSLuaFile("vgui/backbutton.lua")
 	
-	include("gphone/sv_util.lua")
-	include("gphone/sv_phone.lua")
-	include("gphone/sh_util.lua")
-	include("gphone/sh_multiplayer.lua")
+	gPhone.include( "gphone" )
 end
 
 if CLIENT then
-	include("gphone/cl_phone.lua")
-	include("gphone/cl_appbase.lua")
-	include("gphone/cl_util.lua")
-	include("gphone/cl_animations.lua")
-	include("gphone/sh_util.lua")
-	include("gphone/sh_multiplayer.lua")
+	gPhone.include( "gphone" )
 	include("vgui/backbutton.lua")
-	
-	gPhone.loadClientConfig()
 end
 
 print("---// gPhone //---")

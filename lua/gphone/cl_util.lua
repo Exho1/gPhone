@@ -29,85 +29,8 @@ concommand.Add("notify_i", function()
 	gPhone.notifyInteract( {msg="Test message that should be long and word wrappable telling you to launch an app",
 	app="settings", options={"Accept", "Deny"}} )
 end)
+
 -- END TEMPORARY
-
---// Fonts
-surface.CreateFont( "gPhone_18Lite", {
-	font = "Roboto Lt",
-	size = 18,
-	weight = 500,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_14", {
-	font = "Roboto Lt",
-	size = 14,
-	weight = 500,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_16", {
-	font = "Roboto Lt",
-	size = 14,
-	weight = 500,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_12", {
-	font = "Roboto Lt",
-	size = 12,
-	weight = 600,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_60", {
-	font = "Roboto Lt",
-	size = 60,
-	weight = 300,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_40", {
-	font = "Roboto Lt",
-	size = 40,
-	weight = 400,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_18", {
-	font = "Roboto Lt",
-	size = 18,
-	weight = 650,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_18lite", {
-	font = "Roboto Lt",
-	size = 18,
-	weight = 500,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_20", {
-	font = "Roboto Lt",
-	size = 20,
-	weight = 650,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_22", {
-	font = "Roboto Lt",
-	size = 20,
-	weight = 500,
-	antialias = true,
-} )
-
-surface.CreateFont( "gPhone_36", {
-	font = "Roboto Lt",
-	size = 36,
-	weight = 650,
-	antialias = true,
-} )
 
 --// Chat messages
 function gPhone.chatMsg( text )
@@ -120,33 +43,6 @@ end
 net.Receive( "gPhone_ChatMsg", function( len, ply )
 	gPhone.chatMsg( net.ReadString() )
 end)
-
---// Wallpaper
-function gPhone.setWallpaper( bHome, texStr )
-	if bHome then
-		gPhone.config.HomeWallpaperMat = Material(texStr)
-		gPhone.config.HomeWallpaper = texStr
-	else
-		gPhone.config.LockWallpaperMat = Material(texStr)
-		gPhone.config.LockWallpaper = texStr
-	end
-end
-
-function gPhone.getWallpaper( bHome, isMat )
-	if bHome then
-		if isMat then
-			return gPhone.config.HomeWallpaperMat or Material( gPhone.config.FallbackWallpaper )
-		else
-			return gPhone.config.HomeWallpaper or gPhone.config.FallbackWallpaper
-		end
-	else
-		if isMat then
-			return gPhone.config.LockWallpaperMat or Material( gPhone.config.FallbackWallpaper )
-		else
-			return gPhone.config.LockWallpaper or gPhone.config.FallbackWallpaper
-		end
-	end
-end
 
 --// Panel-based blur function kindly given by Netheous (STEAM_0:0:19766778)
 local blur = Material( "pp/blurscreen" )
@@ -288,23 +184,37 @@ function gPhone.saveClientConfig()
 	cfgJSON = util.TableToJSON( gPhone.config )
 	
 	file.CreateDir( "gphone" )
-	file.Write( "gphone/client_config.txt", cfgJSON)
+	file.Write( "gphone/config.txt", cfgJSON)
 end
 
 --// Load config
 function gPhone.loadClientConfig()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Loading config file")
 	
-	if not file.Exists( "gphone/client_config.txt", "DATA" ) then
+	if not file.Exists( "gphone/config.txt", "DATA" ) then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
 		gPhone.saveClientConfig()
 		gPhone.loadClientConfig()
 		return
 	end
 	
-	local cfgFile = file.Read( "gphone/client_config.txt", "DATA" )
+	local cfgFile = file.Read( "gphone/config.txt", "DATA" )
 	local cfgTable = util.JSONToTable( cfgFile ) 
-
+	
+	-- Make sure the config file accepts new values
+	local shouldSave = false
+	for k, v in pairs( gPhone.config ) do
+		if not cfgTable[k] then
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Saved config file missing key/value: "..tostring(k).." "..tostring(v))
+			cfgTable[k] = v
+			shouldSave = true
+		end
+	end
+	
+	if shouldSave then
+		gPhone.saveClientConfig()
+	end
+	
 	gPhone.config = cfgTable
 end
 
@@ -381,17 +291,18 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 	file.CreateDir( "gphone/messages" )
 	file.Write( "gphone/messages/"..idFormat..".txt", json)
 	
-	local app = gApp["_active_"]
-	if app.Data and app.Data.UpdateMessages and gPhone.phoneActive then -- In app (viewing convo?)
+	local app = gPhone.getActiveApp()
+	if app and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
+	--if app and app.Data and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
 		print("Update - In app")
 		app.Data.UpdateMessages( idFormat ) 
-	elseif gPhone.phoneActive then -- In phone
+	elseif gPhone.isOpen() then -- In phone
 		print("Update - Phone")
-		gPhone.incrementBadge( "Messages", 1, idFormat.."_message" )
+		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	else -- Not in phone
 		print("Update - Out")
 		gPhone.vibrate()
-		gPhone.incrementBadge( "Messages", 1, idFormat.."_message" )
+		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	end
 end
 
@@ -429,7 +340,7 @@ function gPhone.checkUpdate()
 		
 		if webVersion != gPhone.version then
 			isUpdate = true
-			gPhone.incrementBadge( "Settings", 1, "update" )
+			gPhone.incrementBadge( "Settings", "update" )
 		else
 			gPhone.decrementBadge( "Settings", true, "update" )
 		end
@@ -438,6 +349,8 @@ function gPhone.checkUpdate()
 	function (error)
 		-- What now?
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to connect to the gPhone webpage to verify versions!" )
+		local str = "The gPhone was unable to connect to the update website to verify the local version, please check the workshop page"
+		gPhone.updateTable = {update=true, version="N/A", description=str, date="N/A"}
 	end)
 end
 
@@ -478,36 +391,30 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 		
 		-- Size the message box's background according to the number of line breaks
 		label:SetSize( wrapWidth - buffer, h * (lineBreaks)) 
+		
+		return lineBreaks
 	end
 end
 
--- Adds a red badge to an app or increases the count on an existing badge
-function gPhone.incrementBadge( app, num, id )
-	num = num or 1
+-- Adds a red badge to a homescreen app with a unique id
+function gPhone.incrementBadge( app, id )
 	id = string.lower( id )
 	
 	for i = 1, #gPhone.apps do
 		if gPhone.apps[i].name == app then
-			gPhone.badgeIDs[app] = gPhone.badgeIDs[app] or {}
+			gPhone.appBadges[app] = gPhone.appBadges[app] or {}
 			
 			-- Check for repeats of the same badge id
-			for k, v in pairs( gPhone.badgeIDs[app] ) do
+			for k, v in pairs( gPhone.appBadges[app] ) do
 				if v == id then
 					gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to add another app badge of the same id: "..id )
 					return
 				end
 			end
 			
-			-- Update the visible badge when the homescreen is updated
-			if gPhone.apps[i].badge then
-				gPhone.apps[i].badge = gPhone.apps[i].badge + num
-			else
-				gPhone.apps[i].badge = num
-			end 
-			
 			-- Log to console and insert into the badge table
-			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..gPhone.apps[i].badge.." with id: "..id )
-			table.insert( gPhone.badgeIDs[app], id )
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
+			table.insert( gPhone.appBadges[app], id )
 			
 			-- Rebuild on homescreen
 			if gPhone.isOnHomescreen then
@@ -517,23 +424,20 @@ function gPhone.incrementBadge( app, num, id )
 	end
 end
 
--- Decreases the count on a badge
-function gPhone.decrementBadge( app, num, id )
+-- Removes a badge id or removes all the ids for a specific app
+function gPhone.decrementBadge( app, id, bAll )
 	for i = 1, #gPhone.apps do
 		if gPhone.apps[i].name == app then
-			gPhone.badgeIDs[app] = gPhone.badgeIDs[app] or {}
-			gPhone.apps[i].badge = gPhone.apps[i].badge or 0
 			
-			for k, v in pairs( gPhone.badgeIDs[app] ) do
+			for k, v in pairs( gPhone.appBadges[app] ) do
 				if v == id then
-					if num == true then
-						gPhone.apps[i].badge = 0
+					if bAll then
+						gPhone.appBadges[app] = {}
 					else
-						gPhone.apps[i].badge = gPhone.apps[i].badge - num
+						gPhone.appBadges[app][k] = nil
 					end
 				
-					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Decremented "..app.." badge to "..gPhone.apps[i].badge.." with id: "..id )
-					table.remove( gPhone.badgeIDs[app], k )
+					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Decremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
 			
 					-- Rebuild on homescreen
 					if gPhone.isOnHomescreen then

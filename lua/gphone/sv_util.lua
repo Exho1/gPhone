@@ -24,19 +24,30 @@ function plymeta:generatePhoneNumber()
 	self:SetNWString( "gPhone_Number", number )
 end 
 
+--// AddCSLuaFiles all the files with the correct prefix
+function gPhone.addCSLuaFile( dir )
+	local filesSH = file.Find( dir.."/sh_*.lua", "LUA" )
+	
+	local files = file.Find( dir.."/cl_*.lua", "LUA" )
+	for k, v in pairs(files) do
+		AddCSLuaFile( dir.."/"..v )
+	end
+end
+
+--// Sends a message to appears in the player's chat box
 function gPhone.chatMsg( ply, text )
 	net.Start("gPhone_ChatMsg")
 		net.WriteString(tostring(text))
 	net.Send(ply)
 end
 
+--// Sends a chat message to connected administrators
 function gPhone.adminMsg( text )
-	-- TODO: Create a table of "admins" and check if they are in this group
-	for k, v in pairs(player.GetAll()) do
-		if v:IsAdmin() or v:IsSuperAdmin() then
-			net.Start("gPhone_ChatMsg")
-				net.WriteString(tostring(text))
-			net.Send(v)
+	for _, ply in pairs( player.GetAll() ) do
+		for _, group in pairs( gPhone.config.adminGroups ) do
+			if ply:GetUserGroup():lower() == group:lower() then
+				gPhone.chatMsg( ply, text )
+			end
 		end
 	end
 end

@@ -20,13 +20,13 @@ function APP.Run( objects, screen )
 	objects.NewText:SetSize( 16, 16 )
 	objects.NewText:SetPos( screen:GetWide() - objects.NewText:GetWide() - 10, y )
 	objects.NewText:SetImage( "materials/vgui/gphone/writenew.png" )
-	objects.NewText:SetColor( gPhone.config.ColorBlue )
+	objects.NewText:SetColor( gPhone.config.colorBlue )
 	objects.NewText.DoClick = function() 
 		APP.NewConversation()
 	end
 	
 	objects.Back = vgui.Create("gPhoneBackButton", screen)
-	objects.Back:SetTextColor( gPhone.config.ColorBlue )
+	objects.Back:SetTextColor( gPhone.config.colorBlue )
 	objects.Back:SetPos( 10, y )
 	objects.Back:SetVisible( false ) -- We dont need this right now
 	
@@ -74,7 +74,7 @@ function APP.PopulateMain( layout )
 		deleteConvo:SetColor( color_white )
 		deleteConvo:SetVisible(false)
 		deleteConvo.Paint = function( self, w, h )
-			draw.RoundedBox(0, 0, 0, w, h, Color(220, 27, 23))
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.config.colorRed)
 		end
 		deleteConvo.DoClick = function( self )
 			-- Deletes the conversation from the phone, this CANNOT be undone
@@ -201,7 +201,7 @@ function APP.PopulateMessages( id )
 	objects.Back:SetVisible( true )
 	objects.NewText:SetVisible( false ) 
 	
-	gPhone.decrementBadge( "Messages", true, gPhone.steamIDToFormat(id) .."_message" )
+	gPhone.decrementBadge( "Messages", gPhone.steamIDToFormat(id) .."_message" )
 	
 	local oldPaint = objects.LayoutScroll.Paint
 	local oldW, oldH = objects.LayoutScroll:GetSize()

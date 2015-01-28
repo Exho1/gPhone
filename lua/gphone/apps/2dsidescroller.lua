@@ -21,7 +21,7 @@ local gravity = 0.2
 local jumpTime = 0
 
 function APP.Run( objects, screen )
-	gPhone.rotateToLandscape()
+	gPhone.setOrientation( "landscape" )
 	gPhone.hideStatusBar()
 	
 	groundLevel = screen:GetTall() - screen:GetTall()/4

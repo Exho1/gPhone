@@ -272,7 +272,7 @@ local function quitToMainMenu()
 	gameRunning = false
 	gamePaused = false
 		
-	gPhone.rotateToPortrait()
+	gPhone.setOrientation( "portrait" )
 	APP.Run( objects, gPhone.phoneScreen )
 	
 	if gameType == PONG_GAME_MP then
@@ -293,7 +293,7 @@ function APP.SetUpGame( type )
 		end
 	end
 	
-	gPhone.rotateToLandscape()
+	gPhone.setOrientation( "landscape" )
 	isInGame = true
 	objectBounds = {}
 	traceData = {}

@@ -39,6 +39,24 @@ function plymeta:getPhoneNumber()
 	end
 end
 
+--// Includes all the files with the correct prefix
+function gPhone.include( dir )
+	local filesSH = file.Find( dir.."/sh_*.lua", "LUA" )
+	
+	local files = {}
+	if SERVER then
+		files = file.Find( dir.."/sv_*.lua", "LUA" )
+		table.Merge( files, filesSH )
+	elseif CLIENT then
+		files = file.Find( dir.."/cl_*.lua", "LUA" )
+		table.Merge( files, filesSH )
+	end
+	
+	for k, v in pairs(files) do
+		include( dir.."/"..v )
+	end
+end
+
 --// Sends a colored message to console
 GPHONE_MSGC_WARNING = 1
 GPHONE_MSGC_NOTIFY = 2
@@ -49,7 +67,7 @@ function gPhone.msgC( enum, ... )
 	if SERVER then 
 		col = Color( 0, 128, 255 )
 	else 
-		if gPhone.config.ShowRunTimeConsoleMessages == true then return end -- Should we write to console for this?!?!
+		if gPhone.config.showConsoleMessages == false then return end
 		col = Color( 255, 255, 100 )
 	end
 

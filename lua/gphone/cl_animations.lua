@@ -9,11 +9,11 @@ function gPhone.toHomeScreen()
 	if gPhone.isOnHomeScreen == true then return end
 	
 	if not gPhone.isPortrait then
-		gPhone.rotateToPortrait()
+		gPhone.setOrientation( "portrait" )
 	end
 	
-	gApp["_close_"]( gApp["_active_"] )
-	gPhone.isOnHomeScreen = true
+	gApp["_close_"]( gPhone.getActiveApp() )
+	gPhone.setPhoneState( "home" )
 	
 	gPhone.buildHomescreen( gPhone.apps )
 end
@@ -21,9 +21,9 @@ end
 --// Rotate the phone to a landscape position
 local oldPWide, oldPHeight, oldSWide, oldSHeight = nil
 function gPhone.rotateToLandscape()
-	if not gPhone.isPortrait then return end
+	if not gPhone.isPortrait() then return end
 	
-	gPhone.isInAnimation = true
+	gPhone.setIsAnimating( true )
 	
 	-- Save old values
 	oldPWide, oldPHeight = gPhone.phoneBase:GetSize()
@@ -51,16 +51,15 @@ function gPhone.rotateToLandscape()
 	gPhone.phoneScreen:SetPos( 87, 35 )
 	gPhone.homeButton:SetPos( oldPHeight - gPhone.homeButton:GetWide() - 35, oldPWide/2 - gPhone.homeButton:GetTall()/2 + 3 )
 	
-	gPhone.isInAnimation = false
-	gPhone.isPortrait = false
+	gPhone.setIsAnimating( false )
 end
 
 --// Rotate the phone back to portrait
 function gPhone.rotateToPortrait()
-	if gPhone.isPortrait then return end
+	if gPhone.isPortrait() then return end
 	
 	local oldThink = gPhone.phoneBase.Think
-	gPhone.isInAnimation = true
+	gPhone.setIsAnimating( true )
 	-- Expand so the phone can rotate without cutting off anything
 	gPhone.phoneBase:SetSize( oldPWide*2, oldPHeight*2 )
 	gPhone.phoneScreen:SetSize( oldSWide*2, oldSHeight*2 )
@@ -82,15 +81,14 @@ function gPhone.rotateToPortrait()
 	gPhone.phoneScreen:SetPos( 31, 87 )
 	gPhone.homeButton:SetPos( oldPWide/2 - gPhone.homeButton:GetWide()/2 - 3, oldPHeight - gPhone.homeButton:GetTall() - 35 )
 	
-	gPhone.isInAnimation = false
-	gPhone.isPortrait = true
+	gPhone.setIsAnimating( false )
 end
 
 --// vibrate the phone if its in its passive state
 function gPhone.vibrate()
-	if not gPhone.phoneActive and IsValid( gPhone.phoneBase ) then
-		if gPhone.isInAnimation then return end
-		gPhone.isInAnimation = true
+	if not gPhone.isOpen() and IsValid( gPhone.phoneBase ) then
+		if gPhone.isAnimating() then return end
+		gPhone.setIsAnimating( true )
 		
 		-- Holy variables Batman!
 		local oldThink = gPhone.phoneBase.Think
@@ -157,7 +155,7 @@ function gPhone.vibrate()
 				gPhone.phoneBase:SetPos( oldX, oldY )
 				gPhone.phoneBase.Think = oldThink 
 				
-				gPhone.isInAnimation = false
+				gPhone.setIsAnimating( false )
 			end)
 		end)
 	end
@@ -166,7 +164,8 @@ end
 --// 'Booting' animation for when the player first opens their phone
 function gPhone.bootUp()
 	local screen = gPhone.phoneScreen
-	gPhone.isInAnimation = true
+	gPhone.setIsAnimating( true )
+	gPhone.setPhoneState( "boot" )
 	
 	-- Hide the default home screen
 	local oldScreen = gPhone.phoneScreen.Paint
@@ -193,9 +192,9 @@ function gPhone.bootUp()
 			for k, v in pairs(gPhone.phoneScreen:GetChildren()) do
 				v:SetVisible(true)
 			end
-			gPhone.isInAnimation = false
+			gPhone.setIsAnimating( false )
 			
-			gPhone.Unlock()
+			gPhone.unlockLockScreen()
 		end
 		
 		if CurTime() > nextPass then
@@ -223,7 +222,7 @@ function gPhone.unlockLockScreen( callback )
 	
 	local screen = gPhone.phoneScreen
 	local x, y = screen:GetPos()
-	gPhone.isInAnimation = true
+	gPhone.setIsAnimating( true )
 	
 	local lX, lY = lockTime:GetPos()
 	local dX, dY = dateLabel:GetPos()
@@ -250,16 +249,15 @@ function gPhone.unlockLockScreen( callback )
 			callback()
 		end
 		
-		gPhone.isOnHomescreen = true
-		gPhone.isOnLockscreen = false
-		gPhone.isInAnimation = false
+		gPhone.setIsAnimating( false )
+		gPhone.setPhoneState( "home" )
 	end)
 end
 
 --// Build the actual lock screen with all the info
 -- Set 'gPhone.shouldUnlock' to false to cancel the default timed unlock
 function gPhone.buildLockScreen()
-	gPhone.isOnLockscreen = true
+	gPhone.setPhoneState( "lock" )
 
 	local screen = gPhone.phoneScreen
 	
@@ -314,7 +312,7 @@ function gPhone.buildLockScreen()
 		end
 	end
 	
-	timer.Simple(gPhone.config.OpenLockDelay, function()
+	timer.Simple(gPhone.config.openLockDelay, function()
 		if gPhone.shouldUnlock then 
 			gPhone.unlockLockScreen()
 		else	

@@ -56,7 +56,7 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			gPhone.chatMsg( ply, "Unable to complete transaction - nil amount" )
 			return
 		else
-			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash
+			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash 
 			amount = math.abs(amount) 
 		end
 		
@@ -109,7 +109,7 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		hook.Add("Think", "gPhone_AntiSpam_"..ply:SteamID(), function()
 			-- Span of time in which texts are counted to check against spam
 			if CurTime() > antiSpamWindow then
-				antiSpamWindow = CurTime() + gPhone.config.AntiSpamTimeframe
+				antiSpamWindow = CurTime() + gPhone.config.antiSpamTimeframe
 				ply.MessageCount = 0
 			end
 			
@@ -120,9 +120,9 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 			end
 
 			-- Caught em
-			if ply.MessageCount > gPhone.config.TextPerTimeframeLimit and CurTime() < antiSpamWindow then
+			if ply.MessageCount > gPhone.config.textPerTimeframeLimit and CurTime() < antiSpamWindow then
 				ply:SetNWBool("gPhone_CanText", false)
-				ply.TextCooldown = gPhone.config.TextSpamCooldown
+				ply.TextCooldown = gPhone.config.textSpamCooldown
 				
 				gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been caught spamming the texting system" )
 				gPhone.chatMsg( ply, "To prevent spam, you have been blocked from texting for "..ply.TextCooldown.." seconds!" )

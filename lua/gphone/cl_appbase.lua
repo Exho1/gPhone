@@ -22,8 +22,6 @@ gApp["_init_"] = function()
 	oldScreenMousePressed = gPhone.phoneScreen.OnMousePressed
 	
 	gPhone.homeIconLayout:SetVisible( false )
-	
-	gPhone.isInApp = true
 end
 
 -- Removes application panels and restores the home screen
@@ -55,17 +53,14 @@ gApp["_close_"] = function( app )
 	
 	gPhone.homeIconLayout:SetVisible( true )
 	
-	if gPhone.config.DarkenStatusBar == true then
+	if gPhone.config.darkStatusBar == true then
 		gPhone.darkenStatusBar()
 	else
 		gPhone.lightenStatusBar()
 	end
 	gPhone.showStatusBar()
 	
-	gApp["_active_"] = {}
-	
-	gPhone.isOnHomeScreen = true
-	gPhone.isInApp = false
+	gPhone.setActiveApp( nil ) 
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
@@ -85,7 +80,7 @@ function gPhone.importApps()
 	for k, v in pairs(files) do
 		include("gphone/apps/"..v)
 	end
-	gApp["_active_"] = {}
+	gPhone.setActiveApp( nil ) 
 end
 
 --// Adds an application table to the phone
@@ -116,7 +111,7 @@ function gPhone.addApp( tbl )
 		if tbl.Gamemode and tbl.Gamemode != "" then
 			if string.lower(tbl.Gamemode) != string.lower(engine.ActiveGamemode()) then
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..tbl.PrintName ) 
-				--return
+				return
 			end
 		end
 	end
@@ -172,11 +167,11 @@ function gPhone.runApp(name)
 		net.SendToServer()
 		
 		-- All seems to be be good, run the application
-		gPhone.isOnHomeScreen = false
+		gPhone.setPhoneState( "app" )
 		app.Start()
-		gApp["_active_"] = app
+		gPhone.setActiveApp( app ) 
 	else
-		-- This should never happen outside of developing
+		-- This only occurs when you save the config file while the phone is open
 		error(string.format("App '%s' does not exist in the Application table, aborting", name))
 		gPhone.toHomeScreen()
 	end
@@ -194,13 +189,12 @@ end
 function gPhone.denyApp( gmName, reason )
 	gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot use this application!" ) 
 	-- Don't need to initialize the app base, its already been done
-	gPhone.isOnHomeScreen = false
+	gPhone.setPhoneState( "app" )
+	gPhone.setActiveApp( {name=gmName} )
 		
 	local screen = gPhone.phoneScreen
 	local objs = gApp["_children_"]
 	local containerWidth = screen:GetWide()-20
-	
-	gApp["_active_"] = nil
 	
 	objs.Container = vgui.Create("DPanel", screen)
 	objs.Container:SetSize( containerWidth, screen:GetTall()/3 )

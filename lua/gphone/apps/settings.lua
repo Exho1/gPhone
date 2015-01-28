@@ -33,7 +33,7 @@ function APP.Run( objects, screen )
 	objects.Title:SetPos( screen:GetWide()/2 - objects.Title:GetWide()/2, 25 )
 	
 	objects.Back = vgui.Create("gPhoneBackButton", screen)
-	objects.Back:SetTextColor( gPhone.config.ColorBlue )
+	objects.Back:SetTextColor( gPhone.config.colorBlue )
 	objects.Back:SetPos( 10, 25 )
 	objects.Back:SetVisible( false )
 	
@@ -196,13 +196,13 @@ function APP.OpenTab( name )
 			darkenStatusBar:SetText( "Darken Status Bar" )	
 			darkenStatusBar:SizeToContents()
 			darkenStatusBar:SetTextColor( Color(0,0,0) )
-			darkenStatusBar:SetValue( gPhone.config.DarkenStatusBar )
+			darkenStatusBar:SetValue( gPhone.config.darkStatusBar )
 			darkenStatusBar.OnChange = function()
 				local bool = darkenStatusBar:GetChecked()
 				if bool == true then
-					gPhone.config.DarkenStatusBar = true
+					gPhone.config.darkStatusBar = true
 				else
-					gPhone.config.DarkenStatusBar = false
+					gPhone.config.darkStatusBar = false
 				end
 				gPhone.saveClientConfig()
 			end
@@ -420,14 +420,84 @@ Icon images - http://www.flaticon.com/
 			
 			local title = vgui.Create( "DLabel", layoutButton )
 			title:SetText( "Install Update" )
-			title:SetTextColor( gPhone.config.ColorBlue )
+			title:SetTextColor( gPhone.config.colorBlue )
 			title:SetFont("gPhone_18")
 			title:SizeToContents()
-			title:SetPos( 10, 5 )
+			title:SetPos( 15, 5 )
 		else
 			-- Your software is up to date
 		end
+	elseif name == "color" then	
+		APP.PrepareNewTab( "Color" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		local background = objects.Layout:Add("DPanel")
+		background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
+		background:SetText("")
+		background.Paint = function( self )
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+		end
+			
+		local colorMixer = vgui.Create( "DColorMixer", background )
+		colorMixer:SetSize( background:GetWide() - 30, background:GetTall() - 30 )
+		colorMixer:SetPos( 15, 15 )
+		colorMixer:SetPalette( true )
+		colorMixer:SetAlphaBar( false ) 
+		colorMixer:SetWangs( true )
+		colorMixer:SetColor( gPhone.config.phoneColor )
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+			
+		local layoutButton = objects.Layout:Add("DButton")
+		layoutButton:SetSize(screen:GetWide(), 30)
+		layoutButton:SetText("")
+		layoutButton.Paint = function( self, w, h)
+			if not layoutButton:IsDown() then
+				draw.RoundedBox(0, 0, 0, w, h, Color(250, 250, 250))
+			else
+				draw.RoundedBox(0, 0, 0, w, h, Color(230, 230, 230))
+			end
+			draw.RoundedBox(0, 15, self:GetTall()-1, self:GetWide(), 1, Color(150, 150, 150))
+		end
+		layoutButton.DoClick = function()
+			gPhone.config.phoneColor = colorMixer:GetColor()
+		end
+		
+		local title = vgui.Create( "DLabel", layoutButton )
+		title:SetText( "Set Color" )
+		title:SetTextColor( gPhone.config.colorBlue )
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 15, 5 )
+		
+		local layoutButton = objects.Layout:Add("DButton")
+		layoutButton:SetSize(screen:GetWide(), 30)
+		layoutButton:SetText("")
+		layoutButton.Paint = function( self, w, h)
+			if not layoutButton:IsDown() then
+				draw.RoundedBox(0, 0, 0, w, h, Color(250, 250, 250))
+			else
+				draw.RoundedBox(0, 0, 0, w, h, Color(230, 230, 230))
+			end
+		end
+		layoutButton.DoClick = function()
+			gPhone.config.phoneColor = color_white
+		end
+		
+		local title = vgui.Create( "DLabel", layoutButton )
+		title:SetText( "Default" )
+		title:SetTextColor( color_black )
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 15, 5 )
 	end
+	
 end
 
 function APP.Paint(screen)
