@@ -26,8 +26,16 @@ concommand.Add("notify_p", function()
 end)
 
 concommand.Add("notify_i", function()
-	gPhone.notifyInteract( {msg="Test message that should be long and word wrappable telling you to launch an app",
-	app="settings", options={"Accept", "Deny"}} )
+	local str = "Test message that should be long and word wrappable telling you to launch an app more text needed eh"
+	gPhone.notifyInteract( {msg=str,
+	title="Testing", options={"Deny", "Accept"}}, 
+	function( pnl, value )
+		
+	end, 
+	function( pnl, value )
+	
+	end, 
+	true )
 end)
 
 -- END TEMPORARY
@@ -177,6 +185,15 @@ function gPhone.setTextAndCenter(label, text, parent, vertical)
 	end
 end
 
+function gPhone.charSub( str, k, strReplace )
+	
+	local len = string.len( strReplace )
+	local start = str:sub( 0, k - 1 )
+	local send = str:sub( k + len )
+	
+	return start .. strReplace .. send	
+end
+
 --// Save config
 function gPhone.saveClientConfig()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Saving config file")
@@ -204,8 +221,8 @@ function gPhone.loadClientConfig()
 	-- Make sure the config file accepts new values
 	local shouldSave = false
 	for k, v in pairs( gPhone.config ) do
-		if not cfgTable[k] then
-			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Saved config file missing key/value: "..tostring(k).." "..tostring(v))
+		if not cfgTable[k] and type(v) != "IMaterial" then
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Saved missing config key/value: "..tostring(k).." "..tostring(v))
 			cfgTable[k] = v
 			shouldSave = true
 		end
@@ -327,14 +344,19 @@ end
 --// Checks the local gPhone version with the newest version
 function gPhone.checkUpdate()
 	local isUpdate = false
-	http.Fetch( "http://www.exho.comeze.com/gphone/version.php", 
+	http.Fetch( "http://exho1.github.io/gphone/index.html", 
 	function ( body, len, headers, code )
-		local fragments = string.Explode( ",", body )
+		-- Gotta find the json 
+		local startPos = string.find( body, "{")
+		local endPos = string.find( body, "}")
 		
-		local webVersion = fragments[1]
-		local description = fragments[2]
-		description = string.gsub(description, "|", "\r\n") -- Add in the spacing
-		local date = string.sub( fragments[3], 1, 10 ) -- Trim off anything that is not part of the date
+		-- Json -> Table
+		local json = string.sub( body, startPos, endPos )
+		local tbl = util.JSONToTable( json )
+		
+		local webVersion = tbl[1]
+		local description = tbl[2]
+		local date = string.sub( tbl[3], 1, 10 ) -- Trim off anything that is not part of the date
 		
 		gPhone.msgC( GPHONE_MSGC_NONE, "Successfully checked online server for version" )
 		
@@ -342,14 +364,14 @@ function gPhone.checkUpdate()
 			isUpdate = true
 			gPhone.incrementBadge( "Settings", "update" )
 		else
-			gPhone.decrementBadge( "Settings", true, "update" )
+			gPhone.decrementBadge( "Settings", "update", true )
 		end
 		gPhone.updateTable = {update=isUpdate, version=webVersion, description=description, date=date}
 	end,
 	function (error)
 		-- What now?
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to connect to the gPhone webpage to verify versions!" )
-		local str = "The gPhone was unable to connect to the update website to verify the local version, please check the workshop page"
+		local str = "Connection to the gPhone site has failed, please report this on the Workshop page and check your version!"
 		gPhone.updateTable = {update=true, version="N/A", description=str, date="N/A"}
 	end)
 end
@@ -378,6 +400,21 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 				if letter == " " then
 					table.insert(frags, k, "\r\n")
 				else
+					--[[ Test code to not hyphen a word but instead drop it down a line
+					local endPoint = k - 15
+					if k - 15 < 0 then
+						endPoint = 0
+					end
+					
+					for i = k, endPoint, -1 do
+						print(i, frags[i])
+						if frags[i] == " " and frags[i] != "\r\n" then
+							print("New space")
+							table.insert(frags, k + 1, "\r\n")
+							break
+						end
+					end]]
+					
 					table.insert(frags, k, "-\r\n-") -- Only hyphen words that we interrupted
 				end
 				lineBreaks = lineBreaks + 1
@@ -390,7 +427,8 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 		label:SetText( text )
 		
 		-- Size the message box's background according to the number of line breaks
-		label:SetSize( wrapWidth - buffer, h * (lineBreaks)) 
+		--label:SetSize( wrapWidth - buffer, h * (lineBreaks)) 
+		label:SizeToContents()
 		
 		return lineBreaks
 	end
@@ -400,57 +438,105 @@ end
 function gPhone.incrementBadge( app, id )
 	id = string.lower( id )
 	
-	for i = 1, #gPhone.apps do
-		if gPhone.apps[i].name == app then
-			gPhone.appBadges[app] = gPhone.appBadges[app] or {}
-			
-			-- Check for repeats of the same badge id
-			for k, v in pairs( gPhone.appBadges[app] ) do
-				if v == id then
-					gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to add another app badge of the same id: "..id )
-					return
-				end
-			end
-			
-			-- Log to console and insert into the badge table
-			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
-			table.insert( gPhone.appBadges[app], id )
-			
-			-- Rebuild on homescreen
-			if gPhone.isOnHomescreen then
-				gPhone.buildHomescreen( gPhone.apps )
-			end
+	gPhone.appBadges[app] = gPhone.appBadges[app] or {}
+	
+	-- Check for repeats of the same badge id
+	for k, v in pairs( gPhone.appBadges[app] ) do
+		if v == id then
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to add another app badge of the same id: "..id )
+			return
 		end
+	end
+	
+	-- Log to console and insert into the badge table
+	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
+	table.insert( gPhone.appBadges[app], id )
+	
+	-- Rebuild on homescreen
+	if gPhone.isOnHomescreen then
+		gPhone.buildHomescreen( gPhone.apps )
 	end
 end
 
 -- Removes a badge id or removes all the ids for a specific app
 function gPhone.decrementBadge( app, id, bAll )
-	for i = 1, #gPhone.apps do
-		if gPhone.apps[i].name == app then
-			
-			for k, v in pairs( gPhone.appBadges[app] ) do
-				if v == id then
-					if bAll then
-						gPhone.appBadges[app] = {}
-					else
-						gPhone.appBadges[app][k] = nil
-					end
-				
-					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Decremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
-			
-					-- Rebuild on homescreen
-					if gPhone.isOnHomescreen then
-						gPhone.buildHomescreen( gPhone.apps )
-					end
-					return
-				end
+	gPhone.appBadges[app] = gPhone.appBadges[app] or {}
+	
+	for k, v in pairs( gPhone.appBadges[app] ) do
+		if v == id then
+			if bAll then
+				gPhone.appBadges[app] = {}
+			else
+				gPhone.appBadges[app][k] = nil
 			end
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted remove badge for nonexistant id: "..id )
+		
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Decremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
+	
+			-- Rebuild on homescreen
+			if gPhone.isOnHomescreen then
+				gPhone.buildHomescreen( gPhone.apps )
+			end
+			return
 		end
 	end
+	gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted remove badge for nonexistant id: "..id )
 end
 
+--// Saves a table entry for an application
+function gPhone.setAppData( app, key, value )
+	local data = {}
+	
+	-- Load any app data
+	if gPhone.hasAppData( app ) then
+		data = gPhone.getAppData( app )
+	end
+	
+	-- Error on nil value
+	if not value then
+		error( "nil value to save as app data" )
+	end
+
+	-- Insert the value into the table at a specified key or at the end
+	if key then
+		data[key] = value
+	else
+		table.insert( data, value )
+	end
+	
+	local json = util.TableToJSON( data )
+		
+	if not file.Exists( "gphone/data", "DATA" ) then
+		file.CreateDir( "gphone/data" )
+	end
+	
+	file.Write( "gphone/data/"..app..".txt", json)
+end
+
+--// Returns the value for app data or the entire table if no key is provided
+function gPhone.getAppData( app, key )
+	local data = {}
+	
+	if gPhone.hasAppData( app ) then
+		local json = file.Read( "gphone/data/"..app..".txt", "DATA" )
+		data = util.JSONToTable( json )
+		
+		if key then
+			return data[key]
+		end
+		return data
+	end
+	return
+end
+
+--// Checks to see if the app has saved data
+function gPhone.hasAppData( app )
+	if file.Exists( "gphone/data/"..app..".txt", "DATA" ) then
+		return true
+	end
+	return false
+end
+
+--// Internal - Cleans up errors and repeated apps on the homescreen
 function gPhone.fixHomescreen( tbl )
 	for k, v in pairs( tbl ) do
 		if v.name:lower() == "n/a" then -- Invalid name 

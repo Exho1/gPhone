@@ -27,13 +27,13 @@ function APP.Run( objects, screen )
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Settings" )
-	objects.Title:SetTextColor(Color(0,0,0))
+	objects.Title:SetTextColor( color_black )
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SizeToContents()
 	objects.Title:SetPos( screen:GetWide()/2 - objects.Title:GetWide()/2, 25 )
 	
 	objects.Back = vgui.Create("gPhoneBackButton", screen)
-	objects.Back:SetTextColor( gPhone.config.colorBlue )
+	objects.Back:SetTextColor( gPhone.colors.blue )
 	objects.Back:SetPos( 10, 25 )
 	objects.Back:SetVisible( false )
 	
@@ -53,12 +53,12 @@ function APP.Run( objects, screen )
 			layoutButton:SetText("")
 			layoutButton.Paint = function()
 				if not layoutButton:IsDown() then
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
 				else
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(230, 230, 230))
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
 				end
 				
-				draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, Color(150, 150, 150))
+				draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
 			end
 			layoutButton.DoClick = function()
 				APP.OpenTab( name )
@@ -120,11 +120,11 @@ function APP.OpenTab( name )
 		newBG:SetText("")
 		newBG.Paint = function()
 			if not newBG:IsDown() then
-				draw.RoundedBox(0, 0, 0, newBG:GetWide(), newBG:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, newBG:GetWide(), newBG:GetTall(), gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, newBG:GetWide(), newBG:GetTall(), Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, newBG:GetWide(), newBG:GetTall(), gPhone.colors.darkWhiteBG)
 			end
-			draw.RoundedBox(0, 15, newBG:GetTall()-1, newBG:GetWide()-30, 1, Color(150, 150, 150))
+			draw.RoundedBox(0, 15, newBG:GetTall()-1, newBG:GetWide()-30, 1, gPhone.colors.greyAccent)
 		end
 		
 		local text = vgui.Create( "DLabel", newBG )
@@ -138,7 +138,7 @@ function APP.OpenTab( name )
 		background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
 		background:SetText("")
 		background.Paint = function()
-			draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(250, 250, 250))
+			draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), gPhone.colors.whiteBG)
 		end
 		
 		-- Images that show what the client's current wallpapers are set to
@@ -214,9 +214,9 @@ function APP.OpenTab( name )
 			useAsLock:SetText("Set Lockscreen")
 			useAsLock.Paint = function(self)
 				if not self:IsDown() then
-					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 				else
-					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 				end
 			end
 			useAsLock.DoClick = function(self)
@@ -231,9 +231,9 @@ function APP.OpenTab( name )
 			useAsHome:SetText("Set Homescreen")
 			useAsHome.Paint = function(self)
 				if not self:IsDown() then
-					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 				else
-					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 				end
 			end
 			useAsHome.DoClick = function(self)
@@ -260,12 +260,12 @@ function APP.OpenTab( name )
 				layoutButton:SetText("")
 				layoutButton.Paint = function()
 					if not layoutButton:IsDown() then
-						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(250, 250, 250))
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
 					else
-						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(230, 230, 230))
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
 					end
 					
-					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, Color(150, 150, 150))
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
 				end
 				layoutButton.DoClick = function()
 					APP.OpenLowerTab( tabName, name )
@@ -299,7 +299,7 @@ function APP.OpenLowerTab( name, upperTabName )
 		background:SetSize(screen:GetWide(), screen:GetTall()/1.5)
 		background:SetText("")
 		background.Paint = function( self )
-			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 		end
 		
 		local titleLabel = vgui.Create( "DLabel", background )
@@ -350,7 +350,7 @@ Icon images - http://www.flaticon.com/
 			background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
 			background:SetText("")
 			background.Paint = function( self )
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 			end
 			
 			local appIcon = vgui.Create("DImage", background)
@@ -407,9 +407,9 @@ Icon images - http://www.flaticon.com/
 			layoutButton:SetText("")
 			layoutButton.Paint = function()
 				if not layoutButton:IsDown() then
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
 				else
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), Color(230, 230, 230))
+					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
 				end
 				
 			end
@@ -420,7 +420,7 @@ Icon images - http://www.flaticon.com/
 			
 			local title = vgui.Create( "DLabel", layoutButton )
 			title:SetText( "Install Update" )
-			title:SetTextColor( gPhone.config.colorBlue )
+			title:SetTextColor( gPhone.colors.blue )
 			title:SetFont("gPhone_18")
 			title:SizeToContents()
 			title:SetPos( 15, 5 )
@@ -439,7 +439,7 @@ Icon images - http://www.flaticon.com/
 		background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
 		background:SetText("")
 		background.Paint = function( self )
-			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 		end
 			
 		local colorMixer = vgui.Create( "DColorMixer", background )
@@ -459,11 +459,11 @@ Icon images - http://www.flaticon.com/
 		layoutButton:SetText("")
 		layoutButton.Paint = function( self, w, h)
 			if not layoutButton:IsDown() then
-				draw.RoundedBox(0, 0, 0, w, h, Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, w, h, Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.darkWhiteBG)
 			end
-			draw.RoundedBox(0, 15, self:GetTall()-1, self:GetWide(), 1, Color(150, 150, 150))
+			draw.RoundedBox(0, 15, self:GetTall()-1, self:GetWide(), 1, gPhone.colors.greyAccent)
 		end
 		layoutButton.DoClick = function()
 			gPhone.config.phoneColor = colorMixer:GetColor()
@@ -471,7 +471,7 @@ Icon images - http://www.flaticon.com/
 		
 		local title = vgui.Create( "DLabel", layoutButton )
 		title:SetText( "Set Color" )
-		title:SetTextColor( gPhone.config.colorBlue )
+		title:SetTextColor( gPhone.colors.blue )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 15, 5 )
@@ -481,9 +481,9 @@ Icon images - http://www.flaticon.com/
 		layoutButton:SetText("")
 		layoutButton.Paint = function( self, w, h)
 			if not layoutButton:IsDown() then
-				draw.RoundedBox(0, 0, 0, w, h, Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, w, h, Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.darkWhiteBG)
 			end
 		end
 		layoutButton.DoClick = function()
@@ -503,7 +503,7 @@ end
 function APP.Paint(screen)
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(200, 200, 200))
 		
-	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, Color(250, 250, 250))
+	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, gPhone.colors.whiteBG)
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))
 end
 

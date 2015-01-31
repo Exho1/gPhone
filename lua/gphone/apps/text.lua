@@ -20,13 +20,13 @@ function APP.Run( objects, screen )
 	objects.NewText:SetSize( 16, 16 )
 	objects.NewText:SetPos( screen:GetWide() - objects.NewText:GetWide() - 10, y )
 	objects.NewText:SetImage( "materials/vgui/gphone/writenew.png" )
-	objects.NewText:SetColor( gPhone.config.colorBlue )
+	objects.NewText:SetColor( gPhone.colors.blue )
 	objects.NewText.DoClick = function() 
 		APP.NewConversation()
 	end
 	
 	objects.Back = vgui.Create("gPhoneBackButton", screen)
-	objects.Back:SetTextColor( gPhone.config.colorBlue )
+	objects.Back:SetTextColor( gPhone.colors.blue )
 	objects.Back:SetPos( 10, y )
 	objects.Back:SetVisible( false ) -- We dont need this right now
 	
@@ -74,7 +74,7 @@ function APP.PopulateMain( layout )
 		deleteConvo:SetColor( color_white )
 		deleteConvo:SetVisible(false)
 		deleteConvo.Paint = function( self, w, h )
-			draw.RoundedBox(0, 0, 0, w, h, gPhone.config.colorRed)
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.red)
 		end
 		deleteConvo.DoClick = function( self )
 			-- Deletes the conversation from the phone, this CANNOT be undone
@@ -89,14 +89,14 @@ function APP.PopulateMain( layout )
 		background:SetText("")
 		background.Paint = function( self )
 			if not self:IsDown() and isPlayerOnline then -- Normal
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 			elseif isPlayerOnline then -- Held
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 			else -- Player offline
 				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(210, 210, 210))
 			end
 			
-			draw.RoundedBox(0, 25, self:GetTall()-1, self:GetWide()-25, 1, Color(150, 150, 150))
+			draw.RoundedBox(0, 25, self:GetTall()-1, self:GetWide()-25, 1, gPhone.colors.greyAccent)
 		end
 		background.DoClick = function( self )
 			local x, y = self:ScreenToLocal( gui.MouseX(), gui.MouseY() )
@@ -280,7 +280,7 @@ function APP.PopulateMessages( id )
 		local yBuffer = 0
 		for k, tbl in pairs( tbl ) do
 			objects.LayoutScroll.Paint = function( self, w, h )
-				draw.RoundedBox(0, 0, 0, w, h, Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
 			end
 			
 			-- Manage colors
@@ -366,7 +366,7 @@ function APP.NewConversation()
 	end
 	
 	objects.LayoutScroll.Paint = function( self, w, h )
-		draw.RoundedBox(0, 0, 1, w, h, Color(250, 250, 250))
+		draw.RoundedBox(0, 0, 1, w, h, gPhone.colors.whiteBG)
 	end
 	
 	local writePanelOffset = 30
@@ -404,12 +404,12 @@ function APP.NewConversation()
 		playerPanels[nick]:SetText("")
 		playerPanels[nick].Paint = function( self )
 			if not self:IsDown() then
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 			end
 			
-			draw.RoundedBox(0, 25, self:GetTall()-1, self:GetWide()-25, 1, Color(150, 150, 150))
+			draw.RoundedBox(0, 25, self:GetTall()-1, self:GetWide()-25, 1, gPhone.colors.greyAccent)
 		end
 		playerPanels[nick].DoClick = function()
 			-- When I later add group chats, use a table
@@ -527,7 +527,7 @@ end
 function APP.Paint( screen )
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(200, 200, 200))
 		
-	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, Color(250, 250, 250))
+	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, gPhone.colors.whiteBG)
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))
 end
 

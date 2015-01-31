@@ -13,7 +13,6 @@ gApp["_active_"] = {} -- Active app's table
 local oldScreenPaint = nil
 local oldScreenThink = nil
 local oldScreenMousePressed = nil
-local appLayout = nil
 
 -- Prepares the phone to run an application
 gApp["_init_"] = function()
@@ -162,6 +161,7 @@ function gPhone.runApp(name)
 			return 
 		end
 		
+		-- Updates to the server with the current app
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_CUR_APP, app=app.Data.PrintName})
 		net.SendToServer()
@@ -200,7 +200,7 @@ function gPhone.denyApp( gmName, reason )
 	objs.Container:SetSize( containerWidth, screen:GetTall()/3 )
 	objs.Container:SetPos( 10, screen:GetTall()/2 - objs.Container:GetTall()/2 )
 	objs.Container.Paint = function()
-		draw.RoundedBox(0, 0, 0, objs.Container:GetWide(), objs.Container:GetTall(), Color(250, 250, 250))
+		draw.RoundedBox(0, 0, 0, objs.Container:GetWide(), objs.Container:GetTall(), gPhone.colors.whiteBG)
 	end
 	
 	local topError = vgui.Create( "DLabel", objs.Container ) -- Header

@@ -34,14 +34,14 @@ function APP.Run( objects, screen )
 	objects.LayoutScroll:SetSize( screen:GetWide() + offset, screen:GetTall() - 120 )
 	objects.LayoutScroll:SetPos( 30, 90 )
 	objects.LayoutScroll.Paint = function() 
-		--draw.RoundedBox(0, 0, 0, objects.LayoutScroll:GetWide(), objects.LayoutScroll:GetTall(), Color(250, 250, 250))
+		--draw.RoundedBox(0, 0, 0, objects.LayoutScroll:GetWide(), objects.LayoutScroll:GetTall(), gPhone.colors.whiteBG)
 	end
 	
 	objects.Container = vgui.Create("DPanel", screen)
 	objects.Container:SetSize( bodyWidth - 20, 30 )
 	objects.Container:SetPos( screen:GetWide()/2 - objects.Container:GetWide()/2, 35 )
 	objects.Container.Paint = function()
-		draw.RoundedBox(0, 0, 0, objects.Container:GetWide(), objects.Container:GetTall(), Color(250, 250, 250))
+		draw.RoundedBox(0, 0, 0, objects.Container:GetWide(), objects.Container:GetTall(), gPhone.colors.whiteBG)
 	end
 	
 	objects.Title = vgui.Create( "DLabel", screen )
@@ -72,9 +72,9 @@ function APP.Run( objects, screen )
 				background:SetText("")
 				background.Paint = function()
 					if not background:IsDown() then
-						draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(250, 250, 250))
+						draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), gPhone.colors.whiteBG)
 					else
-						draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(230, 230, 230))
+						draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), gPhone.colors.darkWhiteBG)
 					end
 				end
 				background.DoClick = function()
@@ -92,7 +92,7 @@ function APP.Run( objects, screen )
 				background:SetSize(pnlWidth, 30)
 				background:SetText("")
 				background.Paint = function()
-					draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), gPhone.colors.whiteBG)
 				end
 				
 				title = vgui.Create( "DLabel", background )
@@ -163,9 +163,9 @@ function APP.ButtonClick( objects, name )
 		sendMoney:SetText("")
 		sendMoney.Paint = function( self )
 			if not self:IsDown() then
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 			end
 		end
 		sendMoney.DoClick = function()
@@ -200,9 +200,9 @@ function APP.ButtonClick( objects, name )
 		cancelTransaction:SetText("")
 		cancelTransaction.Paint = function( self )
 			if not self:IsDown() then
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 			else
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), Color(230, 230, 230))
+				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.darkWhiteBG)
 			end
 		end
 		cancelTransaction.DoClick = function()
@@ -235,7 +235,7 @@ function APP.ButtonClick( objects, name )
 				background:SetSize(screen:GetWide()-60, 30)
 				background:SetText("")
 				background.Paint = function()
-					draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), Color(250, 250, 250))
+					draw.RoundedBox(0, 0, 0, background:GetWide(), background:GetTall(), gPhone.colors.whiteBG)
 				end
 				
 				local title = vgui.Create( "DLabel", background )

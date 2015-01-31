@@ -174,13 +174,18 @@ end
 
 --// Sets the orientation (landscape or portrait) of the phone
 function gPhone.setOrientation( dir )
-	gPhone.orientation = dir
+	dir = string.lower(dir)
 	
-	if dir == "portrait" then
+	if dir == "portrait" and gPhone.orientation != "portrait" then
 		gPhone.rotateToPortrait()
-	else
+	elseif gPhone.orientation != "landscape" then
 		gPhone.rotateToLandscape()
+	else
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to set orientation ("..dir..") while orientation is ("..gPhone.orientation..")" )
+		return
 	end
+	
+	gPhone.orientation = dir
 end
 
 --// Instead of a getOrientation, just return bool based on portrait

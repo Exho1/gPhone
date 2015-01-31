@@ -23,9 +23,6 @@ for k, v in pairs(files) do
 	AddCSLuaFile("apps/"..v)
 end
 
---// Player functions
-local plymeta = FindMetaTable( "Player" )
-
 --// Receives data from applications and runs it on the server
 local antiSpamWindow, lastText = 0, 0
 net.Receive( "gPhone_DataTransfer", function( len, ply )
@@ -151,7 +148,6 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		lastText = CurTime()
 	elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
 		local phoneOpen = data.open
-		
 		if phoneOpen == true then
 			ply:SetNWBool("gPhone_Open", true)
 			hook.Run( "gPhone_Built", ply )

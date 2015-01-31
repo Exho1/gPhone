@@ -9,34 +9,26 @@
 4. Server notifies Client
 5. Create a multiplayer game if needed
 
-
+-- to do: Fix this stupid thing
 
 ]]
 
 gPhone.connectedPlayers = gPhone.connectedPlayers or {}
 
-
-local plymeta = FindMetaTable( "Player" )
-
---// Returns if the player is currently in a multiplayer game with other players
-function plymeta:isInMPGame()
-	return self:GetNWBool("gPhone_InMPGame", false)
-end
-
 if SERVER then
 
-	--// Create a 'data stream' between 2 players in which tables of information are exchanged
+	--// Create a 'net stream' between 2 players in which tables of information are exchanged
 	function gPhone.startNetStream( ply1, ply2, app )
 		local key = #gPhone.connectedPlayers + 1
-		gPhone.msgC( GPHONE_MSGC_NONE, "Created Data Stream between: ", ply1, ply2, "SESSION ID: "..key )
+		gPhone.msgC( GPHONE_MSGC_NONE, "Created net stream between: ", ply1, ply2, "SESSION ID: "..key )
 		
 		local app = app or ply1:getActiveApp() or ply2:getActiveApp()
 		
 		-- Tell both players to rotate their phones (if they haven't already) and launch up a multiplayer game
 		-- I need to figure out a way to make this compatible with other apps as it only works with Pong
-		gPhone.runFunction( ply1, app, "rotateToLandscape" )
+		gPhone.runFunction( ply1, "setOrientation", "landscape" )
 		gPhone.runAppFunction( ply1, app, "SetUpGame", 2 )
-		gPhone.runFunction( ply2, app, "rotateToLandscape" )
+		gPhone.runFunction( ply2, "setOrientation", "landscape" )
 		gPhone.runAppFunction( ply2, app, "SetUpGame", 2 )
 		
 		local lastUpdate = CurTime()
@@ -64,7 +56,7 @@ if SERVER then
 			
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true
-				gPhone.msgC( GPHONE_MSGC_WARNING, "gPhone Data Stream has not received a message in over 5 seconds! Session: "..key )
+				gPhone.msgC( GPHONE_MSGC_WARNING, "gPhone net stream has not received a message in over 5 seconds! Session: "..key )
 				lastUpdate = CurTime()
 				seen = false
 			end
@@ -73,11 +65,13 @@ if SERVER then
 		
 		net.Receive( "gPhone_MultiplayerStream", function( len, ply )
 			data = net.ReadTable()
+			print("recieve", data.sender, data.header == GPHONE_MP_PLAYER_QUIT)
 			if data.sender then
 				lastUpdate = CurTime() 
 				data.sender = ply -- Track who created this table
 				
 				if data.header == GPHONE_MP_PLAYER_QUIT then -- Player quit the game but is still in the app
+					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Player ("..tostring(ply)..") quit" )
 					gPhone.endNetStream( ply )
 				end
 			else -- No sender? Destroy the unknown table and send blank ones out
@@ -90,13 +84,13 @@ if SERVER then
 		gPhone.connectedPlayers[key] = {ply1=ply1, ply2=ply2, game=app}
 	end
 	
-	--// Destroys the data stream that this player is in
+	--// Destroys the net stream that this player is in
 	function gPhone.endNetStream( ply )
 		for i=1, #gPhone.connectedPlayers do
 			local tab = gPhone.connectedPlayers[i]
 			
 			if ply == tab.ply1 or ply == tab.ply2 then
-				gPhone.msgC( GPHONE_MSGC_NONE, "Ended data stream between ", tab.ply1, tab.ply2 )
+				gPhone.msgC( GPHONE_MSGC_NONE, "Ended net stream between ", tab.ply1, tab.ply2 )
 				hook.Remove("Think", "gPhone_MP_Update_"..i)
 				gPhone.connectedPlayers[i] = {}
 				
@@ -138,13 +132,14 @@ if SERVER then
 				
 				-- TEMP: Stop anyone from using it while its broken
 				if true then
-					gPhone.chatMsg( ply, "Multiplayer is unavailable at the moment, sorry. It will come in future versions!" )
-					return
+					--gPhone.chatMsg( ply, "Multiplayer is unavailable at the moment, sorry. It will come in future versions!" )
+					--gPhone.runAppFunction( ply, "gpong", "QuitToMainMenu" )
+					--return
 				end
 				
 				gPhone.chatMsg(ply, "Challenged "..ply:Nick().."!")
 			
-				-- TEMP: Push to data stream later, after they accept
+				-- TEMP: Push to net stream later, after they accept
 				gPhone.startNetStream( sender, target, game )
 				
 				-- TEMP: I invite myself to test
@@ -173,15 +168,17 @@ if CLIENT then
 
 	--// Request a player to join in a game
 	function gPhone.requestGame(target, game)
-		if not client:isInMPGame() and client:hasPhoneOpen() then
-			net.Start("gPhone_MultiplayerData")
-				net.WriteTable( { header=GPHONE_MP_REQUEST, ply2=target, game=game} )
-			net.SendToServer()
-			
-			-- Return the answer
-			
-		elseif client:hasPhoneOpen() then
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot request a multiplayer game while already in one!" )
+		if client.hasPhoneOpen and client:hasPhoneOpen() then
+			if client.inMPGame and not client:inMPGame() then
+				net.Start("gPhone_MultiplayerData")
+					net.WriteTable( { header=GPHONE_MP_REQUEST, ply2=target, game=game} )
+				net.SendToServer()
+				
+				-- Return the answer
+				
+			else
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot request a multiplayer game while already in one!" )
+			end
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot request a multiplayer game without a phone!" )
 		end
@@ -189,12 +186,12 @@ if CLIENT then
 	
 	--// Send a table to the server to be distributed amongst the connected players
 	function gPhone.updateToNetStream( data )
-		if client:isInMPGame() then
+		if client:inMPGame() then
 			net.Start("gPhone_MultiplayerStream")
 				net.WriteTable( data )
 			net.SendToServer()
 		else
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot update to Data Stream outside of a multiplayer game!" )
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot update to net stream outside of a multiplayer game!" )
 		end
 	end
 	
@@ -216,11 +213,11 @@ if CLIENT then
 	--// Check if the server is continuing to stream data to us
 	local seen = false
 	hook.Add("Think", "gPhone_CheckConnected", function()
-		if client.isInMPGame and client:isInMPGame() then -- Meta function hasn't loaded yet
+		if client.inMPGame and client:inMPGame() then -- Meta function hasn't loaded yet
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true
 				
-				gPhone.msgC( GPHONE_MSGC_WARNING, "gPhone Data Stream has not received a message in over 5 seconds!")
+				gPhone.msgC( GPHONE_MSGC_WARNING, "gPhone net stream has not received a message in over 5 seconds!")
 				failCount = failCount + 1
 				lastUpdate = CurTime()
 				

@@ -3,11 +3,11 @@
 local plymeta = FindMetaTable( "Player" )
 
 function plymeta:setTransferCooldown( time )
-	self.FinishedCooldown = CurTime() + time
+	self.transferCooldown = CurTime() + time
 end
 
 function plymeta:getTransferCooldown()
-	local timeLeft = self.FinishedCooldown or 0
+	local timeLeft = self.transferCooldown or 0
 	return timeLeft - CurTime()
 end
 
@@ -23,16 +23,6 @@ function plymeta:generatePhoneNumber()
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
 end 
-
---// AddCSLuaFiles all the files with the correct prefix
-function gPhone.addCSLuaFile( dir )
-	local filesSH = file.Find( dir.."/sh_*.lua", "LUA" )
-	
-	local files = file.Find( dir.."/cl_*.lua", "LUA" )
-	for k, v in pairs(files) do
-		AddCSLuaFile( dir.."/"..v )
-	end
-end
 
 --// Sends a message to appears in the player's chat box
 function gPhone.chatMsg( ply, text )
@@ -64,7 +54,7 @@ function gPhone.notifyPlayer( ply, sender, text, notifyEnum )
 	net.Send( ply )
 end
 
---// Runs a function in the app table
+--// Runs a function in the gPhone app table
 function gPhone.runAppFunction( ply, app, name, ... )
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable( {header=GPHONE_RUN_APPFUNC, app=app, func=name, args={...}} ) 

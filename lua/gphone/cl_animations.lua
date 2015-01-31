@@ -8,7 +8,7 @@ local client = LocalPlayer()
 function gPhone.toHomeScreen()
 	if gPhone.isOnHomeScreen == true then return end
 	
-	if not gPhone.isPortrait then
+	if not gPhone.isPortrait() then
 		gPhone.setOrientation( "portrait" )
 	end
 	
@@ -21,8 +21,6 @@ end
 --// Rotate the phone to a landscape position
 local oldPWide, oldPHeight, oldSWide, oldSHeight = nil
 function gPhone.rotateToLandscape()
-	if not gPhone.isPortrait() then return end
-	
 	gPhone.setIsAnimating( true )
 	
 	-- Save old values
@@ -56,8 +54,7 @@ end
 
 --// Rotate the phone back to portrait
 function gPhone.rotateToPortrait()
-	if gPhone.isPortrait() then return end
-	
+
 	local oldThink = gPhone.phoneBase.Think
 	gPhone.setIsAnimating( true )
 	-- Expand so the phone can rotate without cutting off anything
@@ -210,7 +207,7 @@ function gPhone.bootUp()
 	end
 	
 	gPhone.phoneScreen.Paint = function( self )
-		draw.RoundedBox(2, 0, 0, self:GetWide(), self:GetTall(), Color(250, 250, 250))
+		draw.RoundedBox(2, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 	end
 	
 end
@@ -316,7 +313,7 @@ function gPhone.buildLockScreen()
 		if gPhone.shouldUnlock then 
 			gPhone.unlockLockScreen()
 		else	
-			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Unlock prohibited, waiting for override." )
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Unlock prohibited, waiting for unlock book." )
 			hook.Add("Think", "gPhone_waitForUnlock", function()
 				if gPhone.shouldUnlock then
 					gPhone.unlockLockScreen()
@@ -327,20 +324,93 @@ function gPhone.buildLockScreen()
 	end)
 end
 
---// Opens a notification which the player has to select 1 of 2 options to close
-function gPhone.notifyInteract( tbl )
-	-- tbl = {appName, msgText, options={yes,no}}
-	gPhone.shouldUnlock = false
+--// Opens a notification which the player has to select an option 
+function gPhone.notifyInteract( tbl, optionFunction1, optionFunction2, bCloseOnSelect )
+	-- tbl = {title, msg, options={no,yes}}
+	local screen = gPhone.phoneScreen
 	
 	if gPhone.isPortrait then
-	
+		
 	else
 	
 	end
 	
+	local w, h = screen:GetWide() - 30, 125
+	local bgPanel = vgui.Create( "DPanel", screen )
+	bgPanel:SetSize( w, h )
+	bgPanel:SetPos( 15, screen:GetTall()/2 - bgPanel:GetTall()/2 )
+	bgPanel.Paint = function( self, w, h )
+		draw.RoundedBox(6, 0, 0, w, h, Color(240, 240, 240, 240))
+	end
+	
+	local message = vgui.Create( "DLabel", bgPanel )
+	message:SetTextColor( color_black )
+	message:SetFont("gPhone_16")
+	message:SetText( tbl.msg ) 
+	-- The string has limits, so I'
+	if string.len( tbl.msg ) > 95 then
+		local newMsg = string.Left( tbl.msg, 95 )
+		newMsg = gPhone.charSub( newMsg, 93, "..." )
+		message:SetText( newMsg )
+	end
+	gPhone.WordWrap( message, bgPanel:GetWide(), 10 )
+	message:SetPos( bgPanel:GetWide()/2 - message:GetWide()/2,  bgPanel:GetTall() - 50 - message:GetTall() )
+	
+	local title = vgui.Create( "DLabel", bgPanel )
+	title:SetTextColor( color_black )
+	title:SetFont("gPhone_18")
+	local x, y = message:GetPos()
+	title:SetPos( 0, 10 )
+	gPhone.setTextAndCenter(title, tbl.title, bgPanel)
+	
+	local optionPanels = {}
+	local x = 0
+	-- Create the option buttons
+	for k, value in pairs( tbl.options ) do
+		optionPanels[k] = vgui.Create("DButton", bgPanel )
+		optionPanels[k]:SetSize( bgPanel:GetWide()/2 - 0.5, 40 )
+		optionPanels[k]:SetPos( x, bgPanel:GetTall() - optionPanels[k]:GetTall() )
+		x = optionPanels[k]:GetWide() + 0.5
+		optionPanels[k]:SetText("")
+		optionPanels[k].Paint = function( self, w, h )
+			draw.RoundedBox(0, 0, 1, self:GetWide(), 1, Color(150, 150, 150))
+			
+			if k == 1 then
+				draw.RoundedBox(0, self:GetWide()-1, 1, 1, self:GetTall() - 1, Color(150, 150, 150))
+			else
+				--draw.RoundedBox(0, 0, 1, self:GetWide(), 1, Color(150, 150, 150))
+			end
+		end
+		optionPanels[k].DoClick = function( self )
+			if k == 1 then -- The first option should ALWAYS be a close or deny
+				if optionFunction1 then
+					-- Run developer-set negative function
+					optionFunction1( bgPanel, value )
+				end
+			else
+				-- Run developer-set positive function 
+				if optionFunction2 then
+					optionFunction2( bgPanel, value )
+				end
+			end
+			
+			if bCloseOnSelect != false then
+				-- Close the panel
+				bgPanel:Remove()
+			end
+		end
+		
+		local buttonText = vgui.Create( "DLabel", optionPanels[k] )
+		buttonText:SetTextColor( gPhone.colors.blue )
+		buttonText:SetFont("gPhone_18")
+		gPhone.setTextAndCenter(buttonText, value, optionPanels[k], true)
+	end
+	
+	
+	
 	--gPhone.switchApps( newApp )
 	
-	--[[
+	--[[ Going to need a lockscreen one too
 	if accepted then
 		gPhone.unlockLockScreen( function()
 			gPhone.runApp( otherStuff.game )
@@ -358,5 +428,16 @@ end
 --// Opens a notification which requires no user input (but can be clicked) and goes away automatically
 function gPhone.notifyPassive( tbl )
 	-- tbl = {appName, msgText}
+	local screen = gPhone.phoneScreen
+	
+	local bgPanel = vgui.Create( "DPanel", screen )
+	bgPanel:SetSize(screen:GetWide(), 30)
+	bgPanel.Paint = function( self, w, h )
+		draw.RoundedBox(4, 0, 0, w, h, gPhone.colors.darkWhiteBG)
+	end
+	
+	timer.Simple(1, function()
+		bgPanel:Remove()
+	end)
 
 end

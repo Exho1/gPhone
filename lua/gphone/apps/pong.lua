@@ -260,7 +260,8 @@ local function setBounds( obj )
 end
 
 -- Remove all game elements and move to the main menu
-local function quitToMainMenu()	
+local gameType = nil
+function APP.QuitToMainMenu()	
 	local objects = gApp["_children_"]
 	
 	for k, v in pairs( objects ) do
@@ -281,7 +282,6 @@ local function quitToMainMenu()
 end
 
 -- Set up the game to be played
-local gameType = nil
 local ballSide = PONG_BALLSIDE_CENTER
 function APP.SetUpGame( type )
 	local objects = gApp["_children_"]
@@ -433,7 +433,7 @@ function APP.SetUpGame( type )
 		surface.DrawOutlinedRect( 5, 5, w-10, h-10 )
 	end
 	quitGame.DoClick = function() -- Put us back at the main menu
-		quitToMainMenu()
+		APP.QuitToMainMenu()
 	end
 	
 	objects.LayoutPause:SetVisible(false)

@@ -20,7 +20,6 @@ GPHONE_MONEY_CONFIRMED = 13
 GPHONE_TEXT_MSG = 17
 --GPHONE_REQUEST_TEXTS = 18
 
-
 local plymeta = FindMetaTable( "Player" )
 
 function plymeta:hasPhoneOpen()
@@ -39,23 +38,11 @@ function plymeta:getPhoneNumber()
 	end
 end
 
---// Includes all the files with the correct prefix
-function gPhone.include( dir )
-	local filesSH = file.Find( dir.."/sh_*.lua", "LUA" )
-	
-	local files = {}
-	if SERVER then
-		files = file.Find( dir.."/sv_*.lua", "LUA" )
-		table.Merge( files, filesSH )
-	elseif CLIENT then
-		files = file.Find( dir.."/cl_*.lua", "LUA" )
-		table.Merge( files, filesSH )
-	end
-	
-	for k, v in pairs(files) do
-		include( dir.."/"..v )
-	end
+--// Returns if the player is currently in a multiplayer game with other players
+function plymeta:inMPGame()
+	return self:GetNWBool("gPhone_InMPGame", false)
 end
+
 
 --// Sends a colored message to console
 GPHONE_MSGC_WARNING = 1

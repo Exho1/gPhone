@@ -19,12 +19,9 @@ function gPhone.buildPhone()
 	
 	gPhone.rotation = 0
 	
-	--gPhone.isPortrait = true
-	gPhone.setOrientation( "portrait" )
+	gPhone.orientation = "portrait"
 	gPhone.setIsAnimating( false )
 	gPhone.setPhoneState( "lock" )
-	--gPhone.isOnHomescreen = false
-	--gPhone.isOnLockscreen = true
 	gPhone.shouldUnlock = true
 	
 	-- Create the phone 
@@ -218,11 +215,36 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout:SetPos( 5, 25 )
 	gPhone.homeIconLayout.Paint = function() end
 	
+	gPhone.appDeleteMode = false
+	local mouseStartTime = 0
+	gPhone.homeIconLayout.Think = function( self )
+		if input.IsMouseDown( MOUSE_RIGHT ) then
+			if mouseStartTime == 0 then
+				mouseStartTime = CurTime()
+			end
+			
+			if CurTime() - mouseStartTime >= 0.75 then
+				if gPhone.appDeleteMode == true then
+					gPhone.appDeleteMode = false
+				else
+					gPhone.appDeleteMode = true
+				end
+				
+				mouseStartTime = 0
+			end
+		else
+			mouseStartTime = 0
+		end
+	end
+	
 	-- App badges
 	gPhone.appBadges = {}
 	gPhone.homeIconLayout.PaintOver = function() 
 		if not gPhone.inFolder() then
 			for k, data in pairs( gPhone.appPanels ) do
+				
+				-- gPhone.appDeleteMode
+				
 				if gPhone.appBadges[data.name] then
 					local badges = #gPhone.appBadges[data.name]
 					if badges > 0 then
@@ -246,17 +268,16 @@ function gPhone.buildPhone()
 		end
 	end
 	
-	gPhone.appPanels = {}
-	-- {name, pnl, icon, inFolder, apps}
-	
+	gPhone.appPanels = {} -- {name, pnl, icon, inFolder, apps}
 	gPhone.canMoveApps = true
-	--gPhone.isinFolder = false
 	gPhone.setActiveFolder( {} )
+	
 	-- Handles the dropping of icons on the home screen
 	gPhone.homeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
 		if drop then
 			if not gPhone.canMoveApps then 
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps" )
+				return
 			end
 
 			for k, v in pairs( gPhone.appPanels ) do
@@ -316,6 +337,7 @@ function gPhone.buildPhone()
 				-- Creating a folder
 				elseif x >= iX + iW/3 and x <= iX + iW - iW/3 then
 					if y >= iY and y <= iY + iH and not gPhone.inFolder() then	
+						print("ay")
 						local targetKey = k 
 						local droppedData = {name="Folder", apps={}} 
 						local droppedKey = 0
@@ -575,8 +597,6 @@ function gPhone.buildPhone()
 				local w, h = previewPanel:GetSize()
 				local oldBGPos = {bgPanel:GetPos()}
 				local oldBGSize = {bgPanel:GetSize()}
-				
-				gPhone.closeFolder( nameEditor, previewPanel, bgPanel, oldBGPos )
 
 				-- Handle the building of folders
 				previewPanel.DoClick = function( self )
@@ -592,9 +612,9 @@ function gPhone.buildPhone()
 						end
 					end
 					
-					bgPanel.OnMousePressed = function()
+					bgPanel.OnMousePressed = function( mousecode )
 						if IsValid(previewPanel) then
-							gPhone.closeFolder() 
+							gPhone.closeFolder( nameEditor, previewPanel, bgPanel, oldBGPos ) 
 						end
 					end
 					
@@ -848,19 +868,19 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 				end
 			end
 		end
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to run application function "..func.."!" )
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unknown application ("..app..") function "..func.."!" )
 	elseif header == GPHONE_RUN_FUNC then
 		local func = data.func
 		local args = data.args
 		
 		for k, v in pairs(gPhone) do
-			if k:lower() == func:lower() and type(k) == "function" then
+			if k:lower() == func:lower() then
 				gPhone[k]( unpack(args) )
 				return
 			end
 		end
 		
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to run phone function "..func.."!")
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable phone function "..func.."!")
 	elseif header == GPHONE_MONEY_CONFIRMED then
 		local writeTable = {}
 		data.header = nil
