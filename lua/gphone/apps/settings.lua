@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
+APP.Author = "Exho"
 APP.Tags = {"Useful", "Config"}
 
 local topLevelTabs = {
@@ -319,7 +320,8 @@ Source:
 https://github.com/Exho1/gPhone
 
 Credits:
-Derma blur - STEAM_0:0:19766778
+Derma blur - 
+https://github.com/Chessnut/NutScript
 Phone image - 
 https://creativemarket.com/buatoom
 Icon images - http://www.flaticon.com/
@@ -501,7 +503,7 @@ Icon images - http://www.flaticon.com/
 end
 
 function APP.Paint(screen)
-	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(200, 200, 200))
+	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), gPhone.colors.darkerWhite)
 		
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, gPhone.colors.whiteBG)
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))

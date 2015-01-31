@@ -106,12 +106,11 @@ function gPhone.addApp( tbl )
 	}
 	
 	-- Don't add the app to the phone if we hide unusable apps
-	if gPhone.config.ShowUnusableApps == false then
-		if tbl.Gamemode and tbl.Gamemode != "" then
-			if string.lower(tbl.Gamemode) != string.lower(engine.ActiveGamemode()) then
-				gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..tbl.PrintName ) 
-				return
-			end
+	if gPhone.config.showUnusableApps == false then
+		if not gPhone.canUseApp( tbl ) then
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Flagging unusable application: "..tbl.PrintName ) 
+			gPhone.removedApps[tbl.PrintName:lower()] = 0
+			--return
 		end
 	end
 	
@@ -172,7 +171,7 @@ function gPhone.runApp(name)
 		gPhone.setActiveApp( app ) 
 	else
 		-- This only occurs when you save the config file while the phone is open
-		error(string.format("App '%s' does not exist in the Application table, aborting", name))
+		error(string.format("App '%s' does not exist in the Application table", name))
 		gPhone.toHomeScreen()
 	end
 end

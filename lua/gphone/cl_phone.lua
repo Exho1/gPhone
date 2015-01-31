@@ -9,6 +9,7 @@ function gPhone.buildPhone()
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
 
+	gPhone.removedApps = {}
 	gPhone.apps = {}
 	gPhone.importApps()
 	
@@ -167,7 +168,6 @@ function gPhone.buildPhone()
 	gPhone.homeButton:SetText( "" )
 	gPhone.homeButton.Paint = function() end
 	gPhone.homeButton.DoClick = function()
-		--if not gPhone.isOnHomeScreen and not gPhone.isInAnimation and not gPhone.isOnLockscreen then
 		if gPhone.isInApp() and not gPhone.isAnimating() then
 			gPhone.toHomeScreen()
 		end
@@ -215,6 +215,8 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout:SetPos( 5, 25 )
 	gPhone.homeIconLayout.Paint = function() end
 	
+	-- gPhone.removedApps = {}
+	-- gPhone.removedApps[gpong] = 0
 	gPhone.appDeleteMode = false
 	local mouseStartTime = 0
 	gPhone.homeIconLayout.Think = function( self )
@@ -242,9 +244,6 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout.PaintOver = function() 
 		if not gPhone.inFolder() then
 			for k, data in pairs( gPhone.appPanels ) do
-				
-				-- gPhone.appDeleteMode
-				
 				if gPhone.appBadges[data.name] then
 					local badges = #gPhone.appBadges[data.name]
 					if badges > 0 then
@@ -263,9 +262,20 @@ function gPhone.buildPhone()
 				end
 			end
 		else
+			-- Inside folder badges
 			--table.insert(gPhone.appPanels, {name=v.name, icon=v.icon, pnl=bgPanel, inFolder=true} )
 			--gPhone.getActiveFolder().apps[k] = {pnl=bgPanel, name=v.name, icon=v.icon}
 		end
+	end
+	
+	gPhone.homeIconLayout.Think = function( self )
+		--// App delete mode 
+		-- Create derma buttons ONCE
+		-- On click
+			-- Add app name to gPhone.removedApps 
+			-- Hide buttons and disable mode
+			-- Rebuild homescreen
+	
 	end
 	
 	gPhone.appPanels = {} -- {name, pnl, icon, inFolder, apps}
@@ -492,10 +502,28 @@ function gPhone.buildPhone()
 		-- Run a pass through the table to fix issues
 		gPhone.fixHomescreen( tbl )
 		
+		--tbl = {}
+		--[[for i = 1, 25 do
+			table.insert( tbl, {icon="as", name="Test_"..i} )
+		end]]
+		
 		-- Start building apps and folders
 		local xBuffer, yBuffer, iconCount = 0, 0, 1
 		for key, data in pairs( tbl ) do
 			local bgPanel, appinFolder
+			
+			-- Prevent icon overflow
+			if iconCount > 20 then
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Homescreen is full and unable to hold any more applications!" )
+				local remaining = #tbl - 20
+				gPhone.msgC( GPHONE_MSGC_NOTIFY, remaining.." app(s) were not able to be added" )
+				return
+			end
+			
+			-- Prevent flagged apps from being added to the homescreen, they will go to the app store
+			if gPhone.removedApps[data.name:lower()] then
+				continue -- Special garry keyword
+			end
 			
 			if data.icon then
 				-- Create a normal app icon
@@ -527,7 +555,7 @@ function gPhone.buildPhone()
 				else
 					iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, y)
 				end
-			elseif #data.apps > 1 then
+			elseif data.apps and #data.apps > 1 then
 				-- The fun part, create a folder
 				local folderLabel, nameEditor 
 				bgPanel = vgui.Create( "DPanel", gPhone.homeIconLayout )
@@ -834,13 +862,13 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 		local msg = sender:Nick().." has invited you to play "..game
 		
 		if gPhone.isInApp() then
-			gPhone.notifyPassive( msg, {game=game} )
+			gPhone.notifyBanner( msg, {game=game} )
 		else
 			if not gPhone.isOpen() then
 				gPhone.vibrate()
 			end
 			
-			gPhone.notifyInteract( {msg=msg, app=game, options={"Accept", "Deny"}} )
+			gPhone.notifyAlert( {msg=msg, app=game, options={"Accept", "Deny"}} )
 		end
 	elseif header == GPHONE_RETURNAPP then
 		local name, active = nil, gPhone.getActiveApp() 

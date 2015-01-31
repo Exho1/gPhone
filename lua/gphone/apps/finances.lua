@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Finances"
 APP.Icon = "vgui/gphone/finances.png"
+APP.Author = "Exho"
 APP.Gamemode = "DarkRP"
 APP.Tags = {"Money", "Transfer", "Funds"}
 

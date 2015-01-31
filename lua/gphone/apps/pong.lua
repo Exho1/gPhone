@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "gPong"
 APP.Icon = "vgui/gphone/pong.png"
+APP.Author = "Exho"
 APP.FPS = 30
 APP.Tags = {"Game", "Retro", "2D"}
 

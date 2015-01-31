@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Messages"
 APP.Icon = "vgui/gphone/text.png"
+APP.Author = "Exho"
 APP.Tags = {"Messaging", "Contact", "Communication"}
 
 function APP.Run( objects, screen )
@@ -289,7 +290,7 @@ function APP.PopulateMessages( id )
 				col = Color(80, 235, 80)
 				textcol = color_white
 			else
-				col = Color(200, 200, 200)
+				col = gPhone.colors.darkerWhite
 				textcol = color_black
 			end
 			
@@ -525,7 +526,7 @@ function APP.NewConversation()
 end
 
 function APP.Paint( screen )
-	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), Color(200, 200, 200))
+	draw.RoundedBox(2, 0, 0, screen:GetWide(), screen:GetTall(), gPhone.colors.darkerWhite)
 		
 	draw.RoundedBox(2, 0, 0, screen:GetWide(), 50, gPhone.colors.whiteBG)
 	draw.RoundedBox(0, 0, 50, screen:GetWide(), 1, Color(20, 40, 40))

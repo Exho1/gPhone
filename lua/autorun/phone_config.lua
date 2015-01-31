@@ -27,6 +27,7 @@
 		- Or allow scrolling down
 	-- Function to bypass using net.*Table entirely
 	-- App store
+	-- Removing apps to go into the app store
 ]]
 
 gPhone = gPhone or {}
@@ -52,7 +53,7 @@ else
 		-- Should we display debug console messages called with the msgC function? 
 		showConsoleMessages = true,
 		-- Should apps that we cannot use be shown on the home screen?
-		ShowUnusableApps = true,
+		showUnusableApps = false,
 		-- Should the status bar be darkened on the homescreen for white wallpapers?
 		darkStatusBar = false,
 		
@@ -82,6 +83,7 @@ else
 		
 		whiteBG = Color(250, 250, 250),
 		darkWhiteBG = Color(230, 230, 230), 
+		darkerWhite = Color(210, 210, 210),
 		greyAccent = Color(150, 150, 150),
 	}
 end

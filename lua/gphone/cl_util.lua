@@ -4,10 +4,18 @@ local client = LocalPlayer()
 
 --// Console commands
 concommand.Add("gphone_build", function()
+	if gPhone.exists() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot have multiple instances of the gPhone running!" )
+		return
+	end
 	gPhone.buildPhone()
 end)
 
 concommand.Add("gphone_destroy", function()
+	if not gPhone.exists() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "No instances of the gPhone are open" )
+		return
+	end
 	gPhone.destroyPhone()
 end)
 
@@ -22,12 +30,16 @@ concommand.Add("text", function()
 end)
 
 concommand.Add("notify_p", function()
-	gPhone.notifyPassive( {msg="Test message that should be long and word wrappable telling you to launch an app", app="settings"} )
+	gPhone.notifyBanner( {msg="Update required: \r\n 1.2.3", 
+	app="settings"},
+	function( app )
+
+	end)
 end)
 
 concommand.Add("notify_i", function()
 	local str = "Test message that should be long and word wrappable telling you to launch an app more text needed eh"
-	gPhone.notifyInteract( {msg=str,
+	gPhone.notifyAlert( {msg=str,
 	title="Testing", options={"Deny", "Accept"}}, 
 	function( pnl, value )
 		
@@ -35,6 +47,7 @@ concommand.Add("notify_i", function()
 	function( pnl, value )
 	
 	end, 
+	false, 
 	true )
 end)
 
@@ -52,7 +65,35 @@ net.Receive( "gPhone_ChatMsg", function( len, ply )
 	gPhone.chatMsg( net.ReadString() )
 end)
 
---// Panel-based blur function kindly given by Netheous (STEAM_0:0:19766778)
+--// Returns a color with a newly set alpha
+function gPhone.colorNewAlpha( col, a )
+	local r, g, b = col.r, col.g, col.b
+	return Color( r, g, b, a )
+end
+
+--// Checks if the local player can use an application based on usergroups or gamemode (unsafe)
+function gPhone.canUseApp( appData )
+	local canUse = true
+	
+	if appData.Gamemode and appData.Gamemode != "" then
+		if string.lower(appData.Gamemode) != string.lower(engine.ActiveGamemode()) then
+			canUse = false
+		end
+	end
+	
+	if appData.AllowedUsergroups and #appData.AllowedUsergroups > 0 then
+		for _, group in pairs( appData.AllowedUsergroups ) do
+			if client:GetUserGroup() == group then
+				break
+			end
+			canUse = false
+		end
+	end
+	
+	return canUse
+end
+
+--// Panel-based blur function by Chessnut (https://github.com/Chessnut/NutScript)
 local blur = Material( "pp/blurscreen" )
 function gPhone.drawPanelBlur( panel, layers, density, alpha )
 	local x, y = panel:LocalToScreen(0, 0)
@@ -354,11 +395,12 @@ function gPhone.checkUpdate()
 		local json = string.sub( body, startPos, endPos )
 		local tbl = util.JSONToTable( json )
 		
+		-- Get json data
 		local webVersion = tbl[1]
 		local description = tbl[2]
 		local date = string.sub( tbl[3], 1, 10 ) -- Trim off anything that is not part of the date
 		
-		gPhone.msgC( GPHONE_MSGC_NONE, "Successfully checked online server for version" )
+		gPhone.msgC( GPHONE_MSGC_NONE, "Successfully retrieved update data from server" )
 		
 		if webVersion != gPhone.version then
 			isUpdate = true
@@ -422,6 +464,7 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 			end
 		end
 		
+		print("Done", lineBreaks)
 		-- Reassemble the text 
 		text = table.concat( frags, "" )
 		label:SetText( text )
@@ -430,7 +473,7 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 		--label:SetSize( wrapWidth - buffer, h * (lineBreaks)) 
 		label:SizeToContents()
 		
-		return lineBreaks
+		return lineBreaks or 1
 	end
 end
 

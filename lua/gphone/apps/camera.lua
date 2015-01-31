@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Camera"
 APP.Icon = "vgui/gphone/camera.png"
+APP.Author = "Exho"
 APP.Tags = {"Photos", "Images", "Selfies"}
 
 function APP.Run( objects, screen )

@@ -104,7 +104,11 @@ function gPhone.onLockscreen()
 end
 
 function gPhone.isOpen()
-	return gPhone.phoneState ~= "hidden" and gPhone.phoneState ~= "destroyed"
+	return gPhone.phoneState != "hidden" and gPhone.phoneState != "destroyed"
+end
+
+function gPhone.exists()
+	return gPhone.phoneState != "destroyed"
 end
 
 function gPhone.isHidden()

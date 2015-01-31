@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "2D Game" 
 APP.Icon = "vgui/gphone/app_image.png"
+APP.Author = "Exho"
 APP.FPS = 30
 
 local gameRunning = false

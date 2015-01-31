@@ -325,17 +325,12 @@ function gPhone.buildLockScreen()
 end
 
 --// Opens a notification which the player has to select an option 
-function gPhone.notifyInteract( tbl, optionFunction1, optionFunction2, bCloseOnSelect )
-	-- tbl = {title, msg, options={no,yes}}
+function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, bCloseOnSelect )
 	local screen = gPhone.phoneScreen
 	
-	if gPhone.isPortrait then
-		
-	else
+	gPhone.setIsAnimating( true )
 	
-	end
-	
-	local w, h = screen:GetWide() - 30, 125
+	local w, h = screen:GetWide() - 30, 80
 	local bgPanel = vgui.Create( "DPanel", screen )
 	bgPanel:SetSize( w, h )
 	bgPanel:SetPos( 15, screen:GetTall()/2 - bgPanel:GetTall()/2 )
@@ -347,14 +342,16 @@ function gPhone.notifyInteract( tbl, optionFunction1, optionFunction2, bCloseOnS
 	message:SetTextColor( color_black )
 	message:SetFont("gPhone_16")
 	message:SetText( tbl.msg ) 
-	-- The string has limits, so I'
 	if string.len( tbl.msg ) > 95 then
 		local newMsg = string.Left( tbl.msg, 95 )
 		newMsg = gPhone.charSub( newMsg, 93, "..." )
 		message:SetText( newMsg )
 	end
+	
 	gPhone.WordWrap( message, bgPanel:GetWide(), 10 )
+	bgPanel:SetSize( w, h + message:GetTall() )
 	message:SetPos( bgPanel:GetWide()/2 - message:GetWide()/2,  bgPanel:GetTall() - 50 - message:GetTall() )
+
 	
 	local title = vgui.Create( "DLabel", bgPanel )
 	title:SetTextColor( color_black )
@@ -368,23 +365,29 @@ function gPhone.notifyInteract( tbl, optionFunction1, optionFunction2, bCloseOnS
 	-- Create the option buttons
 	for k, value in pairs( tbl.options ) do
 		optionPanels[k] = vgui.Create("DButton", bgPanel )
-		optionPanels[k]:SetSize( bgPanel:GetWide()/2 - 0.5, 40 )
+		if not bOneOption then
+			optionPanels[k]:SetSize( bgPanel:GetWide()/2 - 0.5, 40 )
+		else
+			optionPanels[k]:SetSize( bgPanel:GetWide(), 40 )
+		end
 		optionPanels[k]:SetPos( x, bgPanel:GetTall() - optionPanels[k]:GetTall() )
 		x = optionPanels[k]:GetWide() + 0.5
 		optionPanels[k]:SetText("")
 		optionPanels[k].Paint = function( self, w, h )
 			draw.RoundedBox(0, 0, 1, self:GetWide(), 1, Color(150, 150, 150))
 			
-			if k == 1 then
-				draw.RoundedBox(0, self:GetWide()-1, 1, 1, self:GetTall() - 1, Color(150, 150, 150))
-			else
-				--draw.RoundedBox(0, 0, 1, self:GetWide(), 1, Color(150, 150, 150))
+			if not bOneOption then
+				if k == 1 then
+					draw.RoundedBox(0, self:GetWide()-1, 1, 1, self:GetTall() - 1, Color(150, 150, 150))
+				end
 			end
 		end
 		optionPanels[k].DoClick = function( self )
+			gPhone.setIsAnimating( false )
+			
 			if k == 1 then -- The first option should ALWAYS be a close or deny
+				-- Run developer-set negative function
 				if optionFunction1 then
-					-- Run developer-set negative function
 					optionFunction1( bgPanel, value )
 				end
 			else
@@ -405,39 +408,94 @@ function gPhone.notifyInteract( tbl, optionFunction1, optionFunction2, bCloseOnS
 		buttonText:SetFont("gPhone_18")
 		gPhone.setTextAndCenter(buttonText, value, optionPanels[k], true)
 	end
-	
-	
-	
-	--gPhone.switchApps( newApp )
-	
-	--[[ Going to need a lockscreen one too
-	if accepted then
-		gPhone.unlockLockScreen( function()
-			gPhone.runApp( otherStuff.game )
-		end)
-	end
-	
-	if denied then
-		gPhone.unlockLockScreen()
-	end
-	
-	gPhone.shouldUnlock = true
-	]]
 end
 
 --// Opens a notification which requires no user input (but can be clicked) and goes away automatically
-function gPhone.notifyPassive( tbl )
-	-- tbl = {appName, msgText}
+function gPhone.notifyBanner( tbl, onClickFunc )
 	local screen = gPhone.phoneScreen
+	local initialO = gPhone.orientation
+	local initialS = gPhone.phoneState
 	
-	local bgPanel = vgui.Create( "DPanel", screen )
-	bgPanel:SetSize(screen:GetWide(), 30)
-	bgPanel.Paint = function( self, w, h )
-		draw.RoundedBox(4, 0, 0, w, h, gPhone.colors.darkWhiteBG)
+	-- Make sure the message doesn't run off the page
+	local wordLimit
+	if gPhone.isPortrait() then
+		wordLimit = 72
+	else
+		wordLimit = 122
 	end
 	
-	timer.Simple(1, function()
-		bgPanel:Remove()
+	-- Get the app icon
+	local icon = "ERROR"
+	for _, data in pairs( gPhone.apps ) do
+		if data.name:lower() == tbl.app:lower() then
+			icon = data.icon
+		end
+	end
+	
+	local bgPanel = vgui.Create( "DPanel", screen )
+	bgPanel:SetSize(screen:GetWide(), 0)
+	bgPanel:SizeTo( bgPanel:GetWide(), 50, 0.5 )
+	bgPanel.Paint = function( self, w, h )
+		draw.RoundedBox(4, 0, 0, w, h, gPhone.colorNewAlpha( color_black, 250 ))
+	end
+	
+	local function closePanel( pnl )
+		pnl:SizeTo( pnl:GetWide(), 0, 0.5, 0, -1, function( data, pnl )
+			if IsValid(pnl) then
+				pnl:Remove()
+			end
+		end)
+	end
+	
+	bgPanel.OnMousePressed = function( self, code )
+		-- Left mouse is the only click that will run the function, all others will close the notification
+		if code == MOUSE_LEFT then
+			onClickFunc( tbl.app )
+		end
+		closePanel( self )
+	end
+	bgPanel.Think = function( self )
+		-- If something major happens to the phone, hide the notification
+		if gPhone.orientation != initialO or gPhone.phoneState != initialS then
+			closePanel( bgPanel )
+			bgPanel.Think = function() end
+		end
+	end
+	
+	local appImage = vgui.Create( "DImageButton", bgPanel ) 
+	appImage:SetSize( 24, 24 )
+	appImage:SetPos( 10, 5 )
+	appImage:SetImage( icon )
+	appImage.DoClick = function()
+		-- App icon will launch you into the app
+		closePanel( bgPanel )
+		gPhone.runApp( string.lower( tbl.app ) )
+	end
+	
+	local message = vgui.Create( "DLabel", bgPanel )
+	message:SetTextColor( color_white )
+	message:SetFont("gPhone_12")
+	message:SetText( tbl.msg ) 
+	if string.len( tbl.msg ) > wordLimit then -- 72 character limit
+		local newMsg = string.Left( tbl.msg, wordLimit )
+		newMsg = gPhone.charSub( newMsg, wordLimit-2, "..." )
+		message:SetText( newMsg )
+	end
+	gPhone.WordWrap( message, bgPanel:GetWide(), 20 )
+	message:SetPos( 40, 20 )
+	
+	local title = vgui.Create( "DLabel", bgPanel )
+	title:SetTextColor( color_white )
+	title:SetFont("gPhone_16")
+	title:SetText( tbl.app )
+	title:SizeToContents()
+	local x, y = message:GetPos()
+	title:SetPos( 40, 5 )
+	
+	timer.Simple(5, function()
+		if IsValid(bgPanel) then
+			closePanel( bgPanel )
+		end
 	end)
-
 end
+

@@ -2,6 +2,7 @@ local APP = {}
 
 APP.PrintName = "Jobs"
 APP.Icon = "vgui/gphone/jobs.png"
+APP.Author = "Exho"
 APP.Gamemode = "DarkRP"
 APP.Tags = {"Jobs", "Teams", "Occupation"}
 
