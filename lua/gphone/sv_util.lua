@@ -48,9 +48,9 @@ function gPhone.confirmTransaction( ply, tbl )
 	net.Send( ply )
 end
 
-function gPhone.notifyPlayer( ply, sender, text, notifyEnum )
+function gPhone.notifyPlayer( ply, sender, text, enum )
 	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=notifyEnum, sender=sender, text=text} )
+		net.WriteTable( {header=enum, sender=sender, text=text} )
 	net.Send( ply )
 end
 

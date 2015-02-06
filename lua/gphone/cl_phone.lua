@@ -182,19 +182,20 @@ function gPhone.buildPhone()
 	--// Build the homescreen
 	
 	-- Loads up icon positions from the position file
-	local txtPositions = gPhone.getActiveAppPositions()
+	local txtPositions = gPhone.getAppPositions()
 	local newApps = {}
 	local denies = 0
-	if #txtPositions > 1 then
-		for a = 1,#gPhone.apps do
+	
+	if txtPositions and #txtPositions > 1 then
+		for a = 1, #gPhone.apps do
 			local app = gPhone.apps[a] -- name and icon
 			local name = app.name
 			denies = 0
 			
 			-- Checks if an app exists in the config file and at which key
-			for i = 1,#txtPositions do
+			for i = 1, #txtPositions do
 				if name == txtPositions[i].name then
-					table.insert(newApps, txtPositions[i])
+					table.insert(newApps, {name=txtPositions[i].name, icon=app.icon})
 				else
 					denies = denies + 1
 				end
@@ -226,11 +227,7 @@ function gPhone.buildPhone()
 			end
 			
 			if CurTime() - mouseStartTime >= 0.75 then
-				if gPhone.appDeleteMode == true then
-					gPhone.appDeleteMode = false
-				else
-					gPhone.appDeleteMode = true
-				end
+				self:deleteApps()
 				
 				mouseStartTime = 0
 			end
@@ -249,15 +246,17 @@ function gPhone.buildPhone()
 					if badges > 0 then
 						local pnl = data.pnl
 						
+						if not IsValid(pnl) then return end
+						
 						local text, font = tostring(badges), "gPhone_12"
 						local width, height = gPhone.getTextSize(text, font) -- X, 12
 						width = width + height/2
 						
 						local x, y = pnl:GetPos()
-						local tX, tY = x + pnl:GetWide() - width + 3, y
+						local tX, tY = x + pnl:GetWide() - width + 1, y - 6
 						
-						draw.RoundedBox(6, x + pnl:GetWide() - width + height/4, y - height/4, width, height, Color(240, 5, 5) )
-						draw.DrawText( text, font, tX + height/4, tY - height/4, color_white )
+						draw.RoundedBox(6, x + pnl:GetWide() - width - 3, y - 6, width, height, Color(240, 5, 5) )
+						draw.DrawText( text, font, tX, tY, color_white )
 					end
 				end
 			end
@@ -268,19 +267,66 @@ function gPhone.buildPhone()
 		end
 	end
 	
-	gPhone.homeIconLayout.Think = function( self )
-		--// App delete mode 
-		-- Create derma buttons ONCE
-		-- On click
-			-- Add app name to gPhone.removedApps 
-			-- Hide buttons and disable mode
-			-- Rebuild homescreen
-	
+	-- Handles the delete button and function for applications
+	gPhone.homeIconLayout.deleteApps = function( self )
+		local dontDelete = {
+			"settings",
+			"app store",
+			"messages",
+			"phone",
+			"contacts",
+		}
+		
+		for k, data in pairs( gPhone.appPanels ) do
+			local pnl = data.pnl
+			if not IsValid(pnl) then return end
+			
+			local x, y = pnl:GetPos()
+			local xOffset, yOffset = 4, -5
+			
+			local deleteButton = vgui.Create( "DButton", self )
+			deleteButton:SetPos( x + xOffset, y + yOffset )
+			deleteButton:SetSize( 13, 13 )
+			deleteButton:SetText("")
+			deleteButton.Paint = function( self, w, h )
+				draw.RoundedBox(6, 0, 0, w, h, Color(200, 200, 200, 240) )
+				draw.DrawText( "x", "gPhone_14", 3, -.5, Color(100, 100, 100, 240) )
+			end
+			deleteButton.DoClick = function() 
+				local name = data.name
+				
+				gPhone.removedApps[name:lower()] = 0 -- Add to removed apps
+				gPhone.buildHomescreen( gPhone.apps ) -- Rebuild homescreen
+			end
+			deleteButton.Think = function( self )
+				if not gPhone.appDeleteMode then
+					self:Remove()
+				end
+				
+				local pnl = gPhone.appPanels[k].pnl
+				
+				if IsValid(pnl) then
+					local x, y = pnl:GetPos()
+					self:SetPos( x + xOffset, y + yOffset )
+				else
+					gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid panel to position delete button on. Key: "..k )
+				end
+			end
+			
+			-- Make sure we don't delete any apps that should not be deleted
+			for _, name in pairs( dontDelete ) do
+				if data.name:lower() == name:lower() then
+					deleteButton:Remove()
+				end
+			end
+		end
+		gPhone.appDeleteMode = !gPhone.appDeleteMode
 	end
 	
 	gPhone.appPanels = {} -- {name, pnl, icon, inFolder, apps}
 	gPhone.canMoveApps = true
 	gPhone.setActiveFolder( {} )
+	gPhone.setActiveFolderPanel( nil )
 	
 	-- Handles the dropping of icons on the home screen
 	gPhone.homeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
@@ -289,10 +335,20 @@ function gPhone.buildPhone()
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps" )
 				return
 			end
-
+			
+			local removedAppKeys = {}
 			for k, v in pairs( gPhone.appPanels ) do
 				local iX, iY = v.pnl:GetPos()
 				local iW, iH = v.pnl:GetSize()
+				
+				if gPhone.apps[k] and gPhone.apps[k].name then
+					local name = gPhone.apps[k].name or ""
+					
+					if gPhone.removedApps[name:lower()] then
+						removedAppKeys[k] = k
+						continue
+					end
+				end
 				
 				-- Moving an icon out of a folder
 				if gPhone.inFolder() then
@@ -334,8 +390,8 @@ function gPhone.buildPhone()
 							table.insert(gPhone.apps, folderKey, {name=leftApp.name, icon=leftApp.icon})
 						end
 
-						-- Close the folder (rebuilds the homescreen)
-						gPhone.CloseFolder()
+						-- Close the folder which rebuilds the homescreen
+						gPhone.closeFolder()
 					else
 						print("Should move apps in folder")
 						--table.insert(gPhone.appPanels, {name=v.name, icon=v.icon, pnl=bgPanel, inFolder=true} )
@@ -344,10 +400,9 @@ function gPhone.buildPhone()
 						
 					end
 				
-				-- Creating a folder
+				-- Creating a folder and adding apps to it
 				elseif x >= iX + iW/3 and x <= iX + iW - iW/3 then
 					if y >= iY and y <= iY + iH and not gPhone.inFolder() then	
-						print("ay")
 						local targetKey = k 
 						local droppedData = {name="Folder", apps={}} 
 						local droppedKey = 0
@@ -362,6 +417,13 @@ function gPhone.buildPhone()
 										droppedKey = p
 									end
 								end
+							end
+						end
+						
+						-- Compensate for removed apps
+						for _, key in pairs( removedAppKeys ) do
+							if key < targetKey then
+								targetKey = targetKey + 1
 							end
 						end
 						
@@ -385,18 +447,16 @@ function gPhone.buildPhone()
 						
 						-- Give the folder a name based on app tags
 						local droppedAppTable = gApp[droppedApp.name:lower()]
-						local targetActiveAppTable = gApp[targetActiveApp.name:lower()]
-						if droppedAppTable and targetActiveAppTable then
+						local targetAppTable = gApp[targetActiveApp.name:lower()]
+						if droppedAppTable and targetAppTable then
 							local tags = {}
 							if droppedAppTable.Data.Tags then
-								--table.Merge( tags, droppedAppTable.Data.Tags )
 								for k, v in pairs( droppedAppTable.Data.Tags ) do
 									tags[#tags+1] = v
 								end
 							end
-							if targetActiveAppTable.Data.Tags then
-								--table.Merge( tags, targetActiveAppTable.Data.Tags )
-								for k, v in pairs( targetActiveAppTable.Data.Tags ) do
+							if targetAppTable.Data.Tags then
+								for k, v in pairs( targetAppTable.Data.Tags ) do
 									tags[#tags+1] = v
 								end
 							end
@@ -412,11 +472,10 @@ function gPhone.buildPhone()
 						end
 						
 						-- Table stuff
-						if gPhone.apps[k].apps != nil then -- Dropped on a folder
-							table.insert(gPhone.apps[k].apps, {name=droppedApp.name, icon=droppedApp.icon})
+						if gPhone.apps[targetKey].apps != nil then -- Append in folder
+							table.insert(gPhone.apps[targetKey].apps, {name=droppedApp.name, icon=droppedApp.icon})
 							table.remove(gPhone.apps, droppedKey)
-						else
-							-- Put the 2 icons into the folder
+						else -- Create folder
 							table.insert(droppedData.apps, {name=targetActiveApp.name, icon=targetActiveApp.icon})
 							table.insert(droppedData.apps, {name=droppedApp.name, icon=droppedApp.icon})
 							
@@ -464,7 +523,7 @@ function gPhone.buildPhone()
 						local droppedKey = 0
 						
 						-- Get the name and image of the icon we are moving
-						for i = 1,#gPhone.appPanels do
+						for i = 1, #gPhone.appPanels do
 							if heldPanel == gPhone.appPanels[i].pnl:GetChildren()[1] then
 								local droppedName = gPhone.appPanels[i].name
 								
@@ -474,6 +533,13 @@ function gPhone.buildPhone()
 										droppedKey = p
 									end
 								end
+							end
+						end
+						
+						-- Compensate for removed apps
+						for _, key in pairs( removedAppKeys ) do
+							if key < k then
+								k = k + 1
 							end
 						end
 						
@@ -551,7 +617,7 @@ function gPhone.buildPhone()
 				if iconLabel:GetWide() > bgPanel:GetWide() then
 					local w, h = iconLabel:GetSize()
 					iconLabel:SetPos( 0, y )
-					iconLabel:SetSize( bgPanel:GetWide(), h )
+					iconLabel:SetSize( bgPanel:GetWide(), h * 1.5 )
 				else
 					iconLabel:SetPos( bgPanel:GetWide()/2 - iconLabel:GetWide()/2, y)
 				end
@@ -582,7 +648,7 @@ function gPhone.buildPhone()
 				for k, v in pairs( data.apps ) do
 					local icon = v.icon or "error"
 					
-					table.insert(drawnIcons, {x=xBuffer, y=yBuffer, icon=Material(icon), color=color_white})
+					table.insert(drawnIcons, {x=xBuffer, y=yBuffer, icon=Material(icon)})
 					previewIconCount = previewIconCount + 1
 					
 					if previewIconCount % 3 == 0 then
@@ -598,13 +664,13 @@ function gPhone.buildPhone()
 					-- Background blur
 					if not dragndrop.GetDroppable() or not dragndrop.GetDroppable()[1] == self or gPhone.isinFolder then
 						-- Vanishes when the panel is picked up or the entire screen becomes blurred
-						gPhone.drawPanelBlur( self, 3, 5, 255 )
+						gPhone.drawPanelBlur( self, 10, 20, 255 )
 					end
 					
 					-- Draw the app icons for the folders contents
 					if not gPhone.inFolder() then
 						for k, v in pairs( drawnIcons ) do
-							surface.SetDrawColor( v.color )
+							surface.SetDrawColor( color_white )
 							surface.SetMaterial( v.icon )
 							surface.DrawTexturedRect( v.x, v.y, 8, 8 )
 						end
@@ -625,11 +691,35 @@ function gPhone.buildPhone()
 				local w, h = previewPanel:GetSize()
 				local oldBGPos = {bgPanel:GetPos()}
 				local oldBGSize = {bgPanel:GetSize()}
+				
+				previewPanel.closeFolder = function()
+					if nameEditor then		
+						nameEditor:OnEnter()		
+						nameEditor:SetVisible(false)		
+					end		
+				
+					gPhone.setPhoneState("homescreen")
+					previewPanel:SetCursor( "hand" )		
+					bgPanel:SetPos( unpack(oldBGPos) )		
+					
+					previewPanel:SizeTo( w, h, 0.5)		
+					timer.Simple(0.5, function()		
+						if IsValid(bgPanel) then		
+							--bgPanel:Remove()		
+						end		
+					end)		
+							
+					gPhone.currentFolder = nil		
+					gPhone.currentFolderApps = {}		
+					gPhone.isInFolder = false		
+					gPhone.buildHomescreen( gPhone.apps )
+				end
 
 				-- Handle the building of folders
 				previewPanel.DoClick = function( self )
 					data.pnl = bgPanel
 					gPhone.setActiveFolder( data )
+					gPhone.setActiveFolderPanel( self )
 					gPhone.setPhoneState( "folder" )
 					previewPanel:SetCursor( "arrow" )
 						
@@ -715,6 +805,8 @@ function gPhone.buildPhone()
 						bgPanel.Paint = function( self, w, h )
 						end
 						
+						v.icon = v.icon or ""
+						
 						local imagePanel = vgui.Create( "DImageButton", bgPanel ) 
 						imagePanel:SetSize( 32, 32 )
 						imagePanel:SetPos( 10, 0 )
@@ -766,7 +858,7 @@ function gPhone.buildPhone()
 		end
 		
 		-- Save the app positions
-		--gPhone.saveAppPositions( gPhone.apps ) -- TEMP FOR TESTING
+		gPhone.saveAppPositions( gPhone.apps )
 	end
 	gPhone.buildHomescreen( gPhone.apps )
 	
@@ -855,21 +947,6 @@ net.Receive( "gPhone_DataTransfer", function( len, ply )
 	
 	if header == GPHONE_BUILD then
 		gPhone.buildPhone()
-	elseif header == GPHONE_NOTIFY_GAME then
-		local sender = data.sender
-		local game = data.text
-		
-		local msg = sender:Nick().." has invited you to play "..game
-		
-		if gPhone.isInApp() then
-			gPhone.notifyBanner( msg, {game=game} )
-		else
-			if not gPhone.isOpen() then
-				gPhone.vibrate()
-			end
-			
-			gPhone.notifyAlert( {msg=msg, app=game, options={"Accept", "Deny"}} )
-		end
 	elseif header == GPHONE_RETURNAPP then
 		local name, active = nil, gPhone.getActiveApp() 
 		active = active or {}

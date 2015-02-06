@@ -424,6 +424,8 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 		wordLimit = 122
 	end
 	
+	tbl.app = tbl.app or ""
+	
 	-- Get the app icon
 	local icon = "ERROR"
 	for _, data in pairs( gPhone.apps ) do
@@ -434,13 +436,12 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	
 	local bgPanel = vgui.Create( "DPanel", screen )
 	bgPanel:SetSize(screen:GetWide(), 0)
-	bgPanel:SizeTo( bgPanel:GetWide(), 50, 0.5 )
 	bgPanel.Paint = function( self, w, h )
 		draw.RoundedBox(4, 0, 0, w, h, gPhone.colorNewAlpha( color_black, 250 ))
 	end
 	
 	local function closePanel( pnl )
-		pnl:SizeTo( pnl:GetWide(), 0, 0.5, 0, -1, function( data, pnl )
+		pnl:SizeTo( pnl:GetWide(), 0, 0.3, 0, -1, function( data, pnl )
 			if IsValid(pnl) then
 				pnl:Remove()
 			end
@@ -450,7 +451,9 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	bgPanel.OnMousePressed = function( self, code )
 		-- Left mouse is the only click that will run the function, all others will close the notification
 		if code == MOUSE_LEFT then
-			onClickFunc( tbl.app )
+			if onClickFunc then
+				onClickFunc( tbl.app )
+			end
 		end
 		closePanel( self )
 	end
@@ -491,6 +494,10 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	title:SizeToContents()
 	local x, y = message:GetPos()
 	title:SetPos( 40, 5 )
+	
+	-- Size appropriately
+	sizeToHeight = title:GetTall() + message:GetTall() + 10
+	bgPanel:SizeTo( bgPanel:GetWide(), sizeToHeight, 0.5 )
 	
 	timer.Simple(5, function()
 		if IsValid(bgPanel) then

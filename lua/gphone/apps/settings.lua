@@ -359,7 +359,7 @@ Icon images - http://www.flaticon.com/
 			appIcon:SetSize( 64, 64 )
 			appIcon:SetPos( 10, 10)
 			appIcon:SetImage( APP.Icon )
-			appIcon:SetImageColor( Color(0, 0, 0) )
+			appIcon:SetImageColor( color_white )
 			
 			local versionLabel = vgui.Create( "DLabel", background )
 			versionLabel:SetText( "gOS "..(uData.version or "N/A") )

@@ -5,7 +5,6 @@
 -- Icon sources: http://www.flaticon.com/
 
 --[[ To Do:
-	- New icons that are not all white
 	- Multiplayer
 	- Fix animations so that they are consistant
 	- Notifications for text messages
@@ -17,17 +16,11 @@
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
-	- Settings tabs
-		- Developer stuff
-	- Convert naming conventions to config
-	- So many update checks will likely max out free webhost
 	- Moving apps in folders
-	- Some system to make sure we don't have too many apps on the screen
-		- Throw em into folders
-		- Or allow scrolling down
 	-- Function to bypass using net.*Table entirely
-	-- App store
-	-- Removing apps to go into the app store
+	-- Do something with the 2d side scroller or remove it from the main game
+	-- Clean up the boot screen
+	-- Fix bug when naming folders and then dragging an icon out
 ]]
 
 gPhone = gPhone or {}

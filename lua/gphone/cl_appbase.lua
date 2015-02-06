@@ -122,6 +122,10 @@ end
 function gPhone.runApp(name)
 	local name = string.lower(name)
 	
+	if gApp["_active_"] then
+		gPhone.toHomeScreen()
+	end
+	
 	if gApp[name] then
 		gApp["_init_"]() -- Prepare the phone
 		

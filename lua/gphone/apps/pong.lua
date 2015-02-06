@@ -172,9 +172,10 @@ function APP.OptionClick( option )
 			end]]
 		end
 		for k, v in pairs( player.GetAll() ) do
-			if v != LocalPlayer() then
+			-- TEMP: No local player
+			--if v != LocalPlayer() then
 				opponentPicker:AddChoice( v:Nick() )
-			end
+			--end
 		end
 		
 		local fake = objects.Layout:Add("DPanel") -- Invisible panel for spacing
@@ -202,10 +203,10 @@ function APP.OptionClick( option )
 		confirmButton.DoClick = function()
 			local ply = util.getPlayerByNick( opponentPicker:GetText() )
 			if IsValid(ply) then
-				local gameResponse = gPhone.requestGame(ply, APP.PrintName)
+				gPhone.requestGame(ply, APP.PrintName)
 				
 				-- The server tells us when to set up the game
-				APP.SetUpGame( PONG_GAME_MP )
+				--APP.SetUpGame( PONG_GAME_MP )
 			end
 		end
 	elseif option == gameOptions[3] then -- Playing against someone else on their computer

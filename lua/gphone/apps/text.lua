@@ -1,7 +1,7 @@
 local APP = {}
 
 APP.PrintName = "Messages"
-APP.Icon = "vgui/gphone/text.png"
+APP.Icon = "vgui/gphone/messages.png"
 APP.Author = "Exho"
 APP.Tags = {"Messaging", "Contact", "Communication"}
 

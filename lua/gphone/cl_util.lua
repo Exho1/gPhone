@@ -6,7 +6,7 @@ local client = LocalPlayer()
 concommand.Add("gphone_build", function()
 	if gPhone.exists() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot have multiple instances of the gPhone running!" )
-		return
+		--return
 	end
 	gPhone.buildPhone()
 end)
@@ -50,6 +50,11 @@ concommand.Add("notify_i", function()
 	false, 
 	true )
 end)
+
+concommand.Add("reqgame", function()
+	gPhone.requestGame(LocalPlayer(), "gPong")
+end)
+
 
 -- END TEMPORARY
 
@@ -278,6 +283,16 @@ end
 
 --// Retrieves app positions
 function gPhone.saveAppPositions( tbl )
+	for k, v in pairs( tbl ) do
+		for name, _ in pairs( gPhone.removedApps ) do
+			if v.name:lower() == name then
+				-- Put removed apps at the end of the table
+				table.insert( tbl, v )
+				table.remove( tbl, k )
+			end
+		end
+	end
+	
 	cfgJSON = util.TableToJSON( tbl )
 	
 	file.CreateDir( "gphone" )
@@ -285,7 +300,7 @@ function gPhone.saveAppPositions( tbl )
 end
 
 --// Saves moved app positions
-function gPhone.getActiveAppPositions()
+function gPhone.getAppPositions()
 	if not file.Exists( "gphone/homescreen_layout.txt", "DATA" ) then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate app position file!")
 		gPhone.saveAppPositions( gPhone.apps )

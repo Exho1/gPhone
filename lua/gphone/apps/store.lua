@@ -84,7 +84,7 @@ function APP.PopulateList()
 		
 		local icon = vgui.Create( "DImage", bgPanel )
 		icon:SetImage( data.icon or "ERROR" )
-		icon:SetImageColor( color_black )
+		icon:SetImageColor( color_white )
 		icon:SetSize( 32, 32 )
 		icon:SetPos( 10, 5 )
 		
@@ -143,7 +143,7 @@ function APP.PopulateList()
 			
 			if download.chosen then -- Download app
 				if canDownload then
-					gPhone.msgC( GPHONE_MSGC_NONE, "Downloaded app ("..dName..") from app store" )
+					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Downloaded app ("..dName..") from app store" )
 					
 					gPhone.removedApps[dNameL] = nil
 					download:SetText("Have")

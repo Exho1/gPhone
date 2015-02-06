@@ -1,13 +1,6 @@
 ----// Shared Multiplayer Handler //----
 
 --[[
-	// Plan //
-- Multiplayer Request:
-1. Client sends request to server with Game and Target
-2. Server notifies Target with Game and Client
-3. Target chooses to accept or deny then sends to server
-4. Server notifies Client
-5. Create a multiplayer game if needed
 
 -- to do: Fix this stupid thing
 
@@ -18,8 +11,7 @@ gPhone.connectedPlayers = gPhone.connectedPlayers or {}
 if SERVER then
 
 	--// Create a 'net stream' between 2 players in which tables of information are exchanged
-	function gPhone.startNetStream( ply1, ply2, app )
-		local key = #gPhone.connectedPlayers + 1
+	function gPhone.startNetStream( ply1, ply2, app, key )
 		gPhone.msgC( GPHONE_MSGC_NONE, "Created net stream between: ", ply1, ply2, "SESSION ID: "..key )
 		
 		local app = app or ply1:getActiveApp() or ply2:getActiveApp()
@@ -81,7 +73,6 @@ if SERVER then
 		
 		ply1:SetNWBool("gPhone_InMPGame", true)
 		ply2:SetNWBool("gPhone_InMPGame", true)
-		gPhone.connectedPlayers[key] = {ply1=ply1, ply2=ply2, game=app}
 	end
 	
 	--// Destroys the net stream that this player is in
@@ -112,45 +103,83 @@ if SERVER then
 		end
 	end
 	
+	function gPhone.waitForGame( ply1, ply2, game, id )
+		print("start game wait")
+		hook.Add("Think", "gPhone_MP_Wait_"..id, function()
+			if ply1:getActiveApp():lower() == game:lower() and ply2:getActiveApp():lower() == game:lower() then
+				print("Both players ready")
+				hook.Remove("Think", "gPhone_MP_Wait_"..id)
+				gPhone.startNetStream( sender, target, game )
+			end
+		end)
+	end
+	
 	--// Receive multiplayer data
 	net.Receive( "gPhone_MultiplayerData", function( len, ply )
 		local data = net.ReadTable()
 		local header = data.header
 		
-		if header == GPHONE_MP_REQUEST then -- Requesting a game between 2 players
+		print("Received multiplayer data")
+		
+		if header == GPHONE_MP_REQUEST then
 			-- The sender of the invitation is ALWAYS player 1 and the recipient is player 2
 			local sender = ply or data.ply1
 			local target = data.ply2
 			local game = data.game
 			
 			if sender:hasPhoneOpen() then
-				if target:hasPhoneOpen() then
-					-- Pop up notification
-				else
-					-- vibrate
-				end
 				
 				-- TEMP: Stop anyone from using it while its broken
 				if true then
 					--gPhone.chatMsg( ply, "Multiplayer is unavailable at the moment, sorry. It will come in future versions!" )
-					--gPhone.runAppFunction( ply, "gpong", "QuitToMainMenu" )
+					--gPhone.runAppFunction( ply, game, "QuitToMainMenu" )
 					--return
 				end
 				
 				gPhone.chatMsg(ply, "Challenged "..ply:Nick().."!")
 			
 				-- TEMP: Push to net stream later, after they accept
-				gPhone.startNetStream( sender, target, game )
-				
-				-- TEMP: I invite myself to test
-				local response = gPhone.notifyPlayer( sender, sender, game, GPHONE_NOTIFY_GAME ) -- TEMP: First arg should be target
+				--gPhone.startNetStream( sender, target, game )
+				-- TEMP: First argument should be ply
+				gPhone.invitePlayer( sender, sender, game )
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, sender:Nick().." attempted to request a multiplayer game outside of the gPhone!")
 			end
-		else
-		
+		elseif header == GPHONE_MP_REQUEST_RESPONSE then
+			local sender = ply
+			local target = data.target
+			local response = data.accepted
+			local game = data.game
+			
+			print("Request response", sender, target, response, game)
+			
+			-- Have the phone tell the player of the response
+			if response == true then
+				local text = sender:Nick().." has accepted your offer to play "..game
+				gPhone.sendResponse( target, game, text )
+				
+				local key = #gPhone.connectedPlayers + 1
+				gPhone.connectedPlayers[key] = {ply1=target, ply2=sender, game=game}
+				
+				gPhone.waitForGame( target, sender, game, key )
+			else
+				local text = sender:Nick().." has delined your offer to play "..game
+				gPhone.sendResponse( target, game, text )
+			end
 		end
 	end)
+	
+	function gPhone.sendResponse( ply, game, msg )
+		net.Start("gPhone_MultiplayerData")
+			net.WriteTable( {header=GPHONE_MP_REQUEST_RESPONSE, game=game, msg=msg} )
+		net.Send( ply )	
+	end
+	
+	function gPhone.invitePlayer( ply, sender, game )
+		net.Start("gPhone_MultiplayerData")
+			net.WriteTable( {header=GPHONE_MP_REQUEST, sender=sender, game=game} )
+		net.Send( ply )
+	end
 end
 
 if CLIENT then
@@ -161,8 +190,46 @@ if CLIENT then
 		local data = net.ReadTable()
 		local header = data.header
 		
-		if header == GPHONE_MP_REQUEST_RESPONSE then
+		print("Received multiplayer data")
+		
+		if header == GPHONE_MP_REQUEST then
+			local sender = data.sender
+			local game = data.game
 			
+			print("Request", sender, game)
+			
+			local msg = sender:Nick().." has invited you to play "..game
+			
+			if gPhone.isInApp() then
+				gPhone.notifyBanner( {msg=msg, game=game}, function()
+					gPhone.sendRequestResult( sender, game, true )
+					gPhone.runApp( game )
+				end)
+			else
+				if not gPhone.isOpen() then
+					gPhone.vibrate()
+				end
+				
+				-- Notify the player about the game invite
+				gPhone.notifyAlert( {msg=msg, title="Multiplayer", options={"Deny", "Accept"}},
+				function( pnl, value )
+					gPhone.sendRequestResult( sender, game, false )
+				end,
+				function( pnl, value )
+					gPhone.sendRequestResult( sender, game, true )
+					gPhone.runApp( game )
+				end,
+				false, true)
+			end
+		elseif header == GPHONE_MP_REQUEST_RESPONSE then
+			local text = data.msg
+			local game = data.game
+			
+			-- Banner notify the client of the response
+			gPhone.notifyBanner( {msg=text, app=game}, function()
+				gPhone.sendRequestResult( sender, game, true )
+				gPhone.runApp( game )
+			end)
 		end
 	end)
 
@@ -173,15 +240,19 @@ if CLIENT then
 				net.Start("gPhone_MultiplayerData")
 					net.WriteTable( { header=GPHONE_MP_REQUEST, ply2=target, game=game} )
 				net.SendToServer()
-				
-				-- Return the answer
-				
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot request a multiplayer game while already in one!" )
 			end
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot request a multiplayer game without a phone!" )
 		end
+	end
+	
+	function gPhone.sendRequestResult( target, game, bAccepted )
+		print("Request result", target, game, bAccepted)
+		net.Start("gPhone_MultiplayerData")
+			net.WriteTable( { header=GPHONE_MP_REQUEST_RESPONSE, target=target, game=game, accepted=bAccepted} )
+		net.SendToServer()	
 	end
 	
 	--// Send a table to the server to be distributed amongst the connected players

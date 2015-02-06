@@ -116,14 +116,34 @@ function gPhone.isHidden()
 end
 --\\
 
---// Returns the active homescreen folder
-function gPhone.getActiveFolder()
-	return gPhone.currentFolder or {}
-end
 
 --// Sets the active homescreen folder
 function gPhone.setActiveFolder( tbl )
 	gPhone.currentFolder = tbl
+end
+
+function gPhone.getActiveFolder()
+	return gPhone.currentFolder or {}
+end
+--\\
+
+--// Sets the homescreen panel for the active folder
+function gPhone.setActiveFolderPanel( pnl )
+	gPhone.currentFolderPnl = pnl
+end
+
+function gPhone.getActiveFolderPanel()
+	return gPhone.currentFolderPnl
+end
+--\\
+
+--// Tells the active folder to close itself 
+function gPhone.closeFolder()
+	local pnl = gPhone.getActiveFolderPanel()
+	
+	if IsValid(pnl) then
+		pnl:closeFolder()
+	end
 end
 
 --// If the phone is currently running an animation such as rotating or appearing on the screen
@@ -151,30 +171,6 @@ function gPhone.getActiveApp()
 end
 --\\
 
-function gPhone.closeFolder( editor, preview, bg, bgPos )
-	if editor then
-		editor:OnEnter()
-		editor:SetVisible(false)
-	end
-	
-	preview:SetCursor( "hand" )
-	bg:SetPos( unpack(bgPos) )
-	
-	preview:SizeTo( w, h, 0.5)
-	timer.Simple(0.5, function()
-		if IsValid(bg) then
-			--bg:Remove()
-		end
-	end)
-	
-	gPhone.setActiveFolder( {} )
-	gPhone.setPhoneState( "home" )
-	gPhone.buildHomescreen( gPhone.apps )
-end
-
-function gPhone.openFolder( name )
-	
-end
 
 --// Sets the orientation (landscape or portrait) of the phone
 function gPhone.setOrientation( dir )
