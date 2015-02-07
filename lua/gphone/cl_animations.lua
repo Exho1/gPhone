@@ -6,7 +6,7 @@ local client = LocalPlayer()
 
 --// Leave the current app and go to the home screen
 function gPhone.toHomeScreen()
-	if gPhone.isOnHomeScreen == true then return end
+	if gPhone.onHomescreen() == true then return end
 	
 	if not gPhone.isPortrait() then
 		gPhone.setOrientation( "portrait" )
@@ -191,11 +191,11 @@ function gPhone.bootUp()
 			end
 			gPhone.setIsAnimating( false )
 			
-			gPhone.unlockLockScreen()
+			gPhone.buildLockScreen()
 		end
 		
 		if CurTime() > nextPass then
-			local amount = math.random(2, 10)
+			local amount = math.random(3, 10)
 			bootProgress = math.Clamp(bootProgress + amount, 0, progressBar:GetWide())
 			
 			nextPass = CurTime() + math.Rand(0.5, 2)

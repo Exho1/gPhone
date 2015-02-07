@@ -18,6 +18,19 @@ GPHONE_RUN_FUNC = 12
 GPHONE_MONEY_CONFIRMED = 13
 
 GPHONE_TEXT_MSG = 17
+GPHONE_START_CALL = 18
+GPHONE_NET_REQUEST = 19
+GPHONE_NET_RESPONSE = 20
+
+gPhone.deniedStrings = {
+	["phone"] = "%s has denied your call",
+	["gpong"] = "% has denied your request to play gPong",
+}
+
+gPhone.acceptedStrings = {
+	["phone"] = "%s has accepted your call",
+	["gpong"] = "% has accepted your request to play gPong",
+}
 
 local plymeta = FindMetaTable( "Player" )
 
@@ -30,17 +43,167 @@ function plymeta:getActiveApp()
 end
 
 function plymeta:getPhoneNumber()
+	local number 
 	if SERVER then
-		return self:GetPData( "gPhone_Number", 0 )
+		number = self:GetPData( "gPhone_Number", self:GetNWString( "gPhone_Number", gPhone.invalidNumber ) )
 	else
-		return self:GetNWString( "gPhone_Number", 0 )
+		number = self:GetNWString( "gPhone_Number", gPhone.invalidNumber )
 	end
+	
+	if number == gPhone.invalidNumber then
+		gPhone.msgC( GPHONE_MSGC_WARNING, self:Nick().." has an invalid phone number! A new one will be generated" )
+		number = self:generatePhoneNumber()
+	end
+	
+	return number
 end
 
 --// Returns if the player is currently in a multiplayer game with other players
 function plymeta:inMPGame()
 	return self:GetNWBool("gPhone_InMPGame", false)
 end
+
+function plymeta:isInCall()
+	return self:GetNWBool("gPhone_InCall", false)
+end
+
+-- Returns a table of the phone numbers for all connected players
+function gPhone.getPhoneNumbers()
+	local numberTable = {}
+	
+	for _, ply in pairs( player.GetAll() ) do
+		numberTable[ply:getPhoneNumber()] = ply
+	end
+	
+	return numberTable
+end
+
+function gPhone.getPlayerByNumber( number )
+	local tbl = gPhone.getPhoneNumbers()
+	
+	if tbl[number] then
+		return tbl[number]
+	end
+end
+
+gPhone.requestIDs = {}
+
+--// Helper function for inverting the sender and target of a table
+function gPhone.flipSenderTarget( tbl )
+	local target = tbl.target
+	local sender = tbl.sender
+	tbl.sender = target
+	tbl.target = sender
+	
+	return tbl
+end
+
+--// Ping-pong request and response functions using the net library
+--[[
+	Table format: 
+		{target = player, sender = player, app = string, msg = string, id = string}
+	Server:
+		gPhone.sendRequest( {sender=ply, app="Name", msg="Hello"}, ply2 )
+	Client:
+		gPhone.sendRequest( {app="Name", msg="Hello"}, LocalPlayer() )
+	
+	1. Request: Client1 -> Server (if started on server, this step is skipped)
+	2. Request: Server -> Client2
+	3. Response: Client2 -> Server
+	4. Response: Server -> Client1
+]]
+function gPhone.sendRequest( tbl, ply )
+	tbl.header = GPHONE_NET_REQUEST
+	
+	if SERVER then
+		-- Log the request and send to target
+		local id = #gPhone.requestIDs+1
+		gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender}
+		tbl.id = id
+		
+		-- Sender should be manually declared when sending from the server
+		tbl.target = ply
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( tbl )
+		net.Send( ply )
+	else
+		tbl.sender = LocalPlayer()
+		tbl.target = ply
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( tbl )
+		net.SendToServer()
+	end
+end
+
+function gPhone.receiveRequest( tbl )
+	if SERVER then
+		-- If it started on the client, log it
+		if not tbl.id then
+			local id = #gPhone.requestIDs+1
+			gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender}
+			tbl.id = id
+		end
+		
+		gPhone.sendRequest( tbl, tbl.target )
+	else
+		-- Recieve the request and alert the client
+		gPhone.notifyAlert( {msg=tbl.msg, title="Request", options={"Deny", "Accept"}},
+		function( pnl, value )
+			 gPhone.sendResponse( {target=tbl.sender, bAccepted=false, id=tbl.id, app=tbl.app}, tbl.sender )
+		end,
+		function( pnl, value )
+			-- On accept, send response and run app
+			local msg 
+			local sendTable = {target=tbl.sender, bAccepted=true, id=tbl.id, app=tbl.app, msg=msg}
+			
+			gPhone.sendResponse( sendTable, tbl.sender )
+			gPhone.runApp( tbl.app )
+		end,
+		false, true)
+	end
+end
+
+function gPhone.sendResponse( tbl, ply )
+	local sendTable = {header=GPHONE_NET_RESPONSE, sender=ply}
+	table.Merge( sendTable, tbl )
+	
+	if SERVER then
+		-- Foward response to target
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( sendTable )
+		net.Send( ply )
+	else
+		-- This is a response so flip the roles around
+		sendTable = gPhone.flipSenderTarget( sendTable )
+		
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable( sendTable )
+		net.SendToServer()
+	end
+end
+
+function gPhone.receiveResponse( tbl )
+	if SERVER then	
+		-- Empty the response table but keep it for record
+		gPhone.requestIDs[tbl.id] = {}
+		
+		-- Forward the response
+		gPhone.sendResponse( tbl, tbl.target )
+	else
+		-- Generate a response text based off the string table
+		local message 
+		if tbl.bAccepted == true then
+			message = string.format(gPhone.acceptedStrings[tbl.app:lower()], tbl.sender:Nick())
+		else
+			message = string.format(gPhone.deniedStrings[tbl.app:lower()], tbl.sender:Nick())
+		end
+		
+		-- Receive the response and notify with a banner
+		gPhone.notifyBanner( {msg=message, app=tbl.app or "ERROR"} )
+	end
+end	
 
 
 --// Sends a colored message to console

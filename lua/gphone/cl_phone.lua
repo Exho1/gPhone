@@ -6,6 +6,7 @@ local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)
 
 --// Builds the phone 
 function gPhone.buildPhone()
+	
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
 
@@ -168,6 +169,7 @@ function gPhone.buildPhone()
 	gPhone.homeButton:SetText( "" )
 	gPhone.homeButton.Paint = function() end
 	gPhone.homeButton.DoClick = function()
+		gPhone.appDeleteMode = false
 		if gPhone.isInApp() and not gPhone.isAnimating() then
 			gPhone.toHomeScreen()
 		end
@@ -193,9 +195,9 @@ function gPhone.buildPhone()
 			denies = 0
 			
 			-- Checks if an app exists in the config file and at which key
-			for i = 1, #txtPositions do
+			for i = 1, #txtPositions do	
 				if name == txtPositions[i].name then
-					table.insert(newApps, {name=txtPositions[i].name, icon=app.icon})
+					table.insert(newApps, txtPositions[i])
 				else
 					denies = denies + 1
 				end
@@ -216,8 +218,7 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout:SetPos( 5, 25 )
 	gPhone.homeIconLayout.Paint = function() end
 	
-	-- gPhone.removedApps = {}
-	-- gPhone.removedApps[gpong] = 0
+	-- Enable/disable app delete mode
 	gPhone.appDeleteMode = false
 	local mouseStartTime = 0
 	gPhone.homeIconLayout.Think = function( self )
@@ -233,6 +234,35 @@ function gPhone.buildPhone()
 			end
 		else
 			mouseStartTime = 0
+		end
+		
+		-- App jiggle
+		if gPhone.appDeleteMode then
+			for k, data in pairs( gPhone.appPanels ) do
+				if IsValid(data.pnl) then
+					if not gPhone.inFolder() then
+						local pnl = data.pnl
+						local x, y = pnl:GetPos()
+						
+						if not pnl.oldX and not pnl.oldY then
+							pnl.oldX = x
+							pnl.oldY = y
+						end
+						
+						local newX = pnl.oldX + math.random(-1, 1)
+						local newY = pnl.oldY + math.random(-1,1)
+						
+						pnl:SetPos( newX, newY )
+					else
+					
+					end
+				end
+				
+				if not data.pnl.tiedButton then
+					gPhone.appDeleteMode = false
+					self:deleteApps()
+				end	
+			end
 		end
 	end
 	
@@ -292,10 +322,12 @@ function gPhone.buildPhone()
 				draw.RoundedBox(6, 0, 0, w, h, Color(200, 200, 200, 240) )
 				draw.DrawText( "x", "gPhone_14", 3, -.5, Color(100, 100, 100, 240) )
 			end
+			data.pnl.tiedButton = deleteButton
 			deleteButton.DoClick = function() 
 				local name = data.name
 				
-				gPhone.removedApps[name:lower()] = 0 -- Add to removed apps
+				--gPhone.removedApps[name:lower()] = 0 -- Add to removed apps
+				gPhone.setAppVisible( name, false )
 				gPhone.buildHomescreen( gPhone.apps ) -- Rebuild homescreen
 			end
 			deleteButton.Think = function( self )
@@ -315,7 +347,7 @@ function gPhone.buildPhone()
 			
 			-- Make sure we don't delete any apps that should not be deleted
 			for _, name in pairs( dontDelete ) do
-				if data.name:lower() == name:lower() then
+				if data.name:lower() == name:lower() or data.apps then
 					deleteButton:Remove()
 				end
 			end
@@ -587,8 +619,13 @@ function gPhone.buildPhone()
 			end
 			
 			-- Prevent flagged apps from being added to the homescreen, they will go to the app store
-			if gPhone.removedApps[data.name:lower()] then
-				continue -- Special garry keyword
+			local removedApp = gPhone.removedApps[data.name:lower()]
+			if removedApp or data.hidden then
+				if data.hidden == false and gPhone.config.showUnusableApps == true then
+					gPhone.setAppVisible( data.name, true )
+				else
+					continue -- Special garry keyword
+				end
 			end
 			
 			if data.icon then
@@ -883,9 +920,9 @@ function gPhone.showPhone()
 		if firstTimeUsed:GetBool() then
 			gPhone.bootUp()
 			LocalPlayer():ConCommand("gphone_firsttime 0")
+		else 
+			gPhone.buildLockScreen()
 		end
-		
-		gPhone.buildLockScreen()
 		
 		-- Tell the server we are done and the phone is ready to be used
 		net.Start("gPhone_DataTransfer")
@@ -939,94 +976,6 @@ function gPhone.destroyPhone()
 		net.SendToServer()
 	end
 end
-
---// Receives a Server-side net message
-net.Receive( "gPhone_DataTransfer", function( len, ply )
-	local data = net.ReadTable()
-	local header = data.header
-	
-	if header == GPHONE_BUILD then
-		gPhone.buildPhone()
-	elseif header == GPHONE_RETURNAPP then
-		local name, active = nil, gPhone.getActiveApp() 
-		active = active or {}
-		active.Data = active.Data or {}
-		
-		if active.Data.PrintName then
-			name = active.Data.PrintName or nil
-		end
-
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( {header=GPHONE_RETURNAPP, app=name} )
-		net.SendToServer()
-	elseif header == GPHONE_RUN_APPFUNC then
-		local app = data.app
-		local func = data.func
-		local args = data.args
-		
-		if gApp[app:lower()] then
-			app = app:lower()
-			for k, v in pairs( gApp[app].Data ) do
-				if k:lower() == func:lower() then
-					gApp[app].Data[k]( unpack(args) )
-					return
-				end
-			end
-		end
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Unknown application ("..app..") function "..func.."!" )
-	elseif header == GPHONE_RUN_FUNC then
-		local func = data.func
-		local args = data.args
-		
-		for k, v in pairs(gPhone) do
-			if k:lower() == func:lower() then
-				gPhone[k]( unpack(args) )
-				return
-			end
-		end
-		
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable phone function "..func.."!")
-	elseif header == GPHONE_MONEY_CONFIRMED then
-		local writeTable = {}
-		data.header = nil
-		data = data[1]
-		
-		--[[
-			Problemo:
-		On Client - ALL transactions for any server will show up
-		On Server - Server gets flooded with tons of .txt documents that might only contain 1 transaction
-		
-		No limit on logs
-		]]
-		
-		if file.Exists( "gphone/appdata/t_log.txt", "DATA" ) then
-			local readFile = file.Read( "gphone/appdata/t_log.txt", "DATA" )
-			print("File exists", readFile)
-			local readTable = util.JSONToTable( gPhone.unscrambleJSON( readFile ) ) 
-			
-			--table.Add( tbl, readTable )
-			writeTable = readTable
-			
-			--local key = #writeTable+1
-			table.insert( writeTable, 1, {amount=data.amount, target=data.target, time=data.time} )
-			--writeTable[key] = {amount=data.amount, target=data.target, time=data.time}
-			gPhone.msgC( GPHONE_MSGC_NONE, "Appending new transaction log into table")
-		else
-			gPhone.msgC( GPHONE_MSGC_WARNING, "No transaction file, creating one...")
-			writeTable[1] = {amount=data.amount, target=data.target, time=data.time}
-			
-			PrintTable(writeTable)
-		end
-		
-		local json = util.TableToJSON( writeTable )
-		json = gPhone.scrambleJSON( json )
-	
-		file.CreateDir( "gphone" )
-		file.Write( "gphone/appdata/t_log.txt", json)
-	elseif header == GPHONE_TEXT_MSG then
-		gPhone.receiveTextMessage( data.data )
-	end
-end)
 
 --// Fake signal strength for the phone based on distance from the map's origin
 local mapOrigin = Vector(0,0,0)

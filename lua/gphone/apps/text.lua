@@ -71,7 +71,6 @@ function APP.PopulateMain( layout )
 		deleteConvo:SetPos(backbackground:GetWide()-deleteOffset,0)
 		deleteConvo:SetText("Delete")
 		deleteConvo:SetFont("gPhone_18lite")
-		deleteConvo:SetFont("gPhone_18lite")
 		deleteConvo:SetColor( color_white )
 		deleteConvo:SetVisible(false)
 		deleteConvo.Paint = function( self, w, h )
@@ -81,7 +80,8 @@ function APP.PopulateMain( layout )
 			-- Deletes the conversation from the phone, this CANNOT be undone
 			backbackground:Remove()
 			local fmat = gPhone.steamIDToFormat( id )
-			file.Delete( "gphone/messages/"..fmat..".txt" )
+			gPhone.discardFile( "gphone/messages/"..fmat..".txt" )
+			--file.Delete( "gphone/messages/"..fmat..".txt" )
 			layout:LayoutIcons_TOP()
 		end
 		

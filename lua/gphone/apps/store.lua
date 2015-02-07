@@ -145,7 +145,7 @@ function APP.PopulateList()
 				if canDownload then
 					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Downloaded app ("..dName..") from app store" )
 					
-					gPhone.removedApps[dNameL] = nil
+					gPhone.setAppVisible( dName, true )
 					download:SetText("Have")
 				else
 					gPhone.msgC( GPHONE_MSGC_WARNING, "Not enough space on the homescreen to install app!" )
@@ -158,7 +158,7 @@ function APP.PopulateList()
 			else -- Uninstall recently downloaded app
 				gPhone.msgC( GPHONE_MSGC_NOTIFY, "Uninstalled app ("..dName..") from app store" )
 				
-				gPhone.removedApps[dNameL] = 0
+				gPhone.setAppVisible( dName, false )
 				download:SetText("Get")
 				
 				-- Remove from the app panels table so it will fail when we look for removed apps
@@ -168,6 +168,7 @@ function APP.PopulateList()
 					end
 				end
 			end
+			gPhone.saveAppPositions( gPhone.apps )
 		end
 	end
 end

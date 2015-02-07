@@ -8,6 +8,7 @@ APP.Tags = {"Useful", "Config"}
 local topLevelTabs = {
 	"General",
 	"Wallpaper",
+	"Homescreen",
 	"_SPACE_", -- Moves the next entry down one button height (not an actual tab)
 	"Text",
 	"Phone",
@@ -21,10 +22,16 @@ local generalLevelTabs = {
 	"Color",
 }
 
+local homescreenLevelTabs = {
+	{text="Show unusable apps", button=false},
+	{text="_SPACE_", button=false},
+	{text="Reset icon positions", button=true},
+}
+
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
-	gPhone.checkUpdate()
+	--gPhone.checkUpdate()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Settings" )
@@ -274,6 +281,78 @@ function APP.OpenTab( name )
 				
 				local title = vgui.Create( "DLabel", layoutButton )
 				title:SetText( tabName )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			end
+		end
+	elseif name == "homescreen" then
+		APP.PrepareNewTab( "Homescreen" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.ToMainScreen()
+		end
+		
+		for _, data in pairs( homescreenLevelTabs ) do
+			local name = data.text
+			local bIsButton = data.button
+			
+			if name == "_SPACE_" then
+				local fake = objects.Layout:Add("DPanel")
+				fake:SetSize(screen:GetWide(), 30)
+				fake.Paint = function() end
+			elseif bIsButton then
+				local layoutButton = objects.Layout:Add("DButton")
+				layoutButton:SetSize(screen:GetWide(), 30)
+				layoutButton:SetText("")
+				layoutButton.Paint = function()
+					if not layoutButton:IsDown() then
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+					else
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+					end
+					
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
+				end
+				layoutButton.DoClick = function( self )
+					if name == homescreenLevelTabs[3].text then -- Reset
+						gPhone.notifyAlert( {msg="Are you sure you want to reset the homescreen icon positions?",
+						title="Confirmation", options={"No", "Yes"}}, nil, 
+						function( pnl, value )
+							-- On yes, move the file to the garbage directory
+							gPhone.discardFile( "gphone/homescreen_layout.txt" )
+						end, false, true )
+					else
+					
+					end
+				end
+				
+				local title = vgui.Create( "DLabel", layoutButton )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			else
+				local bgPanel = objects.Layout:Add("DPanel")
+				bgPanel:SetSize(screen:GetWide(), 30)
+				bgPanel.Paint = function( self, w, h) 
+					draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+					
+					draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+				end
+				
+				local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+				toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+				toggleButton:SetBool( gPhone.config.showUnusableApps )
+				toggleButton.OnValueChanged = function( self, bVal )
+					gPhone.config.showUnusableApps = bVal
+				end
+				
+				local title = vgui.Create( "DLabel", bgPanel )
+				title:SetText( name )
 				title:SetTextColor(Color(0,0,0))
 				title:SetFont("gPhone_18")
 				title:SizeToContents()

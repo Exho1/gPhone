@@ -105,17 +105,19 @@ function gPhone.addApp( tbl )
 		end,
 	}
 	
+	local bCanUse = nil
 	-- Don't add the app to the phone if we hide unusable apps
 	if gPhone.config.showUnusableApps == false then
 		if not gPhone.canUseApp( tbl ) then
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Flagging unusable application: "..tbl.PrintName ) 
-			gPhone.removedApps[tbl.PrintName:lower()] = 0
+			gPhone.removedApps[tbl.PrintName:lower()] = 1
+			bCanUse = false
 			--return
 		end
 	end
 	
 	-- Add the app to the homescreen table
-	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName})
+	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName, canUse=bCanUse})
 end
 
 --// Runs the app on the phone

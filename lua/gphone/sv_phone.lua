@@ -23,141 +23,73 @@ for k, v in pairs(files) do
 	AddCSLuaFile("apps/"..v)
 end
 
---// Receives data from applications and runs it on the server
-local antiSpamWindow, lastText = 0, 0
-net.Receive( "gPhone_DataTransfer", function( len, ply )
-	local data = net.ReadTable()
-	local header = data.header
-	
-	hook.Run( "gPhone_ReceivedClientData", ply, header, data )
-	
-	if header == GPHONE_MONEY_TRANSFER then -- Money transaction
-		local amount = tonumber(data.amount)
-		local target = data.target
-		local plyWallet = tonumber(ply:getDarkRPVar("money"))
-		
-		-- Cooldowns to prevent spam
-		if ply:getTransferCooldown() > 0 then
-			gPhone.chatMsg( ply, "You must wait "..math.Round(ply:getTransferCooldown()).."s before sending more money" )
-			return
-		end
-		
-		-- If the player disconnected or they are sending money to themselves, stop the transaction
-		if not IsValid(target) or target == ply then
-			gPhone.chatMsg( ply, "Unable to complete transaction - invalid recipient" )
-			return
-		end
-		
-		-- If a negative or string amount got through, stop it
-		if amount < 0 or amount == nil then 
-			gPhone.chatMsg( ply, "Unable to complete transaction - nil amount" )
-			return
-		else
-			-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash 
-			amount = math.abs(amount) 
-		end
-		
-		-- Make sure the player has this money and didn't cheat it on the client
-		if plyWallet > amount then 	
-			-- Last measure before allowing the deal, call the hook
-			local shouldTransfer, denyReason = hook.Run( "gPhone_ShouldAllowTransaction", ply, target, amount )
-			if shouldTransfer == false then
-				if denyReason != nil then
-					gPhone.chatMsg( ply, denyReason )
-				else
-					gPhone.chatMsg( ply, "Unable to complete transaction, sorry" )
-				end
-				return
-			end
-			
-			-- Complete the transaction
-			target:addMoney(amount)
-			ply:addMoney(-amount)
-			gPhone.chatMsg( target, "Received $"..amount.." from "..ply:Nick().."!" )
-			gPhone.chatMsg( ply, "Wired $"..amount.." to "..target:Nick().." successfully!" )
-			gPhone.confirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
-			
-			ply:setTransferCooldown( 5 )
-		else	
-			gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
-			gPhone.chatMsg( ply, "Unable to complete transaction - lack of funds" )
-			return
-		end
-	elseif header == GPHONE_REQUEST_TEXTS then
-		
-	elseif header == GPHONE_TEXT_MSG then
-		local canText = ply:GetNWBool("gPhone_CanText", true)
-		local msgTable = {}
-		local nick = data.tbl.target
-		local target = util.getPlayerByNick( nick )
-		
-		msgTable = data.tbl
-		msgTable.sender = ply:Nick()
-		msgTable.self = false
-		
-		-- Flagged for spam
-		if not canText then
-			gPhone.chatMsg( ply, "You cannot text for "..math.Round(ply.TextCooldown).." more seconds!" )
-			return 
-		end
-		
-		-- Anti text spam
-		ply.MessageCount = (ply.MessageCount or 0) + 1
-		hook.Add("Think", "gPhone_AntiSpam_"..ply:SteamID(), function()
-			-- Span of time in which texts are counted to check against spam
-			if CurTime() > antiSpamWindow then
-				antiSpamWindow = CurTime() + gPhone.config.antiSpamTimeframe
-				ply.MessageCount = 0
-			end
-			
-			-- If they haven't texted in 10 seconds, this hook is no longer needed
-			if CurTime() - lastText > 10 then
-				hook.Remove("Think", "gPhone_AntiSpam_"..ply:SteamID())
-				ply.MessageCount = 0
-			end
+local plymeta = FindMetaTable( "Player" )
 
-			-- Caught em
-			if ply.MessageCount > gPhone.config.textPerTimeframeLimit and CurTime() < antiSpamWindow then
-				ply:SetNWBool("gPhone_CanText", false)
-				ply.TextCooldown = gPhone.config.textSpamCooldown
-				
-				gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been caught spamming the texting system" )
-				gPhone.chatMsg( ply, "To prevent spam, you have been blocked from texting for "..ply.TextCooldown.." seconds!" )
-				ply.MessageCount = 0 
-				
-				-- Countdown until the cooldown ends
-				local endTime = CurTime() + ply.TextCooldown
-				hook.Add("Think", "gPhone_TextCooldown_"..ply:SteamID(), function()
-					ply.TextCooldown = endTime - CurTime()
-					
-					if ply.TextCooldown <= 0 then
-						ply.TextCooldown = nil
-						canText = true
-						ply:SetNWBool("gPhone_CanText", true)
-						hook.Remove("Think", "gPhone_TextCooldown_"..ply:SteamID())
-					end
-				end)
-			end
-		end)
-		
-		-- Send the message the the target
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( {header=GPHONE_TEXT_MSG, data=msgTable} )
-		net.Send( target )
-		
-		lastText = CurTime()
-	elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
-		local phoneOpen = data.open
-		if phoneOpen == true then
-			ply:SetNWBool("gPhone_Open", true)
-			hook.Run( "gPhone_Built", ply )
-		else
-			ply:SetNWBool("gPhone_Open", false)
-		end
-	elseif header == GPHONE_CUR_APP then
-		ply:SetNWString("gPhone_CurApp", data.app)
+function plymeta:setTransferCooldown( time )
+	self.transferCooldown = CurTime() + time
+end
+
+function plymeta:getTransferCooldown()
+	local timeLeft = self.transferCooldown or 0
+	return timeLeft - CurTime()
+end
+
+function plymeta:generatePhoneNumber()
+	if self:GetPData( "gPhone_Number", gPhone.invalidNumber ) != gPhone.invalidNumber then
+		-- Already has a number, just set the networked string
+		self:SetNWString( "gPhone_Number", self:GetPData( "gPhone_Number" ) )
+		return
 	end
-end)
+	
+	local number = gPhone.steamIDToPhoneNumber( self )
+	
+	self:SetPData( "gPhone_Number", number )
+	self:SetNWString( "gPhone_Number", number )
+end 
+
+--// Sends a message to appears in the player's chat box
+function gPhone.chatMsg( ply, text )
+	net.Start("gPhone_ChatMsg")
+		net.WriteString(tostring(text))
+	net.Send(ply)
+end
+
+--// Sends a chat message to connected administrators
+function gPhone.adminMsg( text )
+	for _, ply in pairs( player.GetAll() ) do
+		for _, group in pairs( gPhone.config.adminGroups ) do
+			if ply:GetUserGroup():lower() == group:lower() then
+				gPhone.chatMsg( ply, text )
+			end
+		end
+	end
+end
+
+function gPhone.confirmTransaction( ply, tbl )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=GPHONE_MONEY_CONFIRMED, tbl} ) 
+	net.Send( ply )
+end
+
+function gPhone.notifyPlayer( ply, sender, text, enum )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=enum, sender=sender, text=text} )
+	net.Send( ply )
+end
+
+--// Runs a function in the gPhone app table
+function gPhone.runAppFunction( ply, app, name, ... )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=GPHONE_RUN_APPFUNC, app=app, func=name, args={...}} ) 
+	net.Send( ply )
+end
+
+--// Runs a function in the gPhone table
+function gPhone.runFunction( ply, name, ... )
+	net.Start("gPhone_DataTransfer")
+		net.WriteTable( {header=GPHONE_RUN_FUNC, func=name, args={...}} ) 
+	net.Send( ply )
+end
 
 hook.Add("PlayerInitialSpawn", "gPhone_GenerateNumber", function( ply )
 	ply:generatePhoneNumber()
@@ -166,6 +98,21 @@ hook.Add("PlayerInitialSpawn", "gPhone_GenerateNumber", function( ply )
 		net.WriteTable( {header=GPHONE_BUILD} )
 	net.Send( ply )
 end)
+
+hook.Add("PlayerDeath", "gPhone_HideOnDeath", function( ply )
+	gPhone.runFunction( ply, "hidePhone" )
+end)
+
+hook.Add("PlayerCanHearPlayersVoice", "gPhone_CallHandler", function( listener, talker )
+	if listener:isInCall() and talker:isInCall() then
+		return true
+	elseif talker:isInCall() and not listener:isInCall() then
+		return false
+	elseif listener:isInCall() and not talker:isInCall() then
+		return false
+	end
+end)
+
 
 
 

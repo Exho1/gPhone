@@ -227,8 +227,9 @@ if CLIENT then
 			
 			-- Banner notify the client of the response
 			gPhone.notifyBanner( {msg=text, app=game}, function()
-				gPhone.sendRequestResult( sender, game, true )
-				gPhone.runApp( game )
+				-- What is this for?
+				--gPhone.sendRequestResult( sender, game, true )
+				--gPhone.runApp( game )
 			end)
 		end
 	end)

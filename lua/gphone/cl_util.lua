@@ -231,6 +231,64 @@ function gPhone.setTextAndCenter(label, text, parent, vertical)
 	end
 end
 
+function gPhone.getAppFromName( name )
+	for _, data in pairs( gPhone.apps ) do
+		if data.name:lower() == name:lower() then
+			return data
+		end
+	end
+end
+
+--// Discards text files into another folder instead of deleting them from the user's computer
+function gPhone.discardFile( filePath )
+	if file.Exists( filePath, "DATA" ) then
+		local contents = file.Read( filePath, "DATA" )
+		
+		-- Fallback name
+		local name = "nil_"..os.date( "%x" ).."_"..os.date( "%I:%M%p" )
+		
+		-- Get the file name
+		local frags = string.Explode("/", filePath)
+		for k, v in pairs( frags ) do
+			if string.find( v, ".txt" ) then
+				name = v
+			end
+		end
+		
+		-- Handle multiples
+		if file.Exists( "gphone/garbage/"..name, "DATA") then
+			name = name.."_"..os.date( "%x" ).."_"..os.date( "%I:%M%p" )
+		end
+		
+		-- Write new and delete the old
+		file.Write( "gphone/garbage/"..name, contents )
+		file.Delete( filePath )
+	end
+end
+
+--// Sets if an app should be shown on the homescreen, if not it will be in the app store
+function gPhone.setAppVisible( name, bVisible )
+	local nameL = name:lower()
+	
+	local gAppsKey 
+	for k, v in pairs(gPhone.apps) do
+		if v.name:lower() == nameL then
+			gAppsKey = k
+		end
+	end
+	
+	if bVisible then
+		gPhone.apps[gAppsKey].hidden = false
+		gPhone.removedApps[nameL] = nil
+	else
+		gPhone.apps[gAppsKey].hidden = true
+		gPhone.removedApps[nameL] = 0
+	end
+	
+	gPhone.saveAppPositions( gPhone.apps )
+end
+
+--// Push a string into another at the specified key
 function gPhone.charSub( str, k, strReplace )
 	
 	local len = string.len( strReplace )
@@ -287,6 +345,7 @@ function gPhone.saveAppPositions( tbl )
 		for name, _ in pairs( gPhone.removedApps ) do
 			if v.name:lower() == name then
 				-- Put removed apps at the end of the table
+				v.hidden = true
 				table.insert( tbl, v )
 				table.remove( tbl, k )
 			end

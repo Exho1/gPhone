@@ -11,6 +11,7 @@ function APP.Run( objects, screen )
 	objects.TakePicture = vgui.Create( "DImageButton", screen )
 	objects.TakePicture:SetText( "" )
 	objects.TakePicture:SetColor( color_white )
+	-- TODO: Remove this image and replace it with a circle and filled circle
 	objects.TakePicture:SetImage( "vgui/gphone/button.png" )
 	objects.TakePicture:SetSize(32, 32)
 	objects.TakePicture:SetPos( screen:GetWide()/2 - objects.TakePicture:GetWide()/2, screen:GetTall() - 50 )

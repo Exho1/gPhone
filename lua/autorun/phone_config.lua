@@ -6,6 +6,8 @@
 
 --[[ To Do:
 	- Multiplayer
+		- App variable which defines a function to run to start a multiplayer game
+		- Replace the horrid multiplayer request system with my new one
 	- Fix animations so that they are consistant
 	- Notifications for text messages
 	- Convert all the back buttons to my format
@@ -13,19 +15,23 @@
 		objects.Back:SetTextColor( gPhone.colors.blue )
 		objects.Back:SetPos( )
 	- Finish apps!!!
+	- Mas settings
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
 	- Moving apps in folders
-	-- Function to bypass using net.*Table entirely
-	-- Do something with the 2d side scroller or remove it from the main game
-	-- Clean up the boot screen
-	-- Fix bug when naming folders and then dragging an icon out
+	- Function to bypass using net.*Table entirely
+	- Reroute all net.Send to my own function so I can easily modify them
+	- Do something with the 2d side scroller or remove it from the main game
+	- Stop delete button from jiggling
+	- Maybe add prompt before deleting apps
+	-  
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = 0.5
+gPhone.version = 0.123 -- TEMP
 
+gPhone.invalidNumber = "INVALID"
 if SERVER then
 	--// Serverside config
 	gPhone.config = {
@@ -78,6 +84,7 @@ else
 		darkWhiteBG = Color(230, 230, 230), 
 		darkerWhite = Color(210, 210, 210),
 		greyAccent = Color(150, 150, 150),
+		green = Color(75, 236, 101),
 	}
 end
 
@@ -93,14 +100,15 @@ if SERVER then
  	AddCSLuaFile("gphone/cl_util.lua")
  	AddCSLuaFile("gphone/cl_util_extension.lua")
  	AddCSLuaFile("gphone/cl_animations.lua")
+	AddCSLuaFile("gphone/sh_datatransfer.lua")
 	AddCSLuaFile("gphone/sh_util.lua")
  	AddCSLuaFile("gphone/sh_multiplayer.lua")
 	AddCSLuaFile("vgui/backbutton.lua")
 	
-	include("gphone/sv_util.lua")
 	include("gphone/sv_phone.lua")
  	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")
+	include("gphone/sh_datatransfer.lua")
 end
 
 if CLIENT then
@@ -111,6 +119,7 @@ if CLIENT then
  	include("gphone/cl_animations.lua")
 	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")
+	include("gphone/sh_datatransfer.lua")
 	include("vgui/backbutton.lua")
 end
 
