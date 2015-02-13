@@ -313,8 +313,9 @@ function gPhone.buildLockScreen()
 		if gPhone.shouldUnlock then 
 			gPhone.unlockLockScreen()
 		else	
-			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Unlock prohibited, waiting for unlock book." )
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Unlock halted at this time, waiting for unlock." )
 			hook.Add("Think", "gPhone_waitForUnlock", function()
+				-- In case the lock screen is not allowed to be opened, we wait for the boolean to be true
 				if gPhone.shouldUnlock then
 					gPhone.unlockLockScreen()
 					hook.Remove("Think", "gPhone_waitForUnlock")
@@ -324,19 +325,74 @@ function gPhone.buildLockScreen()
 	end)
 end
 
+--// Puts all incoming alerts and banners into a list so they appear after each other in order of arrival
+gPhone.notifyQueue = { alert={}, banner={} }
+hook.Add("Think", "gPhone_notificationQueue", function()
+	if #gPhone.notifyQueue.alert > 0 or #gPhone.notifyQueue.banner > 0 then
+		for type, queue in pairs( gPhone.notifyQueue ) do
+			if type == "alert" then
+				for k, d in pairs( queue ) do
+					if not IsValid( gPhone.alertPanel ) then
+						gPhone.msgC( GPHONE_MSGC_NOTIFY, "Creating new alert from queue, key: "..k )
+						
+						-- Remove the next notification if it is a repeat of the current one
+						if gPhone.notifyQueue[type][k+1] then
+							local nextNotify = gPhone.notifyQueue[type][k+1]
+							if nextNotify.tbl.msg == d.tbl.msg and nextNotify.tbl.title == d.tbl.title then
+								gPhone.msgC( GPHONE_MSGC_NOTIFY, "Removing repeated "..type.." notification to prevent spam" )
+								table.remove( gPhone.notifyQueue.alert, k + 1)
+							end
+						end
+						
+						-- Run the notification and remove from the queue
+						gPhone.notifyAlert( d.tbl, d.func1, d.func2, d.b1, d.b2 )
+						table.remove( gPhone.notifyQueue.alert, k )
+					end
+				end
+			elseif type == "banner" then
+				for k, d in pairs( queue ) do
+					if not IsValid( gPhone.bannerPanel ) then
+						gPhone.msgC( GPHONE_MSGC_NOTIFY, "Creating new banner from queue, key: "..k )
+						
+						if gPhone.notifyQueue[type][k+1] then
+							local nextNotify = gPhone.notifyQueue[type][k+1]
+							if nextNotify.tbl.msg == d.tbl.msg and nextNotify.tbl.title == d.tbl.title then
+								gPhone.msgC( GPHONE_MSGC_NOTIFY, "Removing repeated "..type.." notification to prevent spam" )
+								table.remove( gPhone.notifyQueue.alert, k + 1)
+							end
+						end
+						
+						gPhone.notifyBanner( d.tbl, d.func )
+						table.remove( gPhone.notifyQueue.banner, k )
+					end
+				end
+			end
+		end
+	end
+end)
+
 --// Opens a notification which the player has to select an option 
+gPhone.alertPanel = nil
 function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, bCloseOnSelect )
 	local screen = gPhone.phoneScreen
 	
 	gPhone.setIsAnimating( true )
 	
+	if IsValid(gPhone.alertPanel) then
+		table.insert(gPhone.notifyQueue.alert, 
+		{tbl=tbl, func1=optionFunction1, func2=optionFunction2, b1=bOneOption, b2=bCloseOnSelect} )
+		return
+	end
+	
 	local w, h = screen:GetWide() - 30, 80
-	local bgPanel = vgui.Create( "DPanel", screen )
-	bgPanel:SetSize( w, h )
-	bgPanel:SetPos( 15, screen:GetTall()/2 - bgPanel:GetTall()/2 )
-	bgPanel.Paint = function( self, w, h )
+	gPhone.alertPanel = vgui.Create( "DPanel", screen )
+	gPhone.alertPanel:SetSize( w, h )
+	gPhone.alertPanel:SetPos( 15, screen:GetTall()/2 - gPhone.alertPanel:GetTall()/2 )
+	gPhone.alertPanel.Paint = function( self, w, h )
 		draw.RoundedBox(6, 0, 0, w, h, Color(240, 240, 240, 240))
 	end
+	
+	local bgPanel = gPhone.alertPanel
 	
 	local message = vgui.Create( "DLabel", bgPanel )
 	message:SetTextColor( color_black )
@@ -352,7 +408,6 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 	bgPanel:SetSize( w, h + message:GetTall() )
 	message:SetPos( bgPanel:GetWide()/2 - message:GetWide()/2,  bgPanel:GetTall() - 50 - message:GetTall() )
 
-	
 	local title = vgui.Create( "DLabel", bgPanel )
 	title:SetTextColor( color_black )
 	title:SetFont("gPhone_18")
@@ -397,6 +452,8 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 				end
 			end
 			
+			gPhone.alertPanel = nil
+			
 			if bCloseOnSelect != false then
 				-- Close the panel
 				bgPanel:Remove()
@@ -411,10 +468,17 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 end
 
 --// Opens a notification which requires no user input (but can be clicked) and goes away automatically
+gPhone.bannerPanel = nil
 function gPhone.notifyBanner( tbl, onClickFunc )
 	local screen = gPhone.phoneScreen
 	local initialO = gPhone.orientation
 	local initialS = gPhone.phoneState
+	
+	if IsValid(gPhone.bannerPanel) then
+		table.insert(gPhone.notifyQueue.banner, 
+		{tbl=tbl, func=onClickFunc} )
+		return
+	end
 	
 	-- Make sure the message doesn't run off the page
 	local wordLimit
@@ -434,11 +498,13 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 		end
 	end
 	
-	local bgPanel = vgui.Create( "DPanel", screen )
-	bgPanel:SetSize(screen:GetWide(), 0)
-	bgPanel.Paint = function( self, w, h )
+	gPhone.bannerPanel = vgui.Create( "DPanel", screen )
+	gPhone.bannerPanel:SetSize(screen:GetWide(), 0)
+	gPhone.bannerPanel.Paint = function( self, w, h )
 		draw.RoundedBox(4, 0, 0, w, h, gPhone.colorNewAlpha( color_black, 250 ))
 	end
+	
+	local bgPanel = gPhone.bannerPanel
 	
 	local function closePanel( pnl )
 		pnl:SizeTo( pnl:GetWide(), 0, 0.3, 0, -1, function( data, pnl )

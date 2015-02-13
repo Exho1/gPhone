@@ -106,15 +106,26 @@ function gPhone.addApp( tbl )
 	}
 	
 	local bCanUse = nil
+	
+	--[[
+		- Fix this app hiding system
+			* Apps that are unusuable but user-selected not-hidden always get hidden by this code
+	]]
 	-- Don't add the app to the phone if we hide unusable apps
-	if gPhone.config.showUnusableApps == false then
+	--[[if gPhone.config.showUnusableApps == false then
 		if not gPhone.canUseApp( tbl ) then
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Flagging unusable application: "..tbl.PrintName ) 
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..tbl.PrintName ) 
 			gPhone.removedApps[tbl.PrintName:lower()] = 1
 			bCanUse = false
-			--return
 		end
-	end
+	end]]
+	
+	-- Don't add if its explicitly stated to be hidden
+	--[[if tbl.Hidden == true then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding application due to 'Hidden' boolean: "..tbl.PrintName ) 
+		gPhone.removedApps[tbl.PrintName:lower()] = 1
+		bCanUse = false
+	end]]
 	
 	-- Add the app to the homescreen table
 	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName, canUse=bCanUse})

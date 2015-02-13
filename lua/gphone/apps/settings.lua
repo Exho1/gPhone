@@ -3,13 +3,14 @@ local APP = {}
 APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
 APP.Author = "Exho"
-APP.Tags = {"Useful", "Config"}
+APP.Tags = {"Manage", "Config"}
+
 
 local topLevelTabs = {
 	"General",
 	"Wallpaper",
 	"Homescreen",
-	"_SPACE_", -- Moves the next entry down one button height (not an actual tab)
+	"_SPACE_", 
 	"Text",
 	"Phone",
 	"Contacts",
@@ -20,6 +21,7 @@ local generalLevelTabs = {
 	"Update",
 	"_SPACE_",
 	"Color",
+	"Archive"
 }
 
 local homescreenLevelTabs = {
@@ -28,10 +30,15 @@ local homescreenLevelTabs = {
 	{text="Reset icon positions", button=true},
 }
 
+local archivePanels = {
+	{text="Archive cleanup", toggle=true, val="deleteArchivedFiles"},
+	{text="File life (days)", val="daysToCleanupArchive"},
+	{text="_SPACE_"},
+	{text="Wipe archive", button=true},
+}
+
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
-	
-	--gPhone.checkUpdate()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( "Settings" )
@@ -208,9 +215,9 @@ function APP.OpenTab( name )
 			darkenStatusBar.OnChange = function()
 				local bool = darkenStatusBar:GetChecked()
 				if bool == true then
-					gPhone.config.darkStatusBar = true
+					gPhone.setConfigValue( "darkStatusBar", true )
 				else
-					gPhone.config.darkStatusBar = false
+					gPhone.setConfigValue( "darkStatusBar", false )
 				end
 				gPhone.saveClientConfig()
 			end
@@ -348,7 +355,7 @@ function APP.OpenTab( name )
 				toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
 				toggleButton:SetBool( gPhone.config.showUnusableApps )
 				toggleButton.OnValueChanged = function( self, bVal )
-					gPhone.config.showUnusableApps = bVal
+					gPhone.setConfigValue( "showUnusableApps", bVal )
 				end
 				
 				local title = vgui.Create( "DLabel", bgPanel )
@@ -547,7 +554,7 @@ Icon images - http://www.flaticon.com/
 			draw.RoundedBox(0, 15, self:GetTall()-1, self:GetWide(), 1, gPhone.colors.greyAccent)
 		end
 		layoutButton.DoClick = function()
-			gPhone.config.phoneColor = colorMixer:GetColor()
+			gPhone.setConfigValue( "phoneColor", colorMixer:GetColor() )
 		end
 		
 		local title = vgui.Create( "DLabel", layoutButton )
@@ -577,6 +584,145 @@ Icon images - http://www.flaticon.com/
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 15, 5 )
+	elseif name == "archive" then
+		--gPhone.setConfigValue( "phoneColor", colorMixer:GetColor() )
+		
+		APP.PrepareNewTab( "Archive" )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		--[[
+		local archivePanels = {
+	{text="Archive cleanup", button=false, toggle=true},
+	{text="Archive delete time:", button=false, toggle=true},
+	{text="_SPACE_"},
+	{text="Wipe archive", button=true},
+}
+		]]
+		for _, data in pairs( archivePanels ) do
+			local name = data.text
+			local bIsButton = data.button
+			local bIsToggle = data.toggle
+			
+			if name == "_SPACE_" then
+				local fake = objects.Layout:Add("DPanel")
+				fake:SetSize(screen:GetWide(), 30)
+				fake.Paint = function() end
+			elseif bIsButton == true then
+				local layoutButton = objects.Layout:Add("DButton")
+				layoutButton:SetSize(screen:GetWide(), 30)
+				layoutButton:SetText("")
+				layoutButton.Paint = function()
+					if not layoutButton:IsDown() then
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+					else
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+					end
+					
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
+				end
+				layoutButton.DoClick = function( self )
+					if name == archivePanels[4].text then -- Reset
+						gPhone.notifyAlert( {msg="Are you sure you want to delete all files in the archive? (this cannot be undone)",
+						title="Confirmation", options={"No", "Yes"}}, nil, 
+						function( pnl, value )
+							-- On yes, delete everything
+							for k, v in pairs( file.Find("gphone/archive/*.txt", "DATA") ) do
+								file.Delete("gphone/archive/"..v)
+							end
+						end, false, true )
+					else
+					
+					end
+				end
+				
+				local title = vgui.Create( "DLabel", layoutButton )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			elseif bIsToggle == true then
+				local bgPanel = objects.Layout:Add("DPanel")
+				bgPanel:SetSize(screen:GetWide(), 30)
+				bgPanel.Paint = function( self, w, h) 
+					draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+					
+					draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+				end
+				
+				local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+				toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+				toggleButton:SetBool( gPhone.config[data.val] )
+				toggleButton.OnValueChanged = function( self, bVal )
+					gPhone.setConfigValue( data.val, bVal )
+				end
+				
+				local title = vgui.Create( "DLabel", bgPanel )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			else
+				local bgPanel = objects.Layout:Add("DPanel")
+				bgPanel:SetSize(screen:GetWide(), 30)
+				bgPanel.Paint = function( self, w, h) 
+					draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+					
+					draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+				end
+				
+				nameEditor = vgui.Create( "DTextEntry", bgPanel )
+				nameEditor:SetText( gPhone.config[data.val] )
+				nameEditor:SetFont( "gPhone_20" )
+				local w, h = gPhone.getTextSize( nameEditor:GetText(), nameEditor:GetFont() )
+				nameEditor:SetSize( w * 1.5, h )
+				nameEditor:SetPos( bgPanel:GetWide() - nameEditor:GetWide() - 15, 5 ) 
+				nameEditor:SetTextColor( gPhone.colors.greyAccent )
+				nameEditor:SetDrawBorder( false )
+				nameEditor:SetDrawBackground( false )
+				nameEditor:SetCursorColor( color_black )
+				nameEditor:SetHighlightColor( Color(27,161,226) )
+				nameEditor.Think = function( self )
+					draw.RoundedBox(4, 0, 0, self:GetWide(), self:GetTall(), Color(255, 255, 255) )
+					
+					if self.Opened == false then
+						self:Remove()
+					end
+				end
+				nameEditor.OnChange = function( self )
+					local numDays = tonumber(self:GetText())
+					local strLength = string.len(self:GetText())
+					
+					local x, y = self:GetPos()
+					local w, h = gPhone.getTextSize( self:GetText(), self:GetFont() )
+					
+					if w < 15 then
+						w = 15
+					end
+					
+					self:SetSize( w * 1.5, h )
+					self:SetPos( bgPanel:GetWide() - w - 15, y)
+					
+					if numDays != nil then
+						if strLength < 3 then
+							gPhone.setConfigValue( "daysToCleanupArchive", numDays )
+						end
+					end
+				end
+				
+				local title = vgui.Create( "DLabel", bgPanel )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			end
+		end
 	end
 	
 end

@@ -5,17 +5,18 @@ APP.PrintName = "App Name"
 -- Path to the icon, relative to materials directory
 APP.Icon = "vgui/gphone/app_image.png"
 -- Your name which can be used to attribute this app to you
-APP.Author = "Your Name"
--- Your email address or Steam id so people can contact you
-APP.Contact = "coder@notarealaddress.com or STEAM_0:0:0000000"
+APP.Author = "Coder Name"
 -- Short describing words for your app which may be used to help name a folder containing your app
 APP.Tags = {}
+
 -- Gamemode which this app's use is restricted to. Useful if it contains gamemode-specific functions or variables
 APP.Gamemode = ""
 -- Usergroups which can use this app, all others will be directed to a denial screen. 
 APP.AllowedUsergroups = {}
 -- Used ONLY for games to detour the app's Think function into a ticker that attempts to call it X times per second
 APP.FPS = nil
+-- Prevents the app from appearing on the homescreen initially 
+APP.Hidden = false
 
 -- Called when your App opens
 function APP.Run( objects, screen )

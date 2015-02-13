@@ -9,7 +9,6 @@
 		- App variable which defines a function to run to start a multiplayer game
 		- Replace the horrid multiplayer request system with my new one
 	- Fix animations so that they are consistant
-	- Notifications for text messages
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.colors.blue )
@@ -23,13 +22,16 @@
 	- Function to bypass using net.*Table entirely
 	- Reroute all net.Send to my own function so I can easily modify them
 	- Do something with the 2d side scroller or remove it from the main game
-	- Stop delete button from jiggling
 	- Maybe add prompt before deleting apps
-	-  
+	- Calling
+		- Test if it works
+		- Screen while in a call
+		- No need for screen for being called I don't think, notifications should handle that
+	- 911 number for texting
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = 0.123 -- TEMP
+gPhone.version = "0.0.0"
 
 gPhone.invalidNumber = "INVALID"
 if SERVER then
@@ -70,6 +72,10 @@ else
 		-- Time after showing the homescreen to unlock it 
 		openLockDelay = 1,
 		
+		-- Removes files in the data/gphone/archive folder after a time period has elapsed
+		deleteArchivedFiles = true,
+		daysToCleanupArchive = 14,
+			
 		-- Default phone color
 		phoneColor = Color(255,255,255,255),
 	}

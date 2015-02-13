@@ -5,6 +5,7 @@ APP.Icon = "vgui/gphone/messages.png"
 APP.Author = "Exho"
 APP.Tags = {"Messaging", "Contact", "Communication"}
 
+APP.CurrentConvo = nil
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
@@ -197,6 +198,8 @@ end
 
 --// Create the texting interface and display all messages
 function APP.PopulateMessages( id )
+	APP.CurrentConvo = id
+	
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	objects.Back:SetVisible( true )
@@ -220,6 +223,8 @@ function APP.PopulateMessages( id )
 		objects.LayoutScroll:SetSize( oldW, oldH )
 		
 		objects.WritePanel:SetVisible( false )
+		
+		APP.CurrentConvo = nil
 		
 		for k, v in pairs(objects) do
 			if IsValid(v) then

@@ -24,12 +24,12 @@ GPHONE_NET_RESPONSE = 20
 
 gPhone.deniedStrings = {
 	["phone"] = "%s has denied your call",
-	["gpong"] = "% has denied your request to play gPong",
+	["gpong"] = "%s has denied your request to play gPong",
 }
 
 gPhone.acceptedStrings = {
 	["phone"] = "%s has accepted your call",
-	["gpong"] = "% has accepted your request to play gPong",
+	["gpong"] = "%s has accepted your request to play gPong",
 }
 
 local plymeta = FindMetaTable( "Player" )
@@ -86,8 +86,6 @@ function gPhone.getPlayerByNumber( number )
 	end
 end
 
-gPhone.requestIDs = {}
-
 --// Helper function for inverting the sender and target of a table
 function gPhone.flipSenderTarget( tbl )
 	local target = tbl.target
@@ -98,14 +96,16 @@ function gPhone.flipSenderTarget( tbl )
 	return tbl
 end
 
+gPhone.requestIDs = {}
+
 --// Ping-pong request and response functions using the net library
 --[[
-	Table format: 
-		{target = player, sender = player, app = string, msg = string, id = string}
+	Send table format: 
+		{target = player, sender = player, app = string, msg = string}
 	Server:
 		gPhone.sendRequest( {sender=ply, app="Name", msg="Hello"}, ply2 )
 	Client:
-		gPhone.sendRequest( {app="Name", msg="Hello"}, LocalPlayer() )
+		gPhone.sendRequest( {app="Name", msg="Hello"}, ply )
 	
 	1. Request: Client1 -> Server (if started on server, this step is skipped)
 	2. Request: Server -> Client2
@@ -118,7 +118,9 @@ function gPhone.sendRequest( tbl, ply )
 	if SERVER then
 		-- Log the request and send to target
 		local id = #gPhone.requestIDs+1
-		gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender}
+		gPhone.requestIDs[id] = {responded=false, accepted=false, 
+		target=tbl.target, sender=tbl.sender, app=tbl.app}
+		
 		tbl.id = id
 		
 		-- Sender should be manually declared when sending from the server
@@ -127,6 +129,8 @@ function gPhone.sendRequest( tbl, ply )
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable( tbl )
 		net.Send( ply )
+		
+		return id
 	else
 		tbl.sender = LocalPlayer()
 		tbl.target = ply
@@ -146,6 +150,7 @@ function gPhone.receiveRequest( tbl )
 			tbl.id = id
 		end
 		
+		hook.Run( "gPhone_requestSent", tbl.sender, tbl.target, tbl, id )
 		gPhone.sendRequest( tbl, tbl.target )
 	else
 		-- Recieve the request and alert the client
@@ -186,18 +191,28 @@ end
 
 function gPhone.receiveResponse( tbl )
 	if SERVER then	
-		-- Empty the response table but keep it for record
-		gPhone.requestIDs[tbl.id] = {}
-		
+		-- Update response table
+		gPhone.requestIDs[tbl.id].responded = true
+		gPhone.requestIDs[tbl.id].accepted = tbl.bAccepted
+	
+		hook.Run( "gPhone_responseSent", tbl.sender, tbl.target, tbl, id )
 		-- Forward the response
 		gPhone.sendResponse( tbl, tbl.target )
 	else
 		-- Generate a response text based off the string table
 		local message 
 		if tbl.bAccepted == true then
-			message = string.format(gPhone.acceptedStrings[tbl.app:lower()], tbl.sender:Nick())
+			if gPhone.acceptedStrings[tbl.app:lower()] then
+				message = string.format(gPhone.acceptedStrings[tbl.app:lower()], tbl.sender:Nick())
+			else
+				message = tbl.sender:Nick().." has accepted your request to use "..tbl.app
+			end
 		else
-			message = string.format(gPhone.deniedStrings[tbl.app:lower()], tbl.sender:Nick())
+			if gPhone.deniedStrings[tbl.app:lower()] then
+				message = string.format(gPhone.deniedStrings[tbl.app:lower()], tbl.sender:Nick())
+			else
+				message = tbl.sender:Nick().." has denied your request to use "..tbl.app
+			end
 		end
 		
 		-- Receive the response and notify with a banner
@@ -205,6 +220,32 @@ function gPhone.receiveResponse( tbl )
 	end
 end	
 
+function gPhone.getRequestAccepted( id )
+	if gPhone.requestIDs[id] then
+		-- Was the request with this id accepted?
+		return gPhone.requestIDs[id].accepted 
+	end
+end
+
+function gPhone.getRequestResponded( id )
+	if gPhone.requestIDs[id] then
+		-- Was there a response to this request?
+		return gPhone.requestIDs[id].responded
+	end
+end
+
+function gPhone.getRequestsByPlayer( ply )
+	local reqs = {}
+	
+	for id, tbl in pairs( gPhone.requestIDs ) do
+		if tbl.sender == ply or tbl.target == ply then
+			-- Oldest entry would be the most recent request
+			table.insert(reqs, id)
+		end
+	end
+	
+	return reqs
+end
 
 --// Sends a colored message to console
 GPHONE_MSGC_WARNING = 1

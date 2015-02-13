@@ -14,6 +14,8 @@ function gPhone.buildPhone()
 	gPhone.apps = {}
 	gPhone.importApps()
 	
+	gPhone.archiveCleanup()
+	
 	-- Dimensions
 	local pWidth, pHeight = 300, 600 -- Phone
 	local sWidth, sHeight = 234, 416 -- Screen
@@ -184,7 +186,7 @@ function gPhone.buildPhone()
 	--// Build the homescreen
 	
 	-- Loads up icon positions from the position file
-	local txtPositions = gPhone.getAppPositions()
+	local txtPositions = gPhone.loadAppPositions()
 	local newApps = {}
 	local denies = 0
 	
@@ -216,7 +218,34 @@ function gPhone.buildPhone()
 	gPhone.homeIconLayout = vgui.Create( "DPanel", gPhone.phoneScreen )
 	gPhone.homeIconLayout:SetSize( sWidth - 10, sHeight - 40 )
 	gPhone.homeIconLayout:SetPos( 5, 25 )
-	gPhone.homeIconLayout.Paint = function() end
+	gPhone.homeIconLayout.Paint = function( self, w, h ) 
+		--draw.RoundedBox(2, 0, 0, w, h, Color(0, 255, 0, 100) )
+	end
+	
+	-- Helper function to jiggle apps
+	local function appJiggle( tbl )
+		for k, data in pairs( tbl ) do
+			if IsValid(data.pnl) then
+				local pnl = data.pnl
+				local x, y = pnl:GetPos()
+				
+				if not pnl.oldX and not pnl.oldY then
+					pnl.oldX = x
+					pnl.oldY = y
+				end
+				
+				local newX = pnl.oldX + math.random(-1, 1)
+				local newY = pnl.oldY + math.random(-1,1)
+				
+				pnl:SetPos( newX, newY )
+			end
+			
+			if data.pnl and not data.pnl.tiedButton then
+				gPhone.appDeleteMode = false
+				gPhone.homeIconLayout:deleteApps()
+			end	
+		end
+	end
 	
 	-- Enable/disable app delete mode
 	gPhone.appDeleteMode = false
@@ -238,30 +267,61 @@ function gPhone.buildPhone()
 		
 		-- App jiggle
 		if gPhone.appDeleteMode then
-			for k, data in pairs( gPhone.appPanels ) do
-				if IsValid(data.pnl) then
-					if not gPhone.inFolder() then
-						local pnl = data.pnl
-						local x, y = pnl:GetPos()
-						
-						if not pnl.oldX and not pnl.oldY then
-							pnl.oldX = x
-							pnl.oldY = y
-						end
-						
-						local newX = pnl.oldX + math.random(-1, 1)
-						local newY = pnl.oldY + math.random(-1,1)
-						
-						pnl:SetPos( newX, newY )
-					else
-					
-					end
-				end
+			if not gPhone.inFolder() then
+				appJiggle( gPhone.appPanels )
+			else
+				local folder = gPhone.getActiveFolder()
+				if folder.apps == nil then return end
 				
-				if not data.pnl.tiedButton then
-					gPhone.appDeleteMode = false
-					self:deleteApps()
-				end	
+				appJiggle( folder.apps )
+			end
+		elseif not gPhone.inFolder() then
+			for k, data in pairs( gPhone.appPanels ) do
+				if IsValid( data.pnl ) then
+					local pnl = data.pnl
+					local x, y = pnl:GetPos()
+					
+					if not pnl.oldX and not pnl.oldY then
+						pnl.oldX = x
+						pnl.oldY = y
+					end
+					
+					if x != pnl.oldX or y != pnl.oldY then
+						pnl:SetPos( pnl.oldX, pnl.oldY )
+					end
+					
+				end
+			end
+		end
+	end
+	
+	-- Helper function to create app badges
+	local function createBadges( tbl, bInFolder )
+		for k, data in pairs( gPhone.appPanels ) do
+			if gPhone.appBadges[data.name] then
+				local badges = #gPhone.appBadges[data.name]
+				if badges > 0 then
+					local pnl = data.pnl
+					
+					if not IsValid(pnl) then return end
+					
+					local text, font = tostring(badges), "gPhone_12"
+					local width, height = gPhone.getTextSize(text, font) -- X, 12
+					width = width + height/2
+					
+					local x, y = pnl:GetPos()
+					
+					if bInFolder == true then
+						-- Offset with the parent position
+						local pX, pY = pnl:GetParent():GetPos()
+						x, y = x + pX, y + pY
+					end
+					
+					local tX, tY = x + pnl:GetWide() - width + 1, y - 6
+					
+					draw.RoundedBox(6, x + pnl:GetWide() - width - 3, y - 6, width, height, Color(240, 5, 5) )
+					draw.DrawText( text, font, tX, tY, color_white )
+				end
 			end
 		end
 	end
@@ -270,30 +330,9 @@ function gPhone.buildPhone()
 	gPhone.appBadges = {}
 	gPhone.homeIconLayout.PaintOver = function() 
 		if not gPhone.inFolder() then
-			for k, data in pairs( gPhone.appPanels ) do
-				if gPhone.appBadges[data.name] then
-					local badges = #gPhone.appBadges[data.name]
-					if badges > 0 then
-						local pnl = data.pnl
-						
-						if not IsValid(pnl) then return end
-						
-						local text, font = tostring(badges), "gPhone_12"
-						local width, height = gPhone.getTextSize(text, font) -- X, 12
-						width = width + height/2
-						
-						local x, y = pnl:GetPos()
-						local tX, tY = x + pnl:GetWide() - width + 1, y - 6
-						
-						draw.RoundedBox(6, x + pnl:GetWide() - width - 3, y - 6, width, height, Color(240, 5, 5) )
-						draw.DrawText( text, font, tX, tY, color_white )
-					end
-				end
-			end
+			createBadges( gPhone.appPanels )
 		else
-			-- Inside folder badges
-			--table.insert(gPhone.appPanels, {name=v.name, icon=v.icon, pnl=bgPanel, inFolder=true} )
-			--gPhone.getActiveFolder().apps[k] = {pnl=bgPanel, name=v.name, icon=v.icon}
+			createBadges( gPhone.getActiveFolder().apps, true )
 		end
 	end
 	
@@ -307,50 +346,54 @@ function gPhone.buildPhone()
 			"contacts",
 		}
 		
-		for k, data in pairs( gPhone.appPanels ) do
-			local pnl = data.pnl
-			if not IsValid(pnl) then return end
+		if not gPhone.inFolder() then
+			for k, data in pairs( gPhone.appPanels ) do
+				local pnl = data.pnl
+				if not IsValid(pnl) then return end
 			
-			local x, y = pnl:GetPos()
-			local xOffset, yOffset = 4, -5
-			
-			local deleteButton = vgui.Create( "DButton", self )
-			deleteButton:SetPos( x + xOffset, y + yOffset )
-			deleteButton:SetSize( 13, 13 )
-			deleteButton:SetText("")
-			deleteButton.Paint = function( self, w, h )
-				draw.RoundedBox(6, 0, 0, w, h, Color(200, 200, 200, 240) )
-				draw.DrawText( "x", "gPhone_14", 3, -.5, Color(100, 100, 100, 240) )
-			end
-			data.pnl.tiedButton = deleteButton
-			deleteButton.DoClick = function() 
-				local name = data.name
+				local x, y = pnl:GetPos()
+				local xOffset, yOffset = 6, -7
 				
-				--gPhone.removedApps[name:lower()] = 0 -- Add to removed apps
-				gPhone.setAppVisible( name, false )
-				gPhone.buildHomescreen( gPhone.apps ) -- Rebuild homescreen
-			end
-			deleteButton.Think = function( self )
-				if not gPhone.appDeleteMode then
-					self:Remove()
+				local deleteButton = vgui.Create( "DButton", self )
+				deleteButton:SetPos( x + xOffset, y + yOffset )
+				deleteButton:SetSize( 15, 15 )
+				deleteButton:SetText("")
+				deleteButton.Paint = function( self, w, h )
+					draw.RoundedBox(6, 2, 2, 13, 13, Color(200, 200, 200, 240) )
+					draw.DrawText( "x", "gPhone_14", 5, 2, Color(100, 100, 100, 240) )
+				end
+				data.pnl.tiedButton = deleteButton
+				deleteButton.DoClick = function() 
+					local name = data.name
+
+					gPhone.setAppVisible( name, false )
+					gPhone.buildHomescreen( gPhone.apps ) -- Rebuild homescreen
+				end
+				deleteButton.Think = function( self )
+					if not gPhone.appDeleteMode then
+						self:Remove()
+					end
+					
+					local pnl = gPhone.appPanels[k].pnl
+					
+					if IsValid(pnl) then
+						local x, y = pnl:GetPos()
+						
+						self:SetPos( x + xOffset, y + yOffset )
+					else
+						gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid panel to position delete button on. Key: "..k )
+					end
 				end
 				
-				local pnl = gPhone.appPanels[k].pnl
-				
-				if IsValid(pnl) then
-					local x, y = pnl:GetPos()
-					self:SetPos( x + xOffset, y + yOffset )
-				else
-					gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid panel to position delete button on. Key: "..k )
+				-- Make sure we don't delete any apps that should not be deleted (including folders)
+				for _, name in pairs( dontDelete ) do
+					if data.name:lower() == name:lower() or data.apps then
+						deleteButton:Remove()
+					end
 				end
 			end
-			
-			-- Make sure we don't delete any apps that should not be deleted
-			for _, name in pairs( dontDelete ) do
-				if data.name:lower() == name:lower() or data.apps then
-					deleteButton:Remove()
-				end
-			end
+		else
+			-- Deleting apps in folders
 		end
 		gPhone.appDeleteMode = !gPhone.appDeleteMode
 	end
@@ -671,6 +714,7 @@ function gPhone.buildPhone()
 						local x, y = self:GetPos()
 						draw.RoundedBox(4, 0, y + 10, bgPanel:GetWide(), 50, Color(50, 50, 50, 150) )
 					end
+					--draw.RoundedBox(4, 0, 0, w, h, Color(255, 0, 0, 150) )
 				end
 				
 				local previewPanel = vgui.Create( "DImageButton", bgPanel ) 
@@ -734,6 +778,8 @@ function gPhone.buildPhone()
 						nameEditor:OnEnter()		
 						nameEditor:SetVisible(false)		
 					end		
+					
+					gPhone.homeIconLayout.OnMousePressed = function() end
 				
 					gPhone.setPhoneState("homescreen")
 					previewPanel:SetCursor( "hand" )		
@@ -773,9 +819,15 @@ function gPhone.buildPhone()
 						end
 					end
 					
+					gPhone.homeIconLayout.OnMousePressed = function( mousecode )
+						if IsValid(previewPanel) then
+							gPhone.closeFolder( nameEditor, previewPanel, bgPanel, oldBGPos ) 
+						end
+					end
+					
 					iconLabel:SetVisible(false)
 					bgPanel:SetPos( 0, 0 )
-					bgPanel:SetSize( gPhone.homeIconLayout:GetWide(),  gPhone.homeIconLayout:GetTall() )
+					bgPanel:SetSize( gPhone.homeIconLayout:GetWide(),  gPhone.homeIconLayout:GetTall())
 					
 					local w, h = gPhone.homeIconLayout:GetWide(), gPhone.homeIconLayout:GetTall()/1.7
 					self:SizeTo( w - 10, h, 0.5)
@@ -828,7 +880,8 @@ function gPhone.buildPhone()
 						self.HasFocus = true
 					end
 					nameEditor.OnLoseFocus = function( self )
-						self.HasFocus = true
+						self.HasFocus = false
+						nameEditor:OnEnter()
 					end
 					
 					-- Create the folder's app icons

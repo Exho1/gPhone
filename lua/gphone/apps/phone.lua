@@ -56,17 +56,26 @@ function APP.CreateKeypad()
 	local numberText = vgui.Create( "DTextEntry", buttonBG )
 	numberText:SetText( "" )
 	numberText:SetFont( "gPhone_36" )
-	numberText:SetSize( buttonBG:GetWide(), sizeLabel:GetTall() )
+	numberText:SetSize( buttonBG:GetWide() / 1.5, sizeLabel:GetTall() )
 	numberText:SetPos( 0, 15 ) 
 	numberText:SetTextColor( color_black )
 	numberText:SetDrawBorder( false )
 	numberText:SetDrawBackground( false )
 	numberText:SetCursorColor( color_black )
 	numberText:SetHighlightColor( Color(27,161,226) )
+	numberText:SetZPos(-5)
 	
-	local function editNumber( text )
+	local function editNumber( text, bErase )
 		local txt = numberText:GetText()
 		local newText = txt..text
+		
+		if string.len( newText ) > 9 then
+			return
+		end
+		
+		if bErase then
+			newText = string.sub( newText, 1, string.len(newText) - 1 )
+		end
 		
 		-- Put a dash in the number
 		if string.len( newText ) > 4 then
@@ -139,6 +148,15 @@ function APP.CreateKeypad()
 		end
 	end
 	
+	local backButton = vgui.Create("DImageButton", buttonBG)
+	backButton:SetSize( 16, 16 )
+	backButton:SetPos( buttonBG:GetWide() - backButton:GetTall() - 15, backButton:GetTall() + 10 )
+	backButton:SetColor( gPhone.colors.blue )
+	backButton:SetImage("vgui/gphone/backspace.png")
+	backButton:SetZPos(5)
+	backButton.DoClick = function( self )
+		editNumber( "", true )
+	end
 end
 
 function APP.StartCall( number )

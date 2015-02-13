@@ -1,10 +1,5 @@
 ----// Shared Multiplayer Handler //----
 
---[[
-
--- to do: Fix this stupid thing
-
-]]
 
 gPhone.connectedPlayers = gPhone.connectedPlayers or {}
 

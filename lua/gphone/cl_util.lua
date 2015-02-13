@@ -23,6 +23,7 @@ concommand.Add("gphone_version", function()
 	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the Garry Phone version: "..gPhone.version )
 end)
 
+
 -- TEMPORARY
 
 concommand.Add("text", function()
@@ -30,7 +31,7 @@ concommand.Add("text", function()
 end)
 
 concommand.Add("notify_p", function()
-	gPhone.notifyBanner( {msg="Update required: \r\n 1.2.3", 
+	gPhone.notifyBanner( {msg="Banner "..math.random(10, 400),
 	app="settings"},
 	function( app )
 
@@ -38,7 +39,7 @@ concommand.Add("notify_p", function()
 end)
 
 concommand.Add("notify_i", function()
-	local str = "Test message that should be long and word wrappable telling you to launch an app more text needed eh"
+	local str = tostring("Alert "..math.random(10, 400))
 	gPhone.notifyAlert( {msg=str,
 	title="Testing", options={"Deny", "Accept"}}, 
 	function( pnl, value )
@@ -256,20 +257,52 @@ function gPhone.discardFile( filePath )
 		end
 		
 		-- Handle multiples
-		if file.Exists( "gphone/garbage/"..name, "DATA") then
+		if file.Exists( "gphone/archive/"..name, "DATA") then
 			name = name.."_"..os.date( "%x" ).."_"..os.date( "%I:%M%p" )
 		end
 		
 		-- Write new and delete the old
-		file.Write( "gphone/garbage/"..name, contents )
+		file.Write( "gphone/archive/"..name, contents )
 		file.Delete( filePath )
 	end
+end
+
+--// Deletes text files older than the set time from the gPhone/archive folder automatically
+function gPhone.archiveCleanup()
+	if gPhone.config.deleteArchivedFiles == true then
+		local files = file.Find( "gphone/archive/*.txt", "DATA" )
+		
+		for k, v in pairs( files ) do
+			local movedTime = file.Time( "gphone/archive/"..v, "DATA" )
+			local days = math.abs( movedTime - os.time() )/ 60 / 60 / 24
+			
+			if days > gPhone.config.daysToCleanupArchive then
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Archived file ("..v..") has exceeded clean up time and now will be permanently deleted")
+				file.Delete( "gphone/archive/"..v )
+			end
+		end
+	end
+end
+
+function gPhone.setConfigValue( key, val )
+	for k, v in pairs( gPhone.config ) do
+		if k:lower() == key:lower() then
+			if type(v) == type(val) then
+				gPhone.config[k] = val
+			else
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to modify config values for "..key.." with different types: "..type(v).." and "..type(val))
+			end
+		end
+	end
+	
+	gPhone.saveClientConfig()
 end
 
 --// Sets if an app should be shown on the homescreen, if not it will be in the app store
 function gPhone.setAppVisible( name, bVisible )
 	local nameL = name:lower()
 	
+	PrintTable(gPhone.apps)
 	local gAppsKey 
 	for k, v in pairs(gPhone.apps) do
 		if v.name:lower() == nameL then
@@ -278,7 +311,7 @@ function gPhone.setAppVisible( name, bVisible )
 	end
 	
 	if bVisible then
-		gPhone.apps[gAppsKey].hidden = false
+		gPhone.apps[gAppsKey].hidden = nil
 		gPhone.removedApps[nameL] = nil
 	else
 		gPhone.apps[gAppsKey].hidden = true
@@ -359,7 +392,7 @@ function gPhone.saveAppPositions( tbl )
 end
 
 --// Saves moved app positions
-function gPhone.getAppPositions()
+function gPhone.loadAppPositions()
 	if not file.Exists( "gphone/homescreen_layout.txt", "DATA" ) then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate app position file!")
 		gPhone.saveAppPositions( gPhone.apps )
@@ -425,9 +458,11 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 	
 	local app = gPhone.getActiveApp()
 	if app and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
-	--if app and app.Data and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
-		print("Update - In app")
-		app.Data.UpdateMessages( idFormat ) 
+		print(app.Data.CurrentConvo)
+		if app.Data.CurrentConvo == ply:SteamID() then
+			print("Update - In app")
+			app.Data.UpdateMessages( idFormat ) 
+		end
 	elseif gPhone.isOpen() then -- In phone
 		print("Update - Phone")
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
@@ -436,6 +471,12 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 		gPhone.vibrate()
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	end
+	
+	local bannerTable = {app="Messages", msg=tbl.message}
+		
+	gPhone.notifyBanner( bannerTable, function( app )
+		gPhone.runApp( app )
+	end)
 end
 
 --// Loads all text messages 
