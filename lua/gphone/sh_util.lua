@@ -285,7 +285,7 @@ function gPhone.steamIDToPhoneNumber( plyOrID )
 		return "BOT" 
 	end
 	
-	local idFragments = string.Explode( ":", bPlayer and bPlayer:SteamID() or plyOrID );
+	local idFragments = string.Explode( ":", bPlayer and plyOrID:SteamID() or plyOrID );
 	
 	--local areaCode = idFragments[2]
 	local number = idFragments[3]
