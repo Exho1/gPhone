@@ -119,6 +119,8 @@ if SERVER then
 				end
 			end)
 			
+			print("Send message to ", target)
+			
 			-- Send the message the the target
 			net.Start("gPhone_DataTransfer")
 				net.WriteTable( {header=GPHONE_TEXT_MSG, data=msgTable} )
@@ -147,7 +149,21 @@ if SERVER then
 			
 			print("Calling", targetNum, callingNum)
 			local reqStr = ply:Nick().." is calling you"
-			gPhone.sendRequest( {sender=ply, app="Phone", msg=reqStr}, targetPly )
+			local id = gPhone.sendRequest( {sender=ply, app="Phone", msg=reqStr}, targetPly )
+			
+			gPhone.waitForResponse( id, function( bAccepted, tbl ) 
+				print("Got response!")
+				if bAccepted == true then
+					gPhone.createCall( ply, targetPly )
+				else
+				
+				end
+			end)
+		elseif header == GPHONE_NEW_NUMBER then
+			ply:generatePhoneNumber()
+		elseif header == GPHONE_END_CALL then
+			local id = gPhone.getCallID( ply )
+			gPhone.endCall( id )
 		end
 	end)
 end
@@ -240,7 +256,10 @@ if CLIENT then
 			file.CreateDir( "gphone" )
 			file.Write( "gphone/appdata/t_log.txt", json)
 		elseif header == GPHONE_TEXT_MSG then
-			gPhone.receiveTextMessage( data.data )
+			local tbl = data.data
+			tbl.self = false
+			
+			gPhone.receiveTextMessage( tbl )
 		elseif header == GPHONE_NET_REQUEST then
 			gPhone.receiveRequest( data )
 		elseif header == GPHONE_NET_RESPONSE then

@@ -23,17 +23,19 @@
 	- Reroute all net.Send to my own function so I can easily modify them
 	- Do something with the 2d side scroller or remove it from the main game
 	- Maybe add prompt before deleting apps
-	- Calling
-		- Test if it works
+	- Phone/calling
 		- Screen while in a call
 		- No need for screen for being called I don't think, notifications should handle that
+		- Either allow people to use their keyboard while in a call or use +voicerecord
+		- Enable speaking for both players
 	- 911 number for texting
+	- Add another optional argument for the banner notify for a title instead of using the app name
 ]]
 
 gPhone = gPhone or {}
 gPhone.version = "0.0.0"
 
-gPhone.invalidNumber = "INVALID"
+gPhone.invalidNumber = "ERRO-RNUM"
 if SERVER then
 	--// Serverside config
 	gPhone.config = {
@@ -78,12 +80,16 @@ else
 			
 		-- Default phone color
 		phoneColor = Color(255,255,255,255),
+		
+		-- Disables incoming notifications 
+		airplaneMode = false,
 	}
 	
 	--// Color palatte for apps
 	gPhone.colors = {
 		blue = Color(20, 80, 200),
 		red = Color(220, 27, 23),
+		softRed = Color(220, 84, 78),
 		grey = Color(100, 100, 100),
 		
 		whiteBG = Color(250, 250, 250),
@@ -129,9 +135,23 @@ if CLIENT then
 	include("vgui/backbutton.lua")
 end
 
+print([[
+        _____  _                      
+       |  __ \| |                     
+   __ _| |__) | |__   ___  _ __   ___ 
+  / _` |  ___/| '_ \ / _ \| '_ \ / _ \
+ | (_| | |    | | | | (_) | | | |  __/
+  \__, |_|    |_| |_|\___/|_| |_|\___|
+   __/ |                              
+  |___/ 
+	Created by Exho - STEAM_0:0:53332328
+	Version: ]]..gPhone.version..[[
+]])
+--[[
 print("---// gPhone //---")
 print("- Created by Exho (STEAM_0:0:53332328) -")
 print("- https://github.com/Exho1/gPhone -")
 print("- Do not reupload anywhere -")
 print("---// Version "..gPhone.version.." //---")
+]]
 

@@ -419,10 +419,15 @@ function gPhone.buildPhone()
 				if gPhone.apps[k] and gPhone.apps[k].name then
 					local name = gPhone.apps[k].name or ""
 					
-					if gPhone.removedApps[name:lower()] then
+					if not gPhone.getAppVisible( name ) then
 						removedAppKeys[k] = k
 						continue
 					end
+					
+					--[[if gPhone.removedApps[name:lower()] then
+						removedAppKeys[k] = k
+						continue
+					end]]
 				end
 				
 				-- Moving an icon out of a folder
@@ -740,7 +745,6 @@ function gPhone.buildPhone()
 						yBuffer = yBuffer
 					end
 				end
-				local blur = Material("pp/blurscreen")
 				previewPanel.Paint = function( self, w, h )
 					-- Background blur
 					if not dragndrop.GetDroppable() or not dragndrop.GetDroppable()[1] == self or gPhone.isinFolder then
@@ -996,6 +1000,7 @@ function gPhone.hidePhone()
 			gPhone.config.phoneColor.a = 100 -- Fade the alpha
 		end)
 		
+		gPhone.toHomeScreen()
 		gPhone.setPhoneState( "hidden" )
 		
 		gApp.removeTickers()

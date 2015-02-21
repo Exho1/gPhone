@@ -126,9 +126,10 @@ if SERVER then
 				
 				-- TEMP: Stop anyone from using it while its broken
 				if true then
-					--gPhone.chatMsg( ply, "Multiplayer is unavailable at the moment, sorry. It will come in future versions!" )
-					--gPhone.runAppFunction( ply, game, "QuitToMainMenu" )
-					--return
+					gPhone.chatMsg( ply, "Multiplayer is not implemented at the moment, sorry" )
+					gPhone.runAppFunction( ply, game, "QuitToMainMenu" )
+					gPhone.runFunction( ply1, "setOrientation", "portrait" )
+					return
 				end
 				
 				gPhone.chatMsg(ply, "Challenged "..ply:Nick().."!")
@@ -136,7 +137,7 @@ if SERVER then
 				-- TEMP: Push to net stream later, after they accept
 				--gPhone.startNetStream( sender, target, game )
 				-- TEMP: First argument should be ply
-				gPhone.invitePlayer( sender, sender, game )
+				gPhone.invitePlayer( target, sender, game )
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, sender:Nick().." attempted to request a multiplayer game outside of the gPhone!")
 			end

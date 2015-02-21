@@ -29,22 +29,107 @@ function plymeta:setTransferCooldown( time )
 end
 
 function plymeta:getTransferCooldown()
-	local timeLeft = self.transferCooldown or 0
+	local timeLeft = self.transferCooldown or CurTime()
 	return timeLeft - CurTime()
 end
 
 function plymeta:generatePhoneNumber()
+	print("Generating phone number for "..self:Nick())
 	if self:GetPData( "gPhone_Number", gPhone.invalidNumber ) != gPhone.invalidNumber then
+		print(self:Nick().." has phone number")
 		-- Already has a number, just set the networked string
 		self:SetNWString( "gPhone_Number", self:GetPData( "gPhone_Number" ) )
 		return
 	end
 	
-	local number = gPhone.steamIDToPhoneNumber( self )
+	local number = gPhone.steamIDToPhoneNumber( self:SteamID() )
 	
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
 end 
+
+function plymeta:inCallWith( ply2 )
+	if self:GetNWBool("gPhone_InCall") == true and ply2:GetNWBool("gPhone_InCall") == true then
+		for id, tbl in pairs( gPhone.callingPlayers ) do
+			if tbl[1] == self or tbl[2] == self and tbl[1] == ply or tbl[2] == ply then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+gPhone.callingPlayers = {}
+
+--// Creates a phone call between 2 players
+function gPhone.createCall( ply1, ply2 )
+	local id = nil
+	
+	if not ply1:inCall() and not ply2:inCall() then
+		if IsValid(ply1) and IsValid(ply2) then
+			id = #gPhone.callingPlayers + 1
+			
+			print("Created call", ply1, ply2)
+			gPhone.callingPlayers[id] = {ply1, ply2}
+			ply1:SetNWBool("gPhone_InCall", true)
+			ply2:SetNWBool("gPhone_InCall", true)
+		end	
+	end
+	
+	return id
+end
+
+--// End a created call from its id
+function gPhone.endCall( id )
+	if gPhone.callingPlayers[id] then
+		print("Ended call")
+		
+		for k, caller in pairs( gPhone.callingPlayers[id] ) do
+			caller:SetNWBool("gPhone_InCall", false)
+		end
+		
+		gPhone.callingPlayers[id] = {}
+	end
+end
+
+--// Adds another player into the phone call
+-- TODO: Implement this and edit the overhead to help manage
+-- Also will need a function to remove a player from a call 
+-- Make it so the call is ended when less than 2 people are in it
+function gPhone.addToCall( id, ply )
+	if gPhone.callingPlayers[id] != nil and gPhone.callingPlayers[id] != {} then
+		table.insert( gPhone.callingPlayers[id], ply )
+	else
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to add player("..tostring(ply)..") to an invalid call id ("..id..")" )
+	end
+end
+
+--// Returns the ID of the call the player is currently in
+function gPhone.getCallID( ply )
+	for id, tbl in pairs(gPhone.callingPlayers) do
+		if ply == tbl[1] or ply == tbl[2] then
+			return id
+		end
+	end
+end
+
+--// Manages all of the current calls
+hook.Add("Think", "gPhone_phoneOverhead", function()
+	for id, tbl in pairs(gPhone.callingPlayers) do
+		if IsValid(tbl[1]) and IsValid(tbl[2]) then
+			local ply1 = tbl[1]
+			local ply2 = tbl[2]
+			
+			if ply1:getActiveApp() == "" or ply1:getActiveApp() == nil then
+				gPhone.endCall( id )
+			elseif ply2:getActiveApp() == "" or ply2:getActiveApp() == nil then
+				gPhone.endCall( id )
+			end
+			
+		end
+	end
+end)
+
 
 --// Sends a message to appears in the player's chat box
 function gPhone.chatMsg( ply, text )
@@ -93,7 +178,7 @@ function gPhone.runFunction( ply, name, ... )
 end
 
 --// Various gameplay hooks and what not
-hook.Add("PlayerInitialSpawn", "gPhone_GenerateNumber", function( ply )
+hook.Add("PlayerInitialSpawn", "gPhone_generateNumber", function( ply )
 	ply:generatePhoneNumber()
 
 	net.Start("gPhone_DataTransfer")
@@ -106,12 +191,8 @@ hook.Add("PlayerDeath", "gPhone_HideOnDeath", function( ply )
 end)
 
 hook.Add("PlayerCanHearPlayersVoice", "gPhone_CallHandler", function( listener, talker )
-	if listener:isInCall() and talker:isInCall() then
+	if listener:inCallWith( talker ) and talker:inCallWith( listener ) then
 		return true
-	elseif talker:isInCall() and not listener:isInCall() then
-		return false
-	elseif listener:isInCall() and not talker:isInCall() then
-		return false
 	end
 end)
 

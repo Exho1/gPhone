@@ -203,11 +203,12 @@ function APP.OptionClick( option )
 		confirmButton.DoClick = function()
 			local ply = util.getPlayerByNick( opponentPicker:GetText() )
 			if IsValid(ply) then
+				gPhone.chatMsg("Multiplayer is not implemented")
 				--gPhone.requestGame(ply, APP.PrintName)
 				
-				local msg = LocalPlayer():Nick().." has invited you to play gPong!"
-				local tbl = {target=ply, app=APP.PrintName, msg=msg}
-				gPhone.sendRequest( tbl, ply )
+				--local msg = LocalPlayer():Nick().." has invited you to play gPong!"
+				--local tbl = {target=ply, app=APP.PrintName, msg=msg}
+				--gPhone.sendRequest( tbl, ply )
 				
 				-- The server tells us when to set up the game
 				--APP.SetUpGame( PONG_GAME_MP )

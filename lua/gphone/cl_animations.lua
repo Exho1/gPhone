@@ -100,7 +100,7 @@ function gPhone.vibrate()
 		local shouldBeExtended = true
 		local moveToPos = oldY - 30
 		
-		gPhone.config.PhoneColor.a = 255
+		gPhone.config.phoneColor.a = 255
 		surface.PlaySound( "gphone/vibrate.wav" )
 		
 		-- Think function to do our animations in
@@ -142,7 +142,7 @@ function gPhone.vibrate()
 		timer.Simple(1, function() -- Fix the phone's angles and retract
 			final = 0 
 			shouldBeExtended = false
-			gPhone.config.PhoneColor.a = 100
+			gPhone.config.phoneColor.a = 100
 			timer.Simple(0.5, function() -- Stop vibrating and reset everything
 				shouldvibrate = false
 				
@@ -326,6 +326,7 @@ function gPhone.buildLockScreen()
 end
 
 --// Puts all incoming alerts and banners into a list so they appear after each other in order of arrival
+-- The code looks intimidating but its really quite simple
 gPhone.notifyQueue = { alert={}, banner={} }
 hook.Add("Think", "gPhone_notificationQueue", function()
 	if #gPhone.notifyQueue.alert > 0 or #gPhone.notifyQueue.banner > 0 then
@@ -372,9 +373,16 @@ hook.Add("Think", "gPhone_notificationQueue", function()
 end)
 
 --// Opens a notification which the player has to select an option 
+-- tbl = {msg = String, title = String, options = Table}
+-- options = {"False", "True"}
 gPhone.alertPanel = nil
 function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, bCloseOnSelect )
 	local screen = gPhone.phoneScreen
+	
+	if gPhone.config.airplaneMode then
+		gPhone.msgC( GPHONE_MSGC_NOTIFY, "Hid alert due to airplane mode")
+		return
+	end
 	
 	gPhone.setIsAnimating( true )
 	
@@ -468,11 +476,17 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 end
 
 --// Opens a notification which requires no user input (but can be clicked) and goes away automatically
+-- tbl = {msg = String, app = String, (optional) title = String }
 gPhone.bannerPanel = nil
 function gPhone.notifyBanner( tbl, onClickFunc )
 	local screen = gPhone.phoneScreen
 	local initialO = gPhone.orientation
 	local initialS = gPhone.phoneState
+	
+	if gPhone.config.airplaneMode then
+		gPhone.msgC( GPHONE_MSGC_NOTIFY, "Hid banner due to airplane mode")
+		return
+	end
 	
 	if IsValid(gPhone.bannerPanel) then
 		table.insert(gPhone.notifyQueue.banner, 
@@ -499,7 +513,7 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	end
 	
 	gPhone.bannerPanel = vgui.Create( "DPanel", screen )
-	gPhone.bannerPanel:SetSize(screen:GetWide(), 0)
+	gPhone.bannerPanel:SetSize( screen:GetWide(), 0 )
 	gPhone.bannerPanel.Paint = function( self, w, h )
 		draw.RoundedBox(4, 0, 0, w, h, gPhone.colorNewAlpha( color_black, 250 ))
 	end
@@ -556,7 +570,7 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	local title = vgui.Create( "DLabel", bgPanel )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_16")
-	title:SetText( tbl.app )
+	title:SetText( tbl.title or tbl.app )
 	title:SizeToContents()
 	local x, y = message:GetPos()
 	title:SetPos( 40, 5 )

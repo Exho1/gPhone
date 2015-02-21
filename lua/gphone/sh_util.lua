@@ -21,6 +21,7 @@ GPHONE_TEXT_MSG = 17
 GPHONE_START_CALL = 18
 GPHONE_NET_REQUEST = 19
 GPHONE_NET_RESPONSE = 20
+GPHONE_END_CALL = 21
 
 gPhone.deniedStrings = {
 	["phone"] = "%s has denied your call",
@@ -52,7 +53,14 @@ function plymeta:getPhoneNumber()
 	
 	if number == gPhone.invalidNumber then
 		gPhone.msgC( GPHONE_MSGC_WARNING, self:Nick().." has an invalid phone number! A new one will be generated" )
-		number = self:generatePhoneNumber()
+		if SERVER then
+			number = self:generatePhoneNumber()
+		else
+			net.Start("gPhone_DataTransfer")
+				net.WriteTable( {header=GPHONE_NEW_NUMBER} )
+			net.SendToServer()
+			return gPhone.invalidNumber
+		end
 	end
 	
 	return number
@@ -63,7 +71,7 @@ function plymeta:inMPGame()
 	return self:GetNWBool("gPhone_InMPGame", false)
 end
 
-function plymeta:isInCall()
+function plymeta:inCall()
 	return self:GetNWBool("gPhone_InCall", false)
 end
 
@@ -146,7 +154,7 @@ function gPhone.receiveRequest( tbl )
 		-- If it started on the client, log it
 		if not tbl.id then
 			local id = #gPhone.requestIDs+1
-			gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender}
+			gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender, sendTime=CurTime()}
 			tbl.id = id
 		end
 		
@@ -194,10 +202,17 @@ function gPhone.receiveResponse( tbl )
 		-- Update response table
 		gPhone.requestIDs[tbl.id].responded = true
 		gPhone.requestIDs[tbl.id].accepted = tbl.bAccepted
+		gPhone.requestIDs[tbl.id].receiveTime = CurTime()
 	
 		hook.Run( "gPhone_responseSent", tbl.sender, tbl.target, tbl, id )
 		-- Forward the response
 		gPhone.sendResponse( tbl, tbl.target )
+		
+		timer.Simple(5, function()
+			if tbl.id and gPhone.requestIDs[tbl.id] then
+				gPhone.requestIDs[tbl.id] = {}
+			end
+		end)
 	else
 		-- Generate a response text based off the string table
 		local message 
@@ -220,6 +235,21 @@ function gPhone.receiveResponse( tbl )
 	end
 end	
 
+--// Waits until a reponse is given for the id and then calls a function (bAccepted, tbl)
+function gPhone.waitForResponse( id, callback )
+	local startTime = CurTime()
+	
+	if gPhone.requestIDs[id] then
+		hook.Add("Think", "gPhone_waitFor"..id, function()
+			if gPhone.requestIDs[id].responded == true then
+				callback( gPhone.requestIDs[id].accepted, gPhone.requestIDs[id] )
+				hook.Remove("Think", "gPhone_waitFor"..id)
+			end
+		end)
+	end
+end
+
+--// Returns if a request has been accepted
 function gPhone.getRequestAccepted( id )
 	if gPhone.requestIDs[id] then
 		-- Was the request with this id accepted?
@@ -227,24 +257,12 @@ function gPhone.getRequestAccepted( id )
 	end
 end
 
+--// Returns if a request has been responded
 function gPhone.getRequestResponded( id )
 	if gPhone.requestIDs[id] then
 		-- Was there a response to this request?
 		return gPhone.requestIDs[id].responded
 	end
-end
-
-function gPhone.getRequestsByPlayer( ply )
-	local reqs = {}
-	
-	for id, tbl in pairs( gPhone.requestIDs ) do
-		if tbl.sender == ply or tbl.target == ply then
-			-- Oldest entry would be the most recent request
-			table.insert(reqs, id)
-		end
-	end
-	
-	return reqs
 end
 
 --// Sends a colored message to console

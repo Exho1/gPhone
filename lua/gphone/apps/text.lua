@@ -236,6 +236,8 @@ function APP.PopulateMessages( id )
 
 	messageTable = gPhone.loadTextMessages()
 	
+	PrintTable(messageTable)
+	
 	-- Panel to write and send new gMessages
 	local writePanelOffset = 30
 	local send, textBox
@@ -291,7 +293,7 @@ function APP.PopulateMessages( id )
 			
 			-- Manage colors
 			local col, textcol
-			if tbl.self then
+			if tbl.sender == LocalPlayer():Nick() then
 				col = Color(80, 235, 80)
 				textcol = color_white
 			else
@@ -398,6 +400,8 @@ function APP.NewConversation()
 	for k, v in pairs( player.GetAll() ) do 
 		table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
 	end
+	
+	--table.insert(playerList, {name="Emergency Services", number=911})
 	
 	-- Create a list of all connected players to help with sending messages
 	local messageTarget

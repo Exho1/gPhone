@@ -6,7 +6,7 @@ local client = LocalPlayer()
 concommand.Add("gphone_build", function()
 	if gPhone.exists() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot have multiple instances of the gPhone running!" )
-		--return
+		return
 	end
 	gPhone.buildPhone()
 end)
@@ -20,7 +20,7 @@ concommand.Add("gphone_destroy", function()
 end)
 
 concommand.Add("gphone_version", function()
-	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the Garry Phone version: "..gPhone.version )
+	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the gPhone version: "..gPhone.version )
 end)
 
 
@@ -32,7 +32,7 @@ end)
 
 concommand.Add("notify_p", function()
 	gPhone.notifyBanner( {msg="Banner "..math.random(10, 400),
-	app="settings"},
+	app="Settings", title="OVERRIDE"},
 	function( app )
 
 	end)
@@ -55,8 +55,6 @@ end)
 concommand.Add("reqgame", function()
 	gPhone.requestGame(LocalPlayer(), "gPong")
 end)
-
-
 -- END TEMPORARY
 
 --// Chat messages
@@ -114,6 +112,19 @@ function gPhone.drawPanelBlur( panel, layers, density, alpha )
 		render.UpdateScreenEffectTexture()
 		surface.DrawTexturedRect( -x, -y, ScrW(), ScrH() )
 	end
+end
+
+--// Time formatting function by Bad King Ugrain used in Trouble in Terrorist Town
+function gPhone.simpleTime(seconds, fmt)
+	if not seconds then seconds = 0 end
+
+    local ms = (seconds - math.floor(seconds)) * 100
+    seconds = math.floor(seconds)
+    local s = seconds % 60
+    seconds = (seconds - s) / 60
+    local m = seconds % 60
+
+    return string.format(fmt, m, s, ms)
 end
 
 --// Hide or show children of a panel
@@ -302,7 +313,6 @@ end
 function gPhone.setAppVisible( name, bVisible )
 	local nameL = name:lower()
 	
-	PrintTable(gPhone.apps)
 	local gAppsKey 
 	for k, v in pairs(gPhone.apps) do
 		if v.name:lower() == nameL then
@@ -319,6 +329,23 @@ function gPhone.setAppVisible( name, bVisible )
 	end
 	
 	gPhone.saveAppPositions( gPhone.apps )
+end
+
+function gPhone.getAppVisible( name )
+	local nameL = name:lower()
+	
+	local gAppsKey 
+	for k, v in pairs(gPhone.apps) do
+		if v.name:lower() == nameL then
+			gAppsKey = k
+		end
+	end
+	
+	if gPhone.apps[gAppsKey].hidden == nil then
+		return true
+	else
+		return false
+	end
 end
 
 --// Push a string into another at the specified key
@@ -412,6 +439,8 @@ function gPhone.sendTextMessage( target, msg )
 	
 	local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
 	
+	print("Send text to ", target)
+	
 	-- Off to the server!
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
@@ -429,17 +458,22 @@ end
 
 --// Saves a text message to an existing txt document or a new one
 function gPhone.receiveTextMessage( tbl, bSelf )
-	-- tbl.sender, tbl.self, tbl.time, tbl.date, tbl.message
+	-- tbl.sender, tbl.target, tbl.self, tbl.time, tbl.date, tbl.message,
 	local writeTable = {}
 	local ply
-	if bSelf then
+	if tbl.target == LocalPlayer():Nick() then
 		ply = util.getPlayerByNick( tbl.sender )
 	else
 		ply = util.getPlayerByNick( tbl.target )
 	end
+	--[[if bSelf then
+		ply = util.getPlayerByNick( tbl.sender )
+	else
+		ply = util.getPlayerByNick( tbl.target )
+	end]]
 	local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
 	
-	print("Received", bSelf, tbl.sender, tbl.target)
+	print("Received text", bSelf, tbl.sender, tbl.target, idFormat)
 	
 	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
 		local readFile = file.Read( "gphone/messages/"..idFormat..".txt", "DATA" )
@@ -472,11 +506,13 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	end
 	
-	local bannerTable = {app="Messages", msg=tbl.message}
-		
-	gPhone.notifyBanner( bannerTable, function( app )
-		gPhone.runApp( app )
-	end)
+	if not bSelf then
+		local bannerTable = {app="Messages", title=tbl.sender, msg=tbl.message}
+			
+		gPhone.notifyBanner( bannerTable, function( app )
+			gPhone.runApp( app )
+		end)
+	end
 end
 
 --// Loads all text messages 
@@ -579,7 +615,6 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 			end
 		end
 		
-		print("Done", lineBreaks)
 		-- Reassemble the text 
 		text = table.concat( frags, "" )
 		label:SetText( text )
@@ -607,8 +642,8 @@ function gPhone.incrementBadge( app, id )
 	end
 	
 	-- Log to console and insert into the badge table
-	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
 	table.insert( gPhone.appBadges[app], id )
+	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Incremented "..app.." badge to "..#gPhone.appBadges[app].." with id: "..id )
 	
 	-- Rebuild on homescreen
 	if gPhone.isOnHomescreen then

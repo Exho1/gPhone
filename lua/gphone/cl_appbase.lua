@@ -27,7 +27,7 @@ end
 gApp["_close_"] = function( app )
 	gPhone.phoneScreen.Paint = oldScreenPaint
 	gPhone.phoneScreen.Think = oldScreenThink
-	 gPhone.phoneScreen.OnMousePressed = oldScreenMousePressed
+	gPhone.phoneScreen.OnMousePressed = oldScreenMousePressed
 	
 	if app and app.Data then
 		if app.Data.Close then
