@@ -1,6 +1,7 @@
 ----// Clientside Application Base //----
 
 local client = LocalPlayer()
+local trans = gPhone.getTranslation
 
 -- gApp is the gPhone's app base, it contains all the apps and related functions
 gApp = {}
@@ -16,6 +17,7 @@ local oldScreenMousePressed = nil
 
 -- Prepares the phone to run an application
 gApp["_init_"] = function()
+	gPhone.log("gApp Init")
 	oldScreenPaint = gPhone.phoneScreen.Paint
 	oldScreenThink = gPhone.phoneScreen.Think
 	oldScreenMousePressed = gPhone.phoneScreen.OnMousePressed
@@ -25,6 +27,7 @@ end
 
 -- Removes application panels and restores the home screen
 gApp["_close_"] = function( app )
+	gPhone.log("gApp Close")
 	gPhone.phoneScreen.Paint = oldScreenPaint
 	gPhone.phoneScreen.Think = oldScreenThink
 	gPhone.phoneScreen.OnMousePressed = oldScreenMousePressed
@@ -71,8 +74,11 @@ function gPhone.importApps()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Importing applications..." )
 	local files = file.Find( "gphone/apps/*.lua", "LUA" )
 	
+	gPhone.log("Found "..#files.." app files to be loaded")
+	
 	if #files == 0 then
-		error("gPhone was unable to load any apps!")
+		gPhone.msgC(GPHONE_MSGC_WARNING, "No apps were able to be loaded!! Dumping debug log")
+		gPhone.dumpLog()
 		return
 	end
 	
@@ -85,6 +91,7 @@ end
 --// Adds an application table to the phone
 function gPhone.addApp( tbl )
 	local name = string.lower(tbl.PrintName) or "error"
+	gPhone.log("Adding application "..name.." to the phone")
 	
 	gApp[name] = {
 		["Data"] = tbl,
@@ -133,6 +140,7 @@ end
 
 --// Runs the app on the phone
 function gPhone.runApp(name)
+	gPhone.log("Running app "..name)
 	local name = string.lower(name)
 	
 	if gApp["_active_"] then
@@ -147,8 +155,8 @@ function gPhone.runApp(name)
 		-- Check if the app has a set run gamemode
 		local appGM = app.Data.Gamemode
 		if appGM != nil and appGM != "" then
-			if string.lower(appGM) != string.lower(engine.ActiveGamemode()) then
-				gPhone.denyApp( appGM, "This app cannot be used in this\r\n gamemode!" )
+			if string.lower(appGM) != string.lower(engine.ActiveGamemode()) then	
+				gPhone.denyApp( appGM, trans("app_deny_gm" ) )
 				return
 			end
 		end
@@ -165,7 +173,7 @@ function gPhone.runApp(name)
 			end
 			
 			if not isWhitelisted then 
-				gPhone.denyApp( appGM, "Your usergroup cannot use this app!" )
+				gPhone.denyApp( appGM, trans("app_deny_group" ) )
 				return 
 			end
 		end
@@ -195,6 +203,7 @@ end
 
 --// Opens an app from another app
 function gPhone.switchApps( newApp )
+	gPhone.log("Switching apps to "..newApp)
 	gPhone.toHomeScreen()
 	timer.Simple(0.3, function()
 		gPhone.runApp( newApp )
@@ -220,11 +229,11 @@ function gPhone.denyApp( gmName, reason )
 	end
 	
 	local topError = vgui.Create( "DLabel", objs.Container ) -- Header
-	topError:SetText( "[App Error]" )
+	topError:SetText( trans("app_error") )
 	topError:SetTextColor(Color(0,0,0))
 	topError:SetFont("gPhone_22")
 	topError:SizeToContents()
-	local width, height = gPhone.getTextSize("App Error", "gPhone_22")
+	local width, height = gPhone.getTextSize(trans("app_error"), "gPhone_22")
 	topError:SetPos( containerWidth/2 - width/2, 5 )
 	
 	local errorMsg = vgui.Create( "DLabel", objs.Container ) -- Actual message
@@ -232,6 +241,7 @@ function gPhone.denyApp( gmName, reason )
 	errorMsg:SetTextColor(Color(0,0,0))
 	errorMsg:SetFont("gPhone_14")
 	errorMsg:SizeToContents()
+	gPhone.WordWrap( errorMsg, objs.Container, 10 )
 	local width, height = gPhone.getTextSize(reason, "gPhone_14")
 	errorMsg:SetPos( containerWidth/2 - width/2, 30 )
 end

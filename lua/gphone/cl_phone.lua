@@ -1,11 +1,18 @@
 ----// Clientside Phone //----
 
 local client = LocalPlayer()
+local trans = gPhone.getTranslation
 local phone = Material( "vgui/gphone/gphone.png" )
 local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)	
 
 --// Builds the phone 
 function gPhone.buildPhone()
+
+	gPhone.wipeLog()
+	
+	if game.SinglePlayer() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Running the phone in single player!!")
+	end
 	
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
@@ -98,10 +105,10 @@ function gPhone.buildPhone()
 		end
 		
 		if battPerc < math.random(1, 4) then -- Simulate a phone dying, its kinda silly and few people will ever see it
-			gPhone.chatMsg( "Your phone has run out of battery and died! Recharging..." )
+			gPhone.chatMsg( trans("battery_dead") )
 			gPhone.hidePhone()
 			timer.Simple(math.random(2, 5), function()
-				gPhone.chatMsg( "Phone recharged!" )
+				gPhone.chatMsg( trans("battery_okay") )
 				gPhone.showPhone()
 				battPerc = 100
 			end)
@@ -160,7 +167,7 @@ function gPhone.buildPhone()
 	end
 	
 	local serviceProvider = vgui.Create( "DLabel", gPhone.phoneScreen )
-	serviceProvider:SetText( "Garry" )
+	serviceProvider:SetText( trans("service_provider") )
 	serviceProvider:SizeToContents()
 	local lastDot = signalDots[#signalDots]
 	serviceProvider:SetPos( lastDot:GetPos() + lastDot:GetWide() + 5, 0 )
@@ -338,6 +345,8 @@ function gPhone.buildPhone()
 	
 	-- Handles the delete button and function for applications
 	gPhone.homeIconLayout.deleteApps = function( self )
+		gPhone.log("Toggle app deletion mode - "..tostring(gPhone.appDeleteMode))
+		
 		local dontDelete = {
 			"settings",
 			"app store",
@@ -406,8 +415,9 @@ function gPhone.buildPhone()
 	-- Handles the dropping of icons on the home screen
 	gPhone.homeIconLayout:Receiver( "gPhoneIcon", function( pnl, item, drop, i, x, y ) 
 		if drop then
+			gPhone.log("Dropped a homescreen icon")
 			if not gPhone.canMoveApps then 
-				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps" )
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to move apps at this moment" )
 				return
 			end
 			
@@ -484,7 +494,7 @@ function gPhone.buildPhone()
 				elseif x >= iX + iW/3 and x <= iX + iW - iW/3 then
 					if y >= iY and y <= iY + iH and not gPhone.inFolder() then	
 						local targetKey = k 
-						local droppedData = {name="Folder", apps={}} 
+						local droppedData = {name=trans("folder_fallback"), apps={}} 
 						local droppedKey = 0
 						
 						-- Get the name and image of the icon we are moving
@@ -548,7 +558,7 @@ function gPhone.buildPhone()
 								end
 							end
 
-							droppedData.name = tag or "Folder"
+							droppedData.name = tag or trans("folder_fallback")
 						end
 						
 						-- Table stuff
@@ -647,12 +657,7 @@ function gPhone.buildPhone()
 		
 		-- Run a pass through the table to fix issues
 		gPhone.fixHomescreen( tbl )
-		
-		--tbl = {}
-		--[[for i = 1, 25 do
-			table.insert( tbl, {icon="as", name="Test_"..i} )
-		end]]
-		
+
 		-- Start building apps and folders
 		local xBuffer, yBuffer, iconCount = 0, 0, 1
 		for key, data in pairs( tbl ) do
@@ -804,6 +809,8 @@ function gPhone.buildPhone()
 
 				-- Handle the building of folders
 				previewPanel.DoClick = function( self )
+					gPhone.log("Opening folder")
+					
 					data.pnl = bgPanel
 					gPhone.setActiveFolder( data )
 					gPhone.setActiveFolderPanel( self )
@@ -871,11 +878,12 @@ function gPhone.buildPhone()
 						self:SetPos( sizeLabel:GetPos() )
 					end
 					nameEditor.OnEnter = function( self )
+						gPhone.log("Changed homescreen folder name from "..data.name.." to "..self:GetText())
 						local text = string.Trim( self:GetText() )
 						if text != "" then
 							data.name = self:GetText()
 						else
-							self:SetText("Invalid")
+							self:SetText( trans("invalid_folder_name") )
 						end
 					end
 					-- Why doesn't the text entry have a variable or function for that?

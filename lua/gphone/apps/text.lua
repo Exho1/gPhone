@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "Messages"
 APP.Icon = "vgui/gphone/messages.png"
@@ -10,7 +11,7 @@ function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
-	objects.Title:SetText( "Messages" )
+	objects.Title:SetText( trans("messages") )
 	objects.Title:SetTextColor(Color(0,0,0))
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SizeToContents()
@@ -70,7 +71,7 @@ function APP.PopulateMain( layout )
 		local deleteConvo = vgui.Create( "DButton", backbackground )
 		deleteConvo:SetSize(deleteOffset, deleteOffset)
 		deleteConvo:SetPos(backbackground:GetWide()-deleteOffset,0)
-		deleteConvo:SetText("Delete")
+		deleteConvo:SetText( trans("delete") )
 		deleteConvo:SetFont("gPhone_18lite")
 		deleteConvo:SetColor( color_white )
 		deleteConvo:SetVisible(false)
@@ -151,18 +152,18 @@ function APP.PopulateMain( layout )
 			if dateFrags[3] != stampFrags[3] then -- Different year
 				local yearDif = tonumber(dateFrags[3]) - tonumber(stampFrags[3]) 
 				if yearDif == 1 then
-					timeStamp = "Last Year"
+					timeStamp = trans("last_year")
 				else -- Ha, like this will ever happen.
-					timeStamp = yearDif.." Years Ago"
+					timeStamp = yearDif.." "..trans("years_ago")
 				end
 			end
 			
 			if dateFrags[1] == stampFrags[1] then -- Same month
 				local dayDif = tonumber(dateFrags[2]) - tonumber(stampFrags[2]) 
 				if dayDif == 1 then
-					timeStamp = "Yesterday"
+					timeStamp = trans("yesterday")
 				elseif dayDif <= 7 then
-					timeStamp = dayDif.." Days Ago"
+					timeStamp = dayDif.." "..trans("days_ago")
 				else
 					timeStamp = dateStamp
 				end
@@ -262,7 +263,7 @@ function APP.PopulateMessages( id )
 	send = vgui.Create( "DButton", objects.WritePanel )
 	send:SetSize( 30, 20 )
 	send:SetPos( objects.WritePanel:GetWide() - 40, 5 )
-	send:SetText("Send")
+	send:SetText( trans("send") )
 	send:SetFont("gPhone_16")
 	send.Paint = function() end
 	send.DoClick = function()
@@ -353,7 +354,7 @@ function APP.NewConversation()
 	objects.NewText:SetVisible( false )
 	objects.Back:SetVisible( true )
 	gPhone.hideChildren( objects.Layout )
-	gPhone.setTextAndCenter( objects.Title, "New Message", screen )
+	gPhone.setTextAndCenter( objects.Title, trans("new_msg"), screen )
 	
 	local oldPaint = objects.LayoutScroll.Paint
 	local oldW, oldH = objects.LayoutScroll:GetSize()
@@ -476,7 +477,7 @@ function APP.NewConversation()
 	end
 	
 	objects.To = vgui.Create( "DLabel", objects.TargetPanel )
-	objects.To:SetText( "To:" )
+	objects.To:SetText( trans("to") )
 	objects.To:SetTextColor(Color(0,0,0))
 	objects.To:SetFont("gPhone_14")
 	objects.To:SizeToContents()
@@ -504,13 +505,13 @@ function APP.NewConversation()
 	sendButton = vgui.Create( "DButton", objects.WritePanel )
 	sendButton:SetSize( 30, 20 )
 	sendButton:SetPos( objects.WritePanel:GetWide() - 40, 5 )
-	sendButton:SetText("Send")
+	sendButton:SetText( trans("send") )
 	sendButton:SetFont("gPhone_16")
 	sendButton.Paint = function() end
 	sendButton.DoClick = function()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
-			gPhone.setTextAndCenter(objects.Title, "Messages",  screen)
+			gPhone.setTextAndCenter(objects.Title, trans("messages"),  screen)
 			
 			gPhone.sendTextMessage( messageTarget:GetText(), messageBox:GetText() ) 
 			messageBox:SetText("")

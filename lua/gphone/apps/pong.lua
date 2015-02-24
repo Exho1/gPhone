@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "gPong"
 APP.Icon = "vgui/gphone/pong.png"
@@ -8,14 +9,14 @@ APP.Tags = {"Game", "Retro", "2D"}
 
 --// Game variables
 local gameOptions = {
-	"Player v Bot",
-	"Player v Player",
-	"Player v Self", 
+	trans("playerbot"),
+	trans("playerplayer"),
+	trans("playerself"), 
 }
 local difficultyLevels = {
-	["Easy"] = {ball=4, ply=4, bot=3},
-	["Intermediate"] = {ball=6, ply=5, bot=5},
-	["Hard"] = {ball=8, ply=7, bot=8},
+	[trans("easy")] = {ball=4, ply=4, bot=3},
+	[trans("medium")] = {ball=6, ply=5, bot=5},
+	[trans("hard")] = {ball=8, ply=7, bot=8},
 }
 local objectBounds = {}
 
@@ -71,7 +72,7 @@ function APP.Run( objects, screen )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_22")
 	title:SizeToContents()
-	gPhone.setTextAndCenter(title, "gPong", titleButton, true)
+	gPhone.setTextAndCenter(title, trans("gpong"), titleButton, true)
 	
 	local fake = objects.Layout:Add("DPanel")
 	fake:SetSize(screen:GetWide(), 50)
@@ -189,7 +190,7 @@ function APP.OptionClick( option )
 		local confirmButton = vgui.Create("DButton", confirmPanel)
 		confirmButton:SetPos(30, 0)
 		confirmButton:SetSize( confirmPanel:GetWide() - 60, confirmPanel:GetTall() )
-		confirmButton:SetText( "Challenge Player!" )
+		confirmButton:SetText( trans("challenge_ply") )
 		confirmButton:SetFont( "gPhone_18" )
 		confirmButton:SetTextColor( color_white )
 		confirmButton.Paint = function( self, w, h )
@@ -203,7 +204,7 @@ function APP.OptionClick( option )
 		confirmButton.DoClick = function()
 			local ply = util.getPlayerByNick( opponentPicker:GetText() )
 			if IsValid(ply) then
-				gPhone.chatMsg("Multiplayer is not implemented")
+				gPhone.chatMsg( trans("feature_deny") )
 				--gPhone.requestGame(ply, APP.PrintName)
 				
 				--local msg = LocalPlayer():Nick().." has invited you to play gPong!"
@@ -222,7 +223,7 @@ function APP.OptionClick( option )
 		local helpLabel = vgui.Create("DLabel", helpPanel)
 		helpLabel:SetPos(30, 0)
 		helpLabel:SetSize( helpPanel:GetWide() - 60, helpPanel:GetTall() )
-		helpLabel:SetText( " Player 1:\r\n W and S to move\r\n Player 2:\r\n Up and Down arrow keys" )
+		helpLabel:SetText( trans("gpong_self_instructions") )
 		helpLabel:SetFont( "gPhone_18" )
 		helpLabel.Paint = function( self, w, h )
 			surface.SetDrawColor( color_white )
@@ -240,7 +241,7 @@ function APP.OptionClick( option )
 		local optionButton = vgui.Create("DButton", optionPanel)
 		optionButton:SetPos(30, 0)
 		optionButton:SetSize( optionPanel:GetWide() - 60, optionPanel:GetTall() )
-		optionButton:SetText( "Start!" )
+		optionButton:SetText( trans("start") )
 		optionButton:SetFont( "gPhone_18" )
 		optionButton:SetTextColor( color_white )
 		optionButton.Paint = function( self, w, h )
@@ -401,7 +402,7 @@ function APP.SetUpGame( type )
 	
 	local resumeGame = layout:Add("DButton")
 	resumeGame:SetSize( layout:GetWide(), 50 )
-	resumeGame:SetText("Resume")
+	resumeGame:SetText( trans("resume") )
 	resumeGame:SetTextColor( color_white )
 	resumeGame:SetFont( "gPhone_18" )
 	resumeGame.Paint = function( self, w, h )
@@ -426,7 +427,7 @@ function APP.SetUpGame( type )
 	
 	local quitGame = layout:Add("DButton")
 	quitGame:SetSize( layout:GetWide(), 50 )
-	quitGame:SetText("Quit")
+	quitGame:SetText( trans("quit") )
 	quitGame:SetTextColor( color_white )
 	quitGame:SetFont( "gPhone_18" )
 	quitGame.Paint = function( self, w, h )
@@ -528,9 +529,9 @@ local function checkWin()
 			timer.Destroy( "gPong_StartDelay" ) 
 			
 			if p1Score >= winScore then
-				status:SetText("P1 wins!")
+				status:SetText(trans("p1_win"))
 			else
-				status:SetText("P2 wins!")
+				status:SetText(trans("p2_win"))
 			end
 			
 			timer.Simple(5, function()

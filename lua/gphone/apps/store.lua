@@ -9,7 +9,7 @@ function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
-	objects.Title:SetText( "App Store" )
+	objects.Title:SetText( trans("app_store") )
 	objects.Title:SetTextColor( color_black )
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SizeToContents()
@@ -64,11 +64,11 @@ function APP.PopulateList()
 		end
 		
 		local title = vgui.Create( "DLabel", bgPanel )
-		title:SetText( "No apps" )
+		title:SetText( trans("no_apps") )
 		title:SetTextColor( color_black )
 		title:SetFont("gPhone_16")
 		title:SizeToContents()
-		gPhone.setTextAndCenter( title, "There are no apps available, sorry :(", bgPanel, true )
+		gPhone.setTextAndCenter( title, trans("no_apps_phrase"), bgPanel, true )
 		return
 	end
 	
@@ -119,7 +119,7 @@ function APP.PopulateList()
 		local download = vgui.Create( "DButton", bgPanel )
 		download:SetSize( 40, 20 )
 		download:SetPos( bgPanel:GetWide() - download:GetWide() - 10, bgPanel:GetTall()/2 - download:GetWide()/4 )
-		download:SetText("Get")
+		download:SetText(trans("get"))
 		download.chosen = false
 		download.bgColor = gPhone.colors.blue
 		download.Paint = function( self, w, h )
@@ -146,20 +146,20 @@ function APP.PopulateList()
 					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Downloaded app ("..dName..") from app store" )
 					
 					gPhone.setAppVisible( dName, true )
-					download:SetText("Have")
+					download:SetText(trans("have"))
 				else
 					gPhone.msgC( GPHONE_MSGC_WARNING, "Not enough space on the homescreen to install app!" )
 					
-					local notifyTbl = {title="Error", 
-					msg="You do not have enough homescreen space to add a new app!",
-					options={"Okay"}}
+					local notifyTbl = {title=trans("error"), 
+					msg=trans("no_homescreen_space"),
+					options={trans("okay")}}
 					gPhone.notifyAlert( notifyTbl, nil, nil, true )
 				end
 			else -- Uninstall recently downloaded app
 				gPhone.msgC( GPHONE_MSGC_NOTIFY, "Uninstalled app ("..dName..") from app store" )
 				
 				gPhone.setAppVisible( dName, false )
-				download:SetText("Get")
+				download:SetText(trans("get"))
 				
 				-- Remove from the app panels table so it will fail when we look for removed apps
 				for k, tbl in pairs( gPhone.appPanels ) do

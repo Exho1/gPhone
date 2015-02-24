@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "Phone"
 APP.Icon = "vgui/gphone/phone.png"
@@ -176,11 +177,11 @@ function APP.StartCall( number )
 			LocalPlayer():ConCommand("+voicerecord")
 			
 			local buttons = {
-				"mute",
-				"keypad",
-				"speaker",
+				trans("mute"):lower(),
+				trans("keypad"):lower(),
+				trans("speaker"):lower(),
 				"_SPACE_",
-				"add",
+				trans("add"):lower(),
 			}
 			
 			gPhone.hideChildren( objects.layout )
@@ -226,10 +227,10 @@ function APP.StartCall( number )
 					numButton.color = Color(230, 230, 230)
 					numButton.bool = false
 					local matCircle = Material("vgui/gphone/circle.png")
-					local matIcon = Material("vgui/gphone/i_"..name..".png")
+					local matIcon = Material("vgui/gphone/i_"..gPhone.getTranslationEN( name )..".png")
 					local matSecondIcon = nil
 					
-					if name == "mute" then
+					if name == buttons[1] then
 						matSecondIcon = Material("vgui/gphone/i_speaker.png")
 					end
 					
@@ -264,13 +265,13 @@ function APP.StartCall( number )
 						-- First click makes it true
 						self.bool = !self.bool
 						
-						if name == "mute" then
+						if name == buttons[1] then
 							if self.bool == false then
 								LocalPlayer():ConCommand("+voicerecord")
-								numButton.text = "mute"
+								numButton.text = trans("mute"):lower()
 							else
 								LocalPlayer():ConCommand("-voicerecord")
-								numButton.text = "unmute"
+								numButton.text = trans("unmute"):lower()
 							end
 						end
 					end
@@ -289,7 +290,7 @@ function APP.StartCall( number )
 			local endCall = vgui.Create("DButton", buttonBG)
 			endCall:SetSize( screen:GetWide() - 40, 50 )
 			endCall:SetPos( 20, screen:GetTall() - endCall:GetTall() - 40 )
-			endCall:SetText( "End Call" )
+			endCall:SetText( trans("end_call") )
 			endCall:SetTextColor( color_white )
 			endCall:SetFont("gPhone_24")
 			endCall.Paint = function( self, w, h )

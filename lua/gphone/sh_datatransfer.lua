@@ -1,5 +1,6 @@
 ----// Shared Net Messages for "gPhone_DataTransfer" //----
 
+local trans = gPhone.getTranslation
 
 if SERVER then
 	--// Receives data from applications and runs it on the server
@@ -8,9 +9,15 @@ if SERVER then
 		local data = net.ReadTable()
 		local header = data.header
 		
+		ply.netCount = ply.netCount + 1
+		
 		hook.Run( "gPhone_ReceivedClientData", ply, header, data )
 		
 		if header == GPHONE_MONEY_TRANSFER then -- Money transaction
+			if not ply.getDarkRPVar then
+				gPhone.chatMsg( ply, trans("transfer_fail_gm") )
+			end
+			
 			local amount = tonumber(data.amount)
 			local target = data.target
 			local plyWallet = tonumber(ply:getDarkRPVar("money"))
@@ -18,18 +25,20 @@ if SERVER then
 			-- Cooldowns to prevent spam
 			if ply:getTransferCooldown() > 0 then
 				gPhone.chatMsg( ply, "You must wait "..math.Round(ply:getTransferCooldown()).."s before sending more money" )
+				gPhone.chatMsg( ply, string.format( trans("transfer_fail_cool"), math.Round(ply:getTransferCooldown()) ) )
 				return
 			end
 			
 			-- If the player disconnected or they are sending money to themselves, stop the transaction
 			if not IsValid(target) or target == ply then
-				gPhone.chatMsg( ply, "Unable to complete transaction - invalid recipient" )
+				gPhone.chatMsg( ply, trans("transfer_fail_ply") )
 				return
 			end
 			
 			-- If a negative or string amount got through, stop it
 			if amount < 0 or amount == nil then 
-				gPhone.chatMsg( ply, "Unable to complete transaction - nil amount" )
+				gPhone.chatMsg( ply, trans("transfer_fail_amount") )
+				gPhone.kick( ply, 23 ) 
 				return
 			else
 				-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash 
@@ -44,7 +53,7 @@ if SERVER then
 					if denyReason != nil then
 						gPhone.chatMsg( ply, denyReason )
 					else
-						gPhone.chatMsg( ply, "Unable to complete transaction, sorry" )
+						gPhone.chatMsg( ply, trans("transfer_fail_generic") )
 					end
 					return
 				end
@@ -52,18 +61,16 @@ if SERVER then
 				-- Complete the transaction
 				target:addMoney(amount)
 				ply:addMoney(-amount)
-				gPhone.chatMsg( target, "Received $"..amount.." from "..ply:Nick().."!" )
-				gPhone.chatMsg( ply, "Wired $"..amount.." to "..target:Nick().." successfully!" )
-				gPhone.confirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
 				
+				gPhone.chatMsg( target, string.format( trans("received_money"), amount, ply:Nick() ) )
+				gPhone.chatMsg( ply, string.format( trans("sent_money"), amount, target:Nick() ) )
+				
+				gPhone.confirmTransaction( ply, {target=target:Nick(), amount=amount, time=os.date( "%x - %I:%M%p")} )
 				ply:setTransferCooldown( 5 )
-			else	
-				gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." attempted to force a transaction with more money than they had!" )
-				gPhone.chatMsg( ply, "Unable to complete transaction - lack of funds" )
+			else
+				gPhone.chatMsg( ply, trans("transfer_fail_funds") )
 				return
 			end
-		elseif header == GPHONE_REQUEST_TEXTS then
-			
 		elseif header == GPHONE_TEXT_MSG then
 			local canText = ply:GetNWBool("gPhone_CanText", true)
 			local msgTable = {}
@@ -76,7 +83,7 @@ if SERVER then
 			
 			-- Flagged for spam
 			if not canText then
-				gPhone.chatMsg( ply, "You cannot text for "..math.Round(ply.TextCooldown).." more seconds!" )
+				gPhone.chatMsg( ply, string.format( trans("text_cooldown"), math.Round(ply.TextCooldown) ) )
 				return 
 			end
 			
@@ -101,7 +108,7 @@ if SERVER then
 					ply.TextCooldown = gPhone.config.textSpamCooldown
 					
 					gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been caught spamming the texting system" )
-					gPhone.chatMsg( ply, "To prevent spam, you have been blocked from texting for "..ply.TextCooldown.." seconds!" )
+					gPhone.chatMsg( ply, string.format( trans("text_flagged"), ply.TextCooldown ) )
 					ply.MessageCount = 0 
 					
 					-- Countdown until the cooldown ends
@@ -118,8 +125,6 @@ if SERVER then
 					end)
 				end
 			end)
-			
-			print("Send message to ", target)
 			
 			-- Send the message the the target
 			net.Start("gPhone_DataTransfer")
@@ -148,15 +153,15 @@ if SERVER then
 			local targetPly = gPhone.getPlayerByNumber( targetNum )
 			
 			print("Calling", targetNum, callingNum)
-			local reqStr = ply:Nick().." is calling you"
-			local id = gPhone.sendRequest( {sender=ply, app="Phone", msg=reqStr}, targetPly )
+			local reqStr = string.format( trans("being_called"), ply:Nick() )
+			local id = gPhone.sendRequest( {sender=ply, app="phone", msg=reqStr}, targetPly )
 			
 			gPhone.waitForResponse( id, function( bAccepted, tbl ) 
 				print("Got response!")
 				if bAccepted == true then
 					gPhone.createCall( ply, targetPly )
 				else
-				
+					-- Timeout after a certain amount of time
 				end
 			end)
 		elseif header == GPHONE_NEW_NUMBER then
@@ -164,6 +169,22 @@ if SERVER then
 		elseif header == GPHONE_END_CALL then
 			local id = gPhone.getCallID( ply )
 			gPhone.endCall( id )
+		end
+	end)
+	
+	local nextCheck = 0
+	hook.Add("Think", "gPhone_netAntiSpam", function()
+		if CurTime() > nextCheck then
+			for k, v in pairs(player.GetAll()) do
+				if v.netCount and v.netCount > 100 then
+					-- Kick the player for attempting to overflow net messages and lag the server, "code" 64
+					gPhone.kick( v, 64 )
+				end
+				
+				v.netCount = 0
+			end
+			
+			nextCheck = CurTime() + 2
 		end
 	end)
 end

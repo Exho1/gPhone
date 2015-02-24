@@ -1,6 +1,7 @@
 ----// Clientside Animations //----
 
 local client = LocalPlayer()
+local trans = gPhone.getTranslation
 
 -- Animations need to be smooth and so they should probably take RealFrameTime into account, I won't use tickers
 
@@ -292,7 +293,7 @@ function gPhone.buildLockScreen()
 	dateLabel:SetPos( screen:GetWide()/2 - dateLabel:GetWide()/2, 70 )
 	
 	slideUnlock = vgui.Create( "DLabel", screen )
-	slideUnlock:SetText( "slide to unlock" )
+	slideUnlock:SetText( trans("slide_unlock") )
 	slideUnlock:SetFont("gPhone_18Lite")
 	slideUnlock:SizeToContents()
 	slideUnlock:SetPos( screen:GetWide()/2 - slideUnlock:GetWide()/2, screen:GetTall() - slideUnlock:GetTall() - 50 )

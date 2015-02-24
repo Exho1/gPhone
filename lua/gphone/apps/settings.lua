@@ -1,47 +1,45 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
 APP.Author = "Exho"
 APP.Tags = {"Manage", "Config"}
 
-
 local topLevelTabs = {
-	"General",
-	"Wallpaper",
-	"Homescreen",
+	trans("general"),
+	trans("wallpaper"),
+	trans("homescreen"),
 	"_SPACE_", 
-	"Text",
-	"Phone",
-	"Contacts",
 }
 
 local generalLevelTabs = {
-	"About",
-	"Update",
+	trans("about"),
+	trans("update"),
 	"_SPACE_",
-	"Color",
-	"Archive"
+	trans("color"),
+	trans("archive")
 }
 
 local homescreenLevelTabs = {
-	{text="Show unusable apps", button=false},
+	{text=trans("show_unusable_apps"), button=false},
 	{text="_SPACE_", button=false},
-	{text="Reset icon positions", button=true},
+	{text=trans("reset_app_pos"), button=true},
 }
 
 local archivePanels = {
-	{text="Archive cleanup", toggle=true, val="deleteArchivedFiles"},
-	{text="File life (days)", val="daysToCleanupArchive"},
+	{text=trans("archive_cleanup"), toggle=true, val="deleteArchivedFiles"},
+	{text=trans("file_life"), val="daysToCleanupArchive"},
 	{text="_SPACE_"},
-	{text="Wipe archive", button=true},
+	{text=trans("wipe_archive"), button=true},
 }
 
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
+	print(trans("settings"))
 	objects.Title = vgui.Create( "DLabel", screen )
-	objects.Title:SetText( "Settings" )
+	objects.Title:SetText( trans("settings") )
 	objects.Title:SetTextColor( color_black )
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SizeToContents()
@@ -107,7 +105,7 @@ function APP.ToMainScreen()
 	local screen = gPhone.phoneScreen
 	
 	objects.Back:SetVisible( false )
-	gPhone.setTextAndCenter(objects.Title, "Settings", screen)
+	gPhone.setTextAndCenter(objects.Title, trans("settings"), screen)
 	
 	for k, pnl in pairs( objects ) do
 		pnl:Remove()
@@ -122,8 +120,8 @@ function APP.OpenTab( name )
 	local screen = gPhone.phoneScreen
 	name = string.lower( name )
 	
-	if name == "wallpaper" then
-		APP.PrepareNewTab( "Wallpaper" )
+	if name == trans("wallpaper"):lower() then
+		APP.PrepareNewTab( trans("wallpaper") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -143,7 +141,7 @@ function APP.OpenTab( name )
 		end
 		
 		local text = vgui.Create( "DLabel", newBG )
-		text:SetText( "Choose a new wallpaper" )
+		text:SetText( trans("choose_new_wp") )
 		text:SetTextColor(Color(0,0,0))
 		text:SetFont("gPhone_18")
 		text:SizeToContents()
@@ -175,12 +173,12 @@ function APP.OpenTab( name )
 			previewLock:SetVisible(false)
 			previewHome:SetVisible(false)
 			background:SetSize(screen:GetWide(), screen:GetTall()/2)
-			text:SetText("Wallpaper Selector")
+			text:SetText( trans("wp_selector") )
 			text:SizeToContents()
 			
 			-- Create a tree
 			local tree = vgui.Create("DTree", background)
-				local dir = tree:AddNode( "Wallpapers" )
+				local dir = tree:AddNode( trans("wallpapers") )
 				dir:MakeFolder( "materials/vgui/gphone/wallpapers", "GAME", true ) -- Set it to the wallpaper directory
 			tree:SetSize( screen:GetWide()/1.5, 170 )
 			tree:SetPos( screen:GetWide()/2 - tree:GetWide()/2, 10)
@@ -208,7 +206,7 @@ function APP.OpenTab( name )
 			-- If your wallpaper is white, the status bar will be hard to see
 			local darkenStatusBar = vgui.Create( "DCheckBoxLabel", background )
 			darkenStatusBar:SetPos( 50, y + tree:GetTall() + 5)
-			darkenStatusBar:SetText( "Darken Status Bar" )	
+			darkenStatusBar:SetText( trans("dark_status") )	
 			darkenStatusBar:SizeToContents()
 			darkenStatusBar:SetTextColor( Color(0,0,0) )
 			darkenStatusBar:SetValue( gPhone.config.darkStatusBar )
@@ -226,7 +224,7 @@ function APP.OpenTab( name )
 			local useAsLock = vgui.Create("DButton", buttonBG)
 			useAsLock:SetSize(screen:GetWide()/2, 30)
 			useAsLock:SetPos( 0, 0 )
-			useAsLock:SetText("Set Lockscreen")
+			useAsLock:SetText( trans("set_lock") )
 			useAsLock.Paint = function(self)
 				if not self:IsDown() then
 					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
@@ -243,7 +241,7 @@ function APP.OpenTab( name )
 			local useAsHome = vgui.Create("DButton", buttonBG)
 			useAsHome:SetSize(screen:GetWide()/2, 30)
 			useAsHome:SetPos( buttonBG:GetWide() - useAsHome:GetWide(), 0 )
-			useAsHome:SetText("Set Homescreen")
+			useAsHome:SetText( trans("set_home") )
 			useAsHome.Paint = function(self)
 				if not self:IsDown() then
 					draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
@@ -256,8 +254,8 @@ function APP.OpenTab( name )
 				gPhone.saveClientConfig()
 			end
 		end
-	elseif name == "general" then
-		APP.PrepareNewTab( "General" )
+	elseif name == trans("general"):lower() then
+		APP.PrepareNewTab( trans("general"))
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -294,8 +292,8 @@ function APP.OpenTab( name )
 				title:SetPos( 35, 5 )
 			end
 		end
-	elseif name == "homescreen" then
-		APP.PrepareNewTab( "Homescreen" )
+	elseif name == trans("homescreen"):lower() then
+		APP.PrepareNewTab( trans("Homescreen") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -325,8 +323,8 @@ function APP.OpenTab( name )
 				end
 				layoutButton.DoClick = function( self )
 					if name == homescreenLevelTabs[3].text then -- Reset
-						gPhone.notifyAlert( {msg="Are you sure you want to reset the homescreen icon positions?",
-						title="Confirmation", options={"No", "Yes"}}, nil, 
+						gPhone.notifyAlert( {msg=trans("reset_homescreen"),
+						title=trans("confirm"), options={trans("no"), trans("yes")}}, nil, 
 						function( pnl, value )
 							-- On yes, move the file to the garbage directory
 							gPhone.discardFile( "gphone/homescreen_layout.txt" )
@@ -372,10 +370,11 @@ end
 function APP.OpenLowerTab( name, upperTabName )
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
-	name = string.lower(name)
 	
-	if name == "about" then
-		APP.PrepareNewTab( "About" )
+	name = name:lower()
+	
+	if name == trans("about"):lower() then
+		APP.PrepareNewTab( trans("about") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -394,7 +393,7 @@ function APP.OpenLowerTab( name, upperTabName )
 		titleLabel:SetFont("gPhone_20")
 		titleLabel:SizeToContents()
 		titleLabel:SetPos( 0, 5 )
-		gPhone.setTextAndCenter( titleLabel, "The Garry Phone", background )
+		gPhone.setTextAndCenter( titleLabel, trans("title"), background )
 		
 		-- Center the Garry Phone
 		local aboutText = [[
@@ -422,8 +421,8 @@ Icon images - http://www.flaticon.com/
 		
 		gPhone.WordWrap( aboutLabel, background:GetWide(), 10 )
 		
-	elseif name == "update" then
-		APP.PrepareNewTab( "Update" )
+	elseif name == trans("update"):lower() then
+		APP.PrepareNewTab( trans("update") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -471,7 +470,7 @@ Icon images - http://www.flaticon.com/
 			dateLabel:SetPos( x + appIcon:GetWide() + 15, y + providerLabel:GetTall() + 3 )
 			
 			local descriptionLabel = vgui.Create( "DLabel", background )
-			descriptionLabel:SetText( uData.description or "No description provided" )
+			descriptionLabel:SetText( uData.description or trans("no_description") )
 			descriptionLabel:SetTextColor(Color(0,0,0))
 			descriptionLabel:SetFont("gPhone_14")
 			local x, y = appIcon:GetPos()
@@ -507,7 +506,7 @@ Icon images - http://www.flaticon.com/
 			end
 			
 			local title = vgui.Create( "DLabel", layoutButton )
-			title:SetText( "Install Update" )
+			title:SetText( trans("install_u") )
 			title:SetTextColor( gPhone.colors.blue )
 			title:SetFont("gPhone_18")
 			title:SizeToContents()
@@ -515,8 +514,8 @@ Icon images - http://www.flaticon.com/
 		else
 			-- Your software is up to date
 		end
-	elseif name == "color" then	
-		APP.PrepareNewTab( "Color" )
+	elseif name == trans("color"):lower() then	
+		APP.PrepareNewTab( trans("color") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -584,10 +583,8 @@ Icon images - http://www.flaticon.com/
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 15, 5 )
-	elseif name == "archive" then
-		--gPhone.setConfigValue( "phoneColor", colorMixer:GetColor() )
-		
-		APP.PrepareNewTab( "Archive" )
+	elseif name == trans("archive"):lower() then
+		APP.PrepareNewTab( trans("archive") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -626,8 +623,8 @@ Icon images - http://www.flaticon.com/
 				end
 				layoutButton.DoClick = function( self )
 					if name == archivePanels[4].text then -- Reset
-						gPhone.notifyAlert( {msg="Are you sure you want to delete all files in the archive? (this cannot be undone)",
-						title="Confirmation", options={"No", "Yes"}}, nil, 
+						gPhone.notifyAlert( {msg=trans("wipe_archive_confirm"),
+						title=trans("confirm"), options={trans("no"), trans("yes")}}, nil, 
 						function( pnl, value )
 							-- On yes, delete everything
 							for k, v in pairs( file.Find("gphone/archive/*.txt", "DATA") ) do

@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 1/27/14
+-- Version: 2/22/14
 -- Phone source: https://creativemarket.com/buatoom/6422-iPhone5-Flat-Template
 -- Icon sources: http://www.flaticon.com/
 
@@ -30,11 +30,18 @@
 		- Enable speaking for both players
 	- 911 number for texting
 	- Add another optional argument for the banner notify for a title instead of using the app name
+	- Some sort of system which logs GPHONE_MSGC_WARNINGs and a debug.traceback would be cool
+	- Language
+		- Add language support for the entire phone
+			- Dont add language support for console print functions
+		- Settings tab to change languages
+	- Add switch for gPhone.config.airplaneMode
 ]]
 
 gPhone = gPhone or {}
 gPhone.version = "0.0.0"
 
+gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
 if SERVER then
 	--// Serverside config
@@ -50,6 +57,7 @@ if SERVER then
 		adminGroups = {"owner", "superadmin", "admin"}
 	}
 else
+	gPhone.debugLog = {}
 	
 	--// Clientside config
 	gPhone.config = {
@@ -114,21 +122,54 @@ if SERVER then
  	AddCSLuaFile("gphone/cl_animations.lua")
 	AddCSLuaFile("gphone/sh_datatransfer.lua")
 	AddCSLuaFile("gphone/sh_util.lua")
+	AddCSLuaFile("gphone/sh_lang.lua")
  	AddCSLuaFile("gphone/sh_multiplayer.lua")
 	AddCSLuaFile("vgui/backbutton.lua")
 	
+	-- Apps
+	local files = file.Find( "gphone/apps/*.lua", "LUA" )
+	for k, v in pairs(files) do
+		AddCSLuaFile("gphone/apps/"..v)
+	end
+	
+	-- Language files
+	files = file.Find( "gphone/lang/*.lua", "LUA" )
+	for k, v in pairs(files) do
+		AddCSLuaFile("gphone/lang/"..v)
+	end
+	
+	-- Include languages
+	local files = file.Find( "gphone/lang/*.lua", "LUA" )
+	for k, v in pairs(files) do
+		include("gphone/lang/"..v)
+	end
+	
+	include("gphone/sh_lang.lua")
 	include("gphone/sv_phone.lua")
  	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")
+	
+	if game.SinglePlayer() then
+		for _, ply in pairs(player.GetAll()) do
+			gPhone.chatMsg( ply, "The phone will not work properly in Single Player!!! Expect bugs and other paranormal activities" )
+		end
+	end
 end
 
 if CLIENT then
+	-- Include languages
+	local files = file.Find( "gphone/lang/*.lua", "LUA" )
+	for k, v in pairs(files) do
+		include("gphone/lang/"..v)
+	end
+
 	include("gphone/cl_phone.lua")
  	include("gphone/cl_appbase.lua")
  	include("gphone/cl_util.lua")
  	include("gphone/cl_util_extension.lua")
  	include("gphone/cl_animations.lua")
+	include("gphone/sh_lang.lua")
 	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")

@@ -1,6 +1,7 @@
 ----// Clientside Utility Functions //----
 
 local client = LocalPlayer()
+local trans = gPhone.getTranslation
 
 --// Console commands
 concommand.Add("gphone_build", function()
@@ -17,11 +18,21 @@ concommand.Add("gphone_destroy", function()
 		return
 	end
 	gPhone.destroyPhone()
+	gPhone.setPhoneState( "destroyed" )
 end)
 
 concommand.Add("gphone_version", function()
 	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the gPhone version: "..gPhone.version )
 end)
+
+concommand.Add("gphone_dump", function()
+	gPhone.dumpLog()
+end)
+
+concommand.Add("gphone_logwipe", function()
+	gPhone.wipeLog()
+end)
+
 
 
 -- TEMPORARY
@@ -68,6 +79,34 @@ end
 net.Receive( "gPhone_ChatMsg", function( len, ply )
 	gPhone.chatMsg( net.ReadString() )
 end)
+
+--// Appends a string to the end of the gPhone log table with the time as the key
+function gPhone.log( string )
+	gPhone.debugLog[os.date("%X")] = string
+end
+
+function gPhone.dumpLog()
+	local date = os.date("%c")
+	date = string.gsub(date, "/", "-")
+	date = string.gsub(date, ":", "-")
+	date = string.gsub(date, " ", "_")
+	
+	gPhone.msgC( GPHONE_MSGC_NONE, "Dumping phone log to file (gphone/dumps/"..date..".txt)")
+	file.CreateDir( "gphone/dumps" )
+	file.Write( "gphone/dumps/"..date..".txt", "--START CONSOLE DUMP AT "..os.date("%X").."--\r\n\r\n")
+	
+	for time, string in pairs( gPhone.debugLog ) do
+		file.Append( "gphone/dumps/"..date..".txt", "["..time.."]: "..string.."\r\n" )
+	end
+	gPhone.msgC( GPHONE_MSGC_NONE, "Log successfully dumped")
+	
+	gPhone.debugLog = {}
+end
+
+function gPhone.wipeLog()
+	gPhone.msgC( GPHONE_MSGC_NONE, "Wiping debug log")
+	gPhone.debugLog = {}
+end
 
 --// Returns a color with a newly set alpha
 function gPhone.colorNewAlpha( col, a )
@@ -564,8 +603,7 @@ function gPhone.checkUpdate()
 	function (error)
 		-- What now?
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to connect to the gPhone webpage to verify versions!" )
-		local str = "Connection to the gPhone site has failed, please report this on the Workshop page and check your version!"
-		gPhone.updateTable = {update=true, version="N/A", description=str, date="N/A"}
+		gPhone.updateTable = {update=true, version="N/A", description=trans(update_check_fail), date="N/A"}
 	end)
 end
 

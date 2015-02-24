@@ -1,36 +1,42 @@
 ----// Shared Utility Functions //----
 
+local trans = gPhone.getTranslation
+
+-- Gotta make sure the languages are included at this point
+local files = file.Find( "gphone/lang/*.lua", "LUA" )
+for k, v in pairs(files) do
+	include("gphone/lang/"..v)
+end
+
 --// Net Message Header Enumerations
 GPHONE_MP_REQUEST = 1
 GPHONE_MP_REQUEST_RESPONSE = 2
 GPHONE_MP_PLAYER_QUIT = 3
-
 GPHONE_MONEY_TRANSFER = 4
 GPHONE_STATE_CHANGED = 5
 GPHONE_BUILD = 6
 GPHONE_NOTIFY_ALERT = 7
 GPHONE_NOTIFY_BANNER = 8
-
 GPHONE_RETURNAPP = 9
 GPHONE_CUR_APP = 10
 GPHONE_RUN_APPFUNC = 11
 GPHONE_RUN_FUNC = 12
 GPHONE_MONEY_CONFIRMED = 13
-
 GPHONE_TEXT_MSG = 17
 GPHONE_START_CALL = 18
 GPHONE_NET_REQUEST = 19
 GPHONE_NET_RESPONSE = 20
 GPHONE_END_CALL = 21
 
+--// Language strings for requests. [appname] = string.format("%s...", playerNick)
 gPhone.deniedStrings = {
-	["phone"] = "%s has denied your call",
-	["gpong"] = "%s has denied your request to play gPong",
+	["phone"] = trans("phone_deny"),
+	["gpong"] = trans("gpong_deny"),
 }
 
 gPhone.acceptedStrings = {
-	["phone"] = "%s has accepted your call",
-	["gpong"] = "%s has accepted your request to play gPong",
+	["phone"] = trans("phone_accept"),
+	["gpong"] = trans("gpong_accept"),
 }
 
 local plymeta = FindMetaTable( "Player" )
@@ -162,7 +168,7 @@ function gPhone.receiveRequest( tbl )
 		gPhone.sendRequest( tbl, tbl.target )
 	else
 		-- Recieve the request and alert the client
-		gPhone.notifyAlert( {msg=tbl.msg, title="Request", options={"Deny", "Accept"}},
+		gPhone.notifyAlert( {msg=tbl.msg, title=trans("request"), options={trans("deny"), trans("accept")}},
 		function( pnl, value )
 			 gPhone.sendResponse( {target=tbl.sender, bAccepted=false, id=tbl.id, app=tbl.app}, tbl.sender )
 		end,
@@ -220,13 +226,13 @@ function gPhone.receiveResponse( tbl )
 			if gPhone.acceptedStrings[tbl.app:lower()] then
 				message = string.format(gPhone.acceptedStrings[tbl.app:lower()], tbl.sender:Nick())
 			else
-				message = tbl.sender:Nick().." has accepted your request to use "..tbl.app
+				message = string.format( trans("accept_fallback"), tbl.sender:Nick(), tbl.app )
 			end
 		else
 			if gPhone.deniedStrings[tbl.app:lower()] then
 				message = string.format(gPhone.deniedStrings[tbl.app:lower()], tbl.sender:Nick())
 			else
-				message = tbl.sender:Nick().." has denied your request to use "..tbl.app
+				message = string.format( trans("deny_fallback"), tbl.sender:Nick(), tbl.app )
 			end
 		end
 		
@@ -284,6 +290,11 @@ function gPhone.msgC( enum, ... )
 	for i=1, #args do
 		args[i] = tostring(args[i])
 	end
+	
+	-- Log everything that runs through
+	if CLIENT then
+		gPhone.log( "[msgC - "..enum.."]: "..table.concat( args, "   " ) )
+	end	
 	
 	local textColor
 	if enum == GPHONE_MSGC_WARNING then

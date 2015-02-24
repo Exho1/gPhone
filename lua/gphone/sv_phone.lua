@@ -1,5 +1,7 @@
 ----// Serverside Phone //----
 
+local trans = gPhone.getTranslation
+
 --// Resourcing and app adding
 resource.AddFile( "materials/vgui/gphone/gPhone.png" )
 resource.AddFile( "resource/fonts/roboto_light.tff" )
@@ -16,10 +18,6 @@ files = file.Find( "materials/vgui/gphone/apps/*.png", "GAME" ) -- App images
 for k, v in pairs(files) do
 	resource.AddFile("materials/vgui/gphone/apps/"..v)
 end
-files = file.Find( "gphone/apps/*.lua", "LUA" ) -- Apps
-for k, v in pairs(files) do
-	AddCSLuaFile("apps/"..v)
-end
 
 --// Meta table
 local plymeta = FindMetaTable( "Player" )
@@ -34,11 +32,12 @@ function plymeta:getTransferCooldown()
 end
 
 function plymeta:generatePhoneNumber()
-	print("Generating phone number for "..self:Nick())
-	if self:GetPData( "gPhone_Number", gPhone.invalidNumber ) != gPhone.invalidNumber then
-		print(self:Nick().." has phone number")
+	print("Generating number for "..self:Nick())
+	local number = self:GetPData( "gPhone_Number", gPhone.invalidNumber )
+	if number != gPhone.invalidNumber and number != "0" then
+		print(self:Nick().." has phone number: "..self:GetPData( "gPhone_Number"))
 		-- Already has a number, just set the networked string
-		self:SetNWString( "gPhone_Number", self:GetPData( "gPhone_Number" ) )
+		self:SetNWString( "gPhone_Number", number )
 		return
 	end
 	
@@ -46,6 +45,7 @@ function plymeta:generatePhoneNumber()
 	
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
+	print("Generated number "..number)
 end 
 
 function plymeta:inCallWith( ply2 )
@@ -147,6 +147,11 @@ function gPhone.adminMsg( text )
 			end
 		end
 	end
+end
+
+--// Kicks a player and gives them a fancy hex string to make it look legit or something
+function gPhone.kick( ply, code ) 
+	ply:Kick( string.format( trans("kick"), code ) )
 end
 
 --// Confirms a transaction

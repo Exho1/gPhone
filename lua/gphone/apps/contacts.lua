@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "Contacts"
 APP.Icon = "vgui/gphone/contacts.png"
@@ -10,7 +11,7 @@ function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
 	objects.Title = vgui.Create( "DLabel", screen )
-	objects.Title:SetText( "Contacts" )
+	objects.Title:SetText( trans("contacts") )
 	objects.Title:SetTextColor(Color(0,0,0))
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SizeToContents()
@@ -44,7 +45,7 @@ function APP.ImportContacts( objects, layout )
 	objects.SearchBar = vgui.Create("DTextEntry", screen)
 	objects.SearchBar:SetSize(screen:GetWide(), 20)
 	objects.SearchBar:SetPos(0, 50)
-	objects.SearchBar:SetText( "Search" )
+	objects.SearchBar:SetText( trans("search") )
 	objects.SearchBar:SetFont("gPhone_18")
 	objects.SearchBar:SetSize( screen:GetWide(), 30 )
 	objects.SearchBar.OnTextChanged = function( self )
@@ -151,12 +152,12 @@ function APP.ContactInfo( name )
 	local tX, tY = objects.Title:GetPos()
 	
 	objects.Back = vgui.Create("DButton", screen)
-	objects.Back:SetText("Back")
+	objects.Back:SetText( trans("back") )
 	objects.Back:SetFont("gPhone_18Lite")
 	objects.Back:SetTextColor( gPhone.colors.blue )
 	objects.Back:SetPos( 10, tY )
 	objects.Back.Paint = function() end
-	objects.Back:SetSize( gPhone.getTextSize("Back", "gPhone_18Lite") )
+	objects.Back:SetSize( gPhone.getTextSize(trans("back"), "gPhone_18Lite") )
 	objects.Back.DoClick = function()
 		objects.Back:Remove()
 		
@@ -197,7 +198,7 @@ function APP.ContactInfo( name )
 	end
 	
 	local text = vgui.Create( "DLabel", numberPanel )
-	text:SetText( "Number" )
+	text:SetText( trans("number") )
 	text:SetTextColor( gPhone.colors.blue )
 	text:SetFont("gPhone_14")
 	text:SizeToContents()

@@ -89,6 +89,7 @@ surface.CreateFont( "gPhone_36", {
 
 --// Sets where the phone UI is
 function gPhone.setPhoneState( state )
+	gPhone.log("Changing phone state from "..gPhone.phoneState.." to "..state)
 	gPhone.phoneState = state
 end
 
@@ -182,6 +183,7 @@ end
 --// Sets the orientation (landscape or portrait) of the phone
 function gPhone.setOrientation( dir )
 	dir = string.lower(dir)
+	gPhone.log("Changing phone orientation to "..dir)
 	
 	if dir == "portrait" and gPhone.orientation != "portrait" then
 		gPhone.rotateToPortrait()
