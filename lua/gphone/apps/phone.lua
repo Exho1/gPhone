@@ -174,7 +174,7 @@ function APP.StartCall( number )
 		net.SendToServer()
 		
 		local function createCallScreen( timeStarted )
-			LocalPlayer():ConCommand("+voicerecord")
+			LocalPlayer():gPhoneConCommand("+voicerecord")
 			
 			local buttons = {
 				trans("mute"):lower(),
@@ -265,14 +265,20 @@ function APP.StartCall( number )
 						-- First click makes it true
 						self.bool = !self.bool
 						
-						if name == buttons[1] then
+						if name == buttons[1] then -- Mute
 							if self.bool == false then
-								LocalPlayer():ConCommand("+voicerecord")
+								LocalPlayer():gPhoneConCommand("+voicerecord")
 								numButton.text = trans("mute"):lower()
 							else
-								LocalPlayer():ConCommand("-voicerecord")
+								LocalPlayer():gPhoneConCommand("-voicerecord")
 								numButton.text = trans("unmute"):lower()
 							end
+						elseif name == buttons[2] then -- Keypad
+							gPhone.chatMsg( trans("feature_deny") )
+						elseif name == buttons[3] then -- Speaker
+							gPhone.chatMsg( trans("feature_deny") )
+						elseif name == buttons[5] then -- Add
+							gPhone.chatMsg( trans("feature_deny") )
 						end
 					end
 				end
@@ -317,7 +323,7 @@ function APP.EndCall( bAppClose )
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
-	LocalPlayer():ConCommand("-voicerecord")
+	LocalPlayer():gPhoneConCommand("-voicerecord")
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_END_CALL})

@@ -14,28 +14,21 @@
 		objects.Back:SetTextColor( gPhone.colors.blue )
 		objects.Back:SetPos( )
 	- Finish apps!!!
-	- Mas settings
+		- Music
+		- Jobs
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
 	- Moving apps in folders
 	- Function to bypass using net.*Table entirely
 	- Reroute all net.Send to my own function so I can easily modify them
-	- Do something with the 2d side scroller or remove it from the main game
-	- Maybe add prompt before deleting apps
 	- Phone/calling
 		- Screen while in a call
 		- No need for screen for being called I don't think, notifications should handle that
 		- Either allow people to use their keyboard while in a call or use +voicerecord
 		- Enable speaking for both players
 	- 911 number for texting
-	- Add another optional argument for the banner notify for a title instead of using the app name
-	- Some sort of system which logs GPHONE_MSGC_WARNINGs and a debug.traceback would be cool
-	- Language
-		- Add language support for the entire phone
-			- Dont add language support for console print functions
-		- Settings tab to change languages
-	- Add switch for gPhone.config.airplaneMode
+	- APP.Hidden property and other app hiding stuff
 ]]
 
 gPhone = gPhone or {}

@@ -1,9 +1,9 @@
 --// Swedish language translations
 -- Letters prefixed with a '%' (ex: %s, %i) are for formatted strings, don't break those
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
+-- By Donkie (https://github.com/Donkie)
 
-local l = gPhone.createLanguage( "swedish" )
---local trans = gPhone.getTranslation
+local l = gPhone.createLanguage( "svensk" )
 
 -- General
 l.title = "The Garry Phone"

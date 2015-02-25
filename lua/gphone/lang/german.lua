@@ -4,7 +4,6 @@
 -- By Tomelyr (STEAM_0:0:9136467) for Exho :*
 
 local l = gPhone.createLanguage( "deutsch" )
---local trans = gPhone.getTranslation
 
 -- General
 l.title = "The Garry Phone"

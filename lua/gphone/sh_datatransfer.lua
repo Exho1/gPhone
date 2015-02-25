@@ -11,7 +11,7 @@ if SERVER then
 		
 		ply.netCount = ply.netCount + 1
 		
-		hook.Run( "gPhone_ReceivedClientData", ply, header, data )
+		hook.Run( "gPhone_receivedClientData", ply, header, data )
 		
 		if header == GPHONE_MONEY_TRANSFER then -- Money transaction
 			if not ply.getDarkRPVar then
@@ -48,7 +48,7 @@ if SERVER then
 			-- Make sure the player has this money and didn't cheat it on the client
 			if plyWallet > amount then 	
 				-- Last measure before allowing the deal, call the hook
-				local shouldTransfer, denyReason = hook.Run( "gPhone_ShouldAllowTransaction", ply, target, amount )
+				local shouldTransfer, denyReason = hook.Run( "gPhone_shouldAllowTransaction", ply, target, amount )
 				if shouldTransfer == false then
 					if denyReason != nil then
 						gPhone.chatMsg( ply, denyReason )
@@ -136,7 +136,7 @@ if SERVER then
 			local phoneOpen = data.open
 			if phoneOpen == true then
 				ply:SetNWBool("gPhone_Open", true)
-				hook.Run( "gPhone_Built", ply )
+				hook.Run( "gPhone_built", ply )
 			else
 				ply:SetNWBool("gPhone_Open", false)
 			end

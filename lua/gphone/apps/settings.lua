@@ -7,6 +7,8 @@ APP.Author = "Exho"
 APP.Tags = {"Manage", "Config"}
 
 local topLevelTabs = {
+	trans("airplane_mode"),
+	"_SPACE_",
 	trans("general"),
 	trans("wallpaper"),
 	trans("homescreen"),
@@ -17,6 +19,7 @@ local generalLevelTabs = {
 	trans("about"),
 	trans("update"),
 	"_SPACE_",
+	trans("language"),
 	trans("color"),
 	trans("archive")
 }
@@ -37,7 +40,6 @@ local archivePanels = {
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
-	print(trans("settings"))
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( trans("settings") )
 	objects.Title:SetTextColor( color_black )
@@ -60,7 +62,7 @@ function APP.Run( objects, screen )
 			local fake = objects.Layout:Add("DPanel")
 			fake:SetSize(screen:GetWide(), 30)
 			fake.Paint = function() end
-		else
+		elseif name:lower() != trans("airplane_mode"):lower() then
 			local layoutButton = objects.Layout:Add("DButton")
 			layoutButton:SetSize(screen:GetWide(), 30)
 			layoutButton:SetText("")
@@ -78,6 +80,28 @@ function APP.Run( objects, screen )
 			end
 			
 			local title = vgui.Create( "DLabel", layoutButton )
+			title:SetText( name )
+			title:SetTextColor(Color(0,0,0))
+			title:SetFont("gPhone_18")
+			title:SizeToContents()
+			title:SetPos( 35, 5 )
+		else
+			local bgPanel = objects.Layout:Add("DPanel")
+			bgPanel:SetSize(screen:GetWide(), 30)
+			bgPanel.Paint = function( self, w, h) 
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+				
+				draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+			end
+			
+			local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+			toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+			toggleButton:SetBool( gPhone.config.airplaneMode )
+			toggleButton.OnValueChanged = function( self, bVal )
+				gPhone.setConfigValue( "airplaneMode", bVal )
+			end
+			
+			local title = vgui.Create( "DLabel", bgPanel )
 			title:SetText( name )
 			title:SetTextColor(Color(0,0,0))
 			title:SetFont("gPhone_18")
@@ -293,7 +317,7 @@ function APP.OpenTab( name )
 			end
 		end
 	elseif name == trans("homescreen"):lower() then
-		APP.PrepareNewTab( trans("Homescreen") )
+		APP.PrepareNewTab( trans("homescreen") )
 		
 		objects.Back:SetVisible( true )
 		objects.Back.DoClick = function()
@@ -324,7 +348,7 @@ function APP.OpenTab( name )
 				layoutButton.DoClick = function( self )
 					if name == homescreenLevelTabs[3].text then -- Reset
 						gPhone.notifyAlert( {msg=trans("reset_homescreen"),
-						title=trans("confirm"), options={trans("no"), trans("yes")}}, nil, 
+						title=trans("confirmation"), options={trans("no"), trans("yes")}}, nil, 
 						function( pnl, value )
 							-- On yes, move the file to the garbage directory
 							gPhone.discardFile( "gphone/homescreen_layout.txt" )
@@ -419,7 +443,7 @@ Icon images - http://www.flaticon.com/
 		local x, y = titleLabel:GetPos()
 		aboutLabel:SetPos( 10, y + titleLabel:GetTall() + 10 )
 		
-		gPhone.WordWrap( aboutLabel, background:GetWide(), 10 )
+		gPhone.wordWrap( aboutLabel, background:GetWide(), 10 )
 		
 	elseif name == trans("update"):lower() then
 		APP.PrepareNewTab( trans("update") )
@@ -476,7 +500,7 @@ Icon images - http://www.flaticon.com/
 			local x, y = appIcon:GetPos()
 			descriptionLabel:SetPos( x, y + appIcon:GetTall() + 5)
 			
-			gPhone.WordWrap( descriptionLabel, background:GetWide(), 10 )
+			gPhone.wordWrap( descriptionLabel, background:GetWide(), 10 )
 			
 			-- Shrink the DPanel to match the content of the text
 			local _, dY = descriptionLabel:GetPos()
@@ -557,7 +581,7 @@ Icon images - http://www.flaticon.com/
 		end
 		
 		local title = vgui.Create( "DLabel", layoutButton )
-		title:SetText( "Set Color" )
+		title:SetText( trans("set_color") )
 		title:SetTextColor( gPhone.colors.blue )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
@@ -578,7 +602,7 @@ Icon images - http://www.flaticon.com/
 		end
 		
 		local title = vgui.Create( "DLabel", layoutButton )
-		title:SetText( "Default" )
+		title:SetText( trans("default") )
 		title:SetTextColor( color_black )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
@@ -591,14 +615,6 @@ Icon images - http://www.flaticon.com/
 			APP.OpenTab( upperTabName )
 		end
 		
-		--[[
-		local archivePanels = {
-	{text="Archive cleanup", button=false, toggle=true},
-	{text="Archive delete time:", button=false, toggle=true},
-	{text="_SPACE_"},
-	{text="Wipe archive", button=true},
-}
-		]]
 		for _, data in pairs( archivePanels ) do
 			local name = data.text
 			local bIsButton = data.button
@@ -624,7 +640,7 @@ Icon images - http://www.flaticon.com/
 				layoutButton.DoClick = function( self )
 					if name == archivePanels[4].text then -- Reset
 						gPhone.notifyAlert( {msg=trans("wipe_archive_confirm"),
-						title=trans("confirm"), options={trans("no"), trans("yes")}}, nil, 
+						title=trans("confirmation"), options={trans("no"), trans("yes")}}, nil, 
 						function( pnl, value )
 							-- On yes, delete everything
 							for k, v in pairs( file.Find("gphone/archive/*.txt", "DATA") ) do
@@ -720,6 +736,84 @@ Icon images - http://www.flaticon.com/
 				title:SetPos( 35, 5 )
 			end
 		end
+	elseif name == trans("language"):lower() then
+		APP.PrepareNewTab( trans("language") )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		local bgPanel = objects.Layout:Add("DPanel")
+		bgPanel:SetSize(screen:GetWide(), 60)
+		bgPanel.Paint = function( self, w, h) 
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+		end
+		
+		local title = vgui.Create( "DLabel", bgPanel )
+		title:SetText( trans("lang_reboot_warn") )
+		title:SetTextColor(Color(0,0,0))
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 5, 5 )
+		gPhone.wordWrap( title, bgPanel:GetWide(), 5 )
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+		
+		local bgPanel = objects.Layout:Add("DPanel")
+		bgPanel:SetSize(screen:GetWide(), 30)
+		bgPanel.Paint = function( self, w, h) 
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+			
+			draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+		end
+		
+		local languagePicker = vgui.Create( "DComboBox", bgPanel )
+		languagePicker:SetSize( bgPanel:GetWide() - 35, bgPanel:GetTall() )
+		languagePicker:SetPos( bgPanel:GetWide() - languagePicker:GetWide() , 0 )
+		languagePicker:SetValue( trans("language") )
+		languagePicker:SetTextColor( color_black )
+		languagePicker:SetFont( "gPhone_18" )
+		languagePicker.Paint = function( self, w, h ) end
+		for k, _ in pairs( gPhone.languages ) do
+			if k != "default" then -- Default is a variable not a language
+				languagePicker:AddChoice( k:gsub("^%l", string.upper) )
+			end
+		end
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+		
+		local layoutButton = objects.Layout:Add("DButton")
+		layoutButton:SetSize(screen:GetWide(), 30)
+		layoutButton:SetText("")
+		layoutButton.Paint = function()
+			if not layoutButton:IsDown() then
+				draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+			else
+				draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+			end
+			
+			draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
+		end
+		layoutButton.DoClick = function( self )
+			local lang = languagePicker:GetValue() 
+			if lang:lower() != "language" and lang != gPhone.getActiveLanguage() then
+				gPhone.setActiveLanguage( lang )
+			end
+		end
+		
+		local title = vgui.Create( "DLabel", layoutButton )
+		title:SetText( trans("confirm") )
+		title:SetTextColor(Color(0,0,0))
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 35, 5 )
+	else
+		-- Add new lower level
 	end
 	
 end

@@ -25,9 +25,9 @@ local isInGame = false
 local gameRunning = false
 local gamePaused = false
 
-local ballSpeed = difficultyLevels.Easy.ball
-local botSpeed = difficultyLevels.Easy.bot
-local playerSpeed = difficultyLevels.Easy.ply
+local ballSpeed = difficultyLevels[trans("easy")].ball
+local botSpeed = difficultyLevels[trans("easy")].bot
+local playerSpeed = difficultyLevels[trans("easy")].ply
 local paddleStartY = nil
 
 -- Enumerations

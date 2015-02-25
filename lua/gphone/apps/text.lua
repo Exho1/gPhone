@@ -316,7 +316,7 @@ function APP.PopulateMessages( id )
 			message:SetPos( 5, 5 )
 			message.Paint = function() end
 			
-			gPhone.WordWrap( message, background:GetWide(), 10 )
+			gPhone.wordWrap( message, background:GetWide(), 10 )
 
 			-- Clamp the width to 2/3s of the screen width and the height to the screen height
 			local w, h = message:GetSize()

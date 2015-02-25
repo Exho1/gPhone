@@ -40,19 +40,7 @@ gApp["_close_"] = function( app )
 	gApp.removeTicker( app )
 	
 	-- Hides all the app children
-	for k, v in pairs( gApp["_children_"] ) do
-		if type(v) == "table" then 
-			for k, v in pairs(v) do 
-				-- What if someone has 2 tables inside each other? Find a better way...
-				v:Remove()
-			end
-		end
-		
-		if IsValid( v ) then
-			v:Remove()
-		end
-	end
-	
+	gPhone.removeAllPanels( gApp["_children_"] )
 	gPhone.homeIconLayout:SetVisible( true )
 	
 	if gPhone.config.darkStatusBar == true then
@@ -60,9 +48,11 @@ gApp["_close_"] = function( app )
 	else
 		gPhone.lightenStatusBar()
 	end
-	gPhone.showStatusBar()
 	
+	gPhone.showStatusBar()
 	gPhone.setActiveApp( nil ) 
+	gPhone.phoneBase:SetMouseInputEnabled( true )
+	gPhone.phoneScreen:SetMouseInputEnabled( true )
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
@@ -179,7 +169,7 @@ function gPhone.runApp(name)
 		end
 		
 		-- Run a hook to see if there are any other conditions that need to be met
-		local shouldRun = hook.Run( "gPhone_ShouldAppRun", name, gApp[name].Data )
+		local shouldRun = hook.Run( "gPhone_shouldAppRun", name, gApp[name].Data )
 		if shouldRun == false then
 			gPhone.toHomeScreen()
 			return 
@@ -241,7 +231,7 @@ function gPhone.denyApp( gmName, reason )
 	errorMsg:SetTextColor(Color(0,0,0))
 	errorMsg:SetFont("gPhone_14")
 	errorMsg:SizeToContents()
-	gPhone.WordWrap( errorMsg, objs.Container, 10 )
+	gPhone.wordWrap( errorMsg, objs.Container, 10 )
 	local width, height = gPhone.getTextSize(reason, "gPhone_14")
 	errorMsg:SetPos( containerWidth/2 - width/2, 30 )
 end

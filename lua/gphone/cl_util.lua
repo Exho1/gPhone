@@ -33,7 +33,18 @@ concommand.Add("gphone_logwipe", function()
 	gPhone.wipeLog()
 end)
 
+local plymeta = FindMetaTable( "Player" )
 
+--// Safe console command function since running them breaks the derma
+function plymeta:gPhoneConCommand( cmd )
+	self:ConCommand( cmd ) 
+	
+	if IsValid(gPhone.phoneBase) then
+		gPhone.phoneBase:SetMouseInputEnabled( true )
+		gPhone.phoneScreen:SetMouseInputEnabled( true )
+		gPhone.homeIconLayout:SetMouseInputEnabled( true )
+	end
+end
 
 -- TEMPORARY
 
@@ -85,6 +96,7 @@ function gPhone.log( string )
 	gPhone.debugLog[os.date("%X")] = string
 end
 
+--// Dumps the current debug log to a text file and clears it
 function gPhone.dumpLog()
 	local date = os.date("%c")
 	date = string.gsub(date, "/", "-")
@@ -103,9 +115,22 @@ function gPhone.dumpLog()
 	gPhone.debugLog = {}
 end
 
+--// Clears the debug log
 function gPhone.wipeLog()
-	gPhone.msgC( GPHONE_MSGC_NONE, "Wiping debug log")
 	gPhone.debugLog = {}
+	gPhone.msgC( GPHONE_MSGC_NONE, "Wiped debug log")
+end
+
+function gPhone.removeAllPanels( tbl )
+	for k, v in pairs(tbl) do
+		if type(v) != "table" then
+			if v.Remove then
+				v:Remove()
+			end
+		else
+			gPhone.removeAllPanels( v )
+		end
+	end
 end
 
 --// Returns a color with a newly set alpha
@@ -608,7 +633,7 @@ function gPhone.checkUpdate()
 end
 
 --// Custom word wrapping function originally made for the texting app
-function gPhone.WordWrap( label, wrapWidth, buffer )
+function gPhone.wordWrap( label, wrapWidth, buffer )
 	buffer = buffer or 10
 	wrapWidth = wrapWidth - buffer
 	
@@ -626,27 +651,20 @@ function gPhone.WordWrap( label, wrapWidth, buffer )
 			width = width + surface.GetTextSize(v)
 			
 			-- The string is longer than the message's width (minus a buffer)
-			if width >= wrapWidth - (buffer + buffer/2) then 
+			if width >= wrapWidth - buffer then 
 				local letter = frags[k]
-				if letter == " " then
+				
+				if letter == " " then -- Perfect, we create new line on a space
 					table.insert(frags, k, "\r\n")
 				else
-					--[[ Test code to not hyphen a word but instead drop it down a line
-					local endPoint = k - 15
-					if k - 15 < 0 then
-						endPoint = 0
-					end
-					
-					for i = k, endPoint, -1 do
-						print(i, frags[i])
-						if frags[i] == " " and frags[i] != "\r\n" then
-							print("New space")
-							table.insert(frags, k + 1, "\r\n")
+					-- Or we have to go back and find one...
+					for i = k, k - 30, -1 do
+						if frags[i] == " " then
+							table.insert(frags, i, "\r\n")
+							table.remove(frags, i + 1)
 							break
 						end
-					end]]
-					
-					table.insert(frags, k, "-\r\n-") -- Only hyphen words that we interrupted
+					end
 				end
 				lineBreaks = lineBreaks + 1
 				width = 0 

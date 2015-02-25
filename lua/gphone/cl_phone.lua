@@ -8,12 +8,12 @@ local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)
 --// Builds the phone 
 function gPhone.buildPhone()
 
-	gPhone.wipeLog()
-	
 	if game.SinglePlayer() then
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Running the phone in single player!!")
+		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! This aint okay")
 	end
 	
+	gPhone.wipeLog()
+
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
 
@@ -644,7 +644,7 @@ function gPhone.buildPhone()
 			end
 		end
 	end, {})
-	
+
 	-- Populate the homescreen with apps
 	function gPhone.buildHomescreen( tbl )
 		if gPhone.isInApp() or not gPhone.isOpen() then return end
@@ -973,18 +973,22 @@ function gPhone.buildPhone()
 end
 
 --// Moves the phone up into visiblity
-function gPhone.showPhone()
+function gPhone.showPhone( callback )
 	if gPhone and gPhone.phoneBase then
 		local pWidth, pHeight = gPhone.phoneBase:GetSize()
 		gPhone.phoneBase:MoveTo( ScrW()-pWidth, ScrH()-pHeight, 0.7, 0, 2, function()
 			gPhone.phoneBase:MakePopup()
+			
+			if callback != nil then
+				callback()
+			end
 		end)
 		
 		gPhone.config.phoneColor.a = 255
 		
 		if firstTimeUsed:GetBool() then
 			gPhone.bootUp()
-			LocalPlayer():ConCommand("gphone_firsttime 0")
+			LocalPlayer():gPhoneConCommand("gphone_firsttime 0")
 		else 
 			gPhone.buildLockScreen()
 		end
@@ -997,7 +1001,7 @@ function gPhone.showPhone()
 end
 
 --// Moves the phone down and disables it
-function gPhone.hidePhone()
+function gPhone.hidePhone( callback )
 	if gPhone and gPhone.phoneBase then
 		local x, y = gPhone.phoneBase:GetPos()
 		
@@ -1006,6 +1010,10 @@ function gPhone.hidePhone()
 		
 		gPhone.phoneBase:MoveTo( x, ScrH()-40, 0.7, 0, 2, function()
 			gPhone.config.phoneColor.a = 100 -- Fade the alpha
+			
+			if callback != nil then
+				callback()
+			end
 		end)
 		
 		gPhone.toHomeScreen()
@@ -1024,7 +1032,7 @@ function gPhone.hidePhone()
 end
 
 --// Completely removes the phone from the game
-function gPhone.destroyPhone()
+function gPhone.destroyPhone( callback )
 	if gPhone and gPhone.phoneBase then
 		gPhone.phoneBase:Close()
 		gPhone.phoneBase = nil
@@ -1033,6 +1041,8 @@ function gPhone.destroyPhone()
 		
 		gPhone.setPhoneState( "destroyed" )
 		
+		LocalPlayer():gPhoneConCommand("-voicerecord")
+		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
 		net.SendToServer()
@@ -1040,7 +1050,25 @@ function gPhone.destroyPhone()
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_CUR_APP, app=nil})
 		net.SendToServer()
+		
+		if callback != nil then
+			callback()
+		end
 	end
+end
+
+--// Rebuilds the phone as fast as possible or with a time delay
+function gPhone.rebootPhone( timeDelay )
+	gPhone.hidePhone( function()
+		print("Hidden")
+		gPhone.destroyPhone( function() 
+			print("Destroyed", timeDelay)
+			timer.Simple(timeDelay or 0.5, function()
+				gPhone.buildPhone()
+				gPhone.showPhone()
+			end)
+		end)
+	end)
 end
 
 --// Fake signal strength for the phone based on distance from the map's origin

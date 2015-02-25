@@ -413,7 +413,7 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 		message:SetText( newMsg )
 	end
 	
-	gPhone.WordWrap( message, bgPanel:GetWide(), 10 )
+	gPhone.wordWrap( message, bgPanel:GetWide(), 10 )
 	bgPanel:SetSize( w, h + message:GetTall() )
 	message:SetPos( bgPanel:GetWide()/2 - message:GetWide()/2,  bgPanel:GetTall() - 50 - message:GetTall() )
 
@@ -565,7 +565,7 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 		newMsg = gPhone.charSub( newMsg, wordLimit-2, "..." )
 		message:SetText( newMsg )
 	end
-	gPhone.WordWrap( message, bgPanel:GetWide(), 20 )
+	gPhone.wordWrap( message, bgPanel:GetWide(), 20 )
 	message:SetPos( 40, 20 )
 	
 	local title = vgui.Create( "DLabel", bgPanel )

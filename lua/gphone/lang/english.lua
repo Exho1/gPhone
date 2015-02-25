@@ -13,6 +13,8 @@ l.kick = "[gPhone]: ILLEGAL REQUEST - ERROR: 0x01B4D0%s"
 l.feature_deny = "The selected feature has not been implemented yet"
 l.error = "Error"
 
+l.default = "Default"
+l.language = "Language"
 l.settings = "Settings"
 l.general = "General"
 l.wallpaper = "Wallpaper"
@@ -33,7 +35,8 @@ l.app_deny_gm = "This app cannot be used in this gamemode!"
 l.app_deny_group = "You are not in the correct group to use this app!"
 
 -- Requests
-l.confim = "Confirmation"
+l.confirmation = "Confirmation"
+l.confirm = "Confirm"
 l.request = "Request"
 l.deny = "Deny"
 l.accept = "Accept"
@@ -66,6 +69,7 @@ l.text_flagged = "To prevent spam, you have been blocked from texting for %i sec
 l.being_called = "%s is calling you!"
 
 -- Settings
+l.airplane_mode = "Airplane Mode"
 l.show_unusable_apps = "Show unusable apps"
 l.reset_app_pos = "Reset icon positions"
 l.archive_cleanup = "Archive cleanup"
@@ -78,12 +82,14 @@ l.dark_status = "Darken status bar"
 l.set_lock = "Set lockscreen"
 l.set_home = "Set homescreen"
 l.reset_homescreen = "Are you sure you want to reset the homescreen icon positions?"
+l.lang_reboot_warn = "The gPhone will reboot when the language is changed and confirmed"
 
 l.no_description = "No description provided"
 l.install_u = "Install Update"
 l.wipe_archive_confirm = "Are you sure you want to delete all files in the archive? (this cannot be undone)"
 l.archive = "Archive"
 l.update = "Update"
+l.set_color = "Set Color"
 
 -- Contacts
 l.contacts = "Contacts"
