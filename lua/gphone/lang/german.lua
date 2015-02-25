@@ -3,7 +3,7 @@
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
 -- By Tomelyr (STEAM_0:0:9136467) for Exho :*
 
-local l = gPhone.createLanguage( "german" )
+local l = gPhone.createLanguage( "deutsch" )
 --local trans = gPhone.getTranslation
 
 -- General

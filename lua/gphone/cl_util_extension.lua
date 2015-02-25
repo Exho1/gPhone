@@ -89,7 +89,7 @@ surface.CreateFont( "gPhone_36", {
 
 --// Sets where the phone UI is
 function gPhone.setPhoneState( state )
-	gPhone.log("Changing phone state from "..gPhone.phoneState.." to "..state)
+gPhone.log("Changing phone state from "..tostring(gPhone.phoneState).." to "..state)
 	gPhone.phoneState = state
 end
 

@@ -2,6 +2,15 @@
 
 gPhone.languages.default = "english"
 
+setmetatable(gPhone.languages,
+{
+	-- Fall back to english if trying to get a translation from a nil language
+	__index = function(t, k)
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to get translation from nonexistant language "..tostring(k))
+		return "english"
+	end
+})
+
 if SERVER then
 	
 	--// Sets the language to be used by all serverside functions
@@ -33,6 +42,7 @@ if CLIENT then
 			LocalPlayer():ConCommand("gphone_language "..lang)
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempt to set active language to invalid ("..lang..")")
+			LocalPlayer():ConCommand("gphone_language english")
 			return
 		end
 	end
@@ -42,32 +52,27 @@ end
 function gPhone.createLanguage( name )
 	name = name:lower()
 	gPhone.languages[name] = {}
+	
+	setmetatable(gPhone.languages[name],
+	{
+		-- If we try to access a non existant key, fall back to an english translation
+		__index = function(t, k)
+			gPhone.msgC( GPHONE_MSGC_WARNING, 
+			string.format("Unable to get translation for (%s) in language (%s)",
+			k, gPhone.getActiveLanguage()))
+			
+			if gPhone.languages["english"][k] then
+				return k
+			end
+		end
+	})
+	
 	return gPhone.languages[name]
 end
 
 --// Returns the string that matches the id for the current language (abbreviated as 'trans')
 function gPhone.getTranslation( id )
-	if gPhone.languages[gPhone.getActiveLanguage()] != nil then
-		if gPhone.languages[gPhone.getActiveLanguage()][id] then
-			return gPhone.languages[gPhone.getActiveLanguage()][id]
-		end
-	end
-	
-	gPhone.msgC( GPHONE_MSGC_WARNING, string.format("Unable to get translation for (%s) in language (%s)",
-	id, gPhone.getActiveLanguage()))
-	
-	return "T-ERROR"
-end
-
---// Returns the direct translation for an id without error prevention
-function gPhone.getTranslationUnsafe( id )
 	return gPhone.languages[gPhone.getActiveLanguage()][id]
-end
-
-
---// Returns the english translation that matches the id 
-function gPhone.getTranslationEN( id )
-	return gPhone.languages["english"][id]
 end
 
 --// Translates the current phrase to english from another language

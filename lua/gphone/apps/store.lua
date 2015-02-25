@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "App Store"
 APP.Icon = "vgui/gphone/store.png"

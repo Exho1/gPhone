@@ -158,6 +158,8 @@ if SERVER then
 end
 
 if CLIENT then
+	include("gphone/sh_lang.lua")
+	
 	-- Include languages
 	local files = file.Find( "gphone/lang/*.lua", "LUA" )
 	for k, v in pairs(files) do
@@ -169,7 +171,6 @@ if CLIENT then
  	include("gphone/cl_util.lua")
  	include("gphone/cl_util_extension.lua")
  	include("gphone/cl_animations.lua")
-	include("gphone/sh_lang.lua")
 	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")
