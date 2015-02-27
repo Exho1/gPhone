@@ -8,14 +8,12 @@
 	- Multiplayer
 		- App variable which defines a function to run to start a multiplayer game
 		- Replace the horrid multiplayer request system with my new one
-	- Fix animations so that they are consistant
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.colors.blue )
 		objects.Back:SetPos( )
 	- Finish apps!!!
 		- Music
-		- Jobs
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
@@ -27,8 +25,16 @@
 		- No need for screen for being called I don't think, notifications should handle that
 		- Either allow people to use their keyboard while in a call or use +voicerecord
 		- Enable speaking for both players
+		- Fix homescreen broken glitch cause of con commands
 	- 911 number for texting
 	- APP.Hidden property and other app hiding stuff
+	- Dumps do not save in order due to string keys
+	- Redesign apps
+		- Finances
+		- Jobs
+	- Language
+		- Fix missing keys in foreign languages with Egnlsih or proper translation
+	- Disable self-messaging
 ]]
 
 gPhone = gPhone or {}
@@ -131,13 +137,14 @@ if SERVER then
 		AddCSLuaFile("gphone/lang/"..v)
 	end
 	
+	include("gphone/sh_lang.lua")
+	
 	-- Include languages
 	local files = file.Find( "gphone/lang/*.lua", "LUA" )
 	for k, v in pairs(files) do
 		include("gphone/lang/"..v)
 	end
 	
-	include("gphone/sh_lang.lua")
 	include("gphone/sv_phone.lua")
  	include("gphone/sh_util.lua")
  	include("gphone/sh_multiplayer.lua")

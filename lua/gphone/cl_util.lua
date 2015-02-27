@@ -93,7 +93,13 @@ end)
 
 --// Appends a string to the end of the gPhone log table with the time as the key
 function gPhone.log( string )
-	gPhone.debugLog[os.date("%X")] = string
+	table.insert( gPhone.debugLog, {time=os.date("%X"), msg=string})
+	
+	if #gPhone.debugLog >= 200 then -- Keep the debug table within a reasonable size
+		table.remove(gPhone.debugLog, 1)
+		table.remove(gPhone.debugLog, 2)
+		table.remove(gPhone.debugLog, 3)
+	end
 end
 
 --// Dumps the current debug log to a text file and clears it
@@ -107,8 +113,8 @@ function gPhone.dumpLog()
 	file.CreateDir( "gphone/dumps" )
 	file.Write( "gphone/dumps/"..date..".txt", "--START CONSOLE DUMP AT "..os.date("%X").."--\r\n\r\n")
 	
-	for time, string in pairs( gPhone.debugLog ) do
-		file.Append( "gphone/dumps/"..date..".txt", "["..time.."]: "..string.."\r\n" )
+	for _, tbl in pairs( gPhone.debugLog ) do
+		file.Append( "gphone/dumps/"..date..".txt", "["..tbl.time.."]: "..tbl.msg.."\r\n" )
 	end
 	gPhone.msgC( GPHONE_MSGC_NONE, "Log successfully dumped")
 	

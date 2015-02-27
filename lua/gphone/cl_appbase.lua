@@ -102,30 +102,21 @@ function gPhone.addApp( tbl )
 		end,
 	}
 	
-	local bCanUse = nil
+	-- Add the app to the homescreen table
+	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName})
 	
-	--[[
-		- Fix this app hiding system
-			* Apps that are unusuable but user-selected not-hidden always get hidden by this code
-	]]
-	-- Don't add the app to the phone if we hide unusable apps
-	--[[if gPhone.config.showUnusableApps == false then
+	-- Handle app hiding 
+	if gPhone.config.showUnusableApps == false then
 		if not gPhone.canUseApp( tbl ) then
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding unusable application: "..tbl.PrintName ) 
-			gPhone.removedApps[tbl.PrintName:lower()] = 1
-			bCanUse = false
+			gPhone.setAppVisible( tbl.PrintName, false )
 		end
-	end]]
+	end
 	
-	-- Don't add if its explicitly stated to be hidden
-	--[[if tbl.Hidden == true then
+	if tbl.Hidden == true then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding application due to 'Hidden' boolean: "..tbl.PrintName ) 
-		gPhone.removedApps[tbl.PrintName:lower()] = 1
-		bCanUse = false
-	end]]
-	
-	-- Add the app to the homescreen table
-	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName, canUse=bCanUse})
+		gPhone.setAppVisible( tbl.PrintName, false )
+	end
 end
 
 --// Runs the app on the phone
@@ -231,9 +222,9 @@ function gPhone.denyApp( gmName, reason )
 	errorMsg:SetTextColor(Color(0,0,0))
 	errorMsg:SetFont("gPhone_14")
 	errorMsg:SizeToContents()
-	gPhone.wordWrap( errorMsg, objs.Container, 10 )
+	gPhone.wordWrap( errorMsg, objs.Container:GetWide(), 10 )
 	local width, height = gPhone.getTextSize(reason, "gPhone_14")
-	errorMsg:SetPos( containerWidth/2 - width/2, 30 )
+	errorMsg:SetPos( 20, 30 )
 end
 
 --// Calls an app's function X times per second in order to simulate a constant framerate. 

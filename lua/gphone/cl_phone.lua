@@ -7,12 +7,13 @@ local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)
 
 --// Builds the phone 
 function gPhone.buildPhone()
-
+	gPhone.wipeLog()
+	
+	gPhone.log("Building phone")
+	
 	if game.SinglePlayer() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! This aint okay")
 	end
-	
-	gPhone.wipeLog()
 
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
@@ -205,8 +206,23 @@ function gPhone.buildPhone()
 			
 			-- Checks if an app exists in the config file and at which key
 			for i = 1, #txtPositions do	
+				if not txtPositions[i] then 
+					gPhone.log("Error referencing app in position file! Key: "..i)
+					continue 
+				end
+				
 				if name == txtPositions[i].name then
-					table.insert(newApps, txtPositions[i])
+					-- Insert app normally at config-specified position
+					table.insert(newApps, i, txtPositions[i])
+				elseif txtPositions[i].apps then
+					-- Check folder
+					local folder = txtPositions[i].apps
+					for k = 1, #folder do
+						if folder[k].name == name then
+							-- This app exists in a folder, create the folder
+							table.insert(newApps, i, txtPositions[i])
+						end	
+					end
 				else
 					denies = denies + 1
 				end
@@ -618,7 +634,7 @@ function gPhone.buildPhone()
 								local droppedName = gPhone.appPanels[i].name
 								
 								for p = 1, #gPhone.apps do
-									if gPhone.apps[p].name == droppedName then
+									if gPhone.apps[p] and gPhone.apps[p].name == droppedName then
 										droppedData = gPhone.apps[p]
 										droppedKey = p
 									end
@@ -783,6 +799,7 @@ function gPhone.buildPhone()
 				local oldBGSize = {bgPanel:GetSize()}
 				
 				previewPanel.closeFolder = function()
+					gPhone.log("Closing folder")
 					if nameEditor then		
 						nameEditor:OnEnter()		
 						nameEditor:SetVisible(false)		
@@ -827,12 +844,16 @@ function gPhone.buildPhone()
 					bgPanel.OnMousePressed = function( mousecode )
 						if IsValid(previewPanel) then
 							gPhone.closeFolder( nameEditor, previewPanel, bgPanel, oldBGPos ) 
+						else
+							gPhone.log("Cannot close folder, panel is nil")
 						end
 					end
 					
 					gPhone.homeIconLayout.OnMousePressed = function( mousecode )
 						if IsValid(previewPanel) then
 							gPhone.closeFolder( nameEditor, previewPanel, bgPanel, oldBGPos ) 
+						else
+							gPhone.log("Cannot close folder, panel is nil")
 						end
 					end
 					
@@ -879,6 +900,7 @@ function gPhone.buildPhone()
 					end
 					nameEditor.OnEnter = function( self )
 						gPhone.log("Changed homescreen folder name from "..data.name.." to "..self:GetText())
+						
 						local text = string.Trim( self:GetText() )
 						if text != "" then
 							data.name = self:GetText()
@@ -970,11 +992,15 @@ function gPhone.buildPhone()
 	
 	-- Check for updates from my website
 	gPhone.checkUpdate()
+	
+	gPhone.log("Phone built successfullly")
 end
 
 --// Moves the phone up into visiblity
 function gPhone.showPhone( callback )
 	if gPhone and gPhone.phoneBase then
+		gPhone.log("Show phone")
+		
 		local pWidth, pHeight = gPhone.phoneBase:GetSize()
 		gPhone.phoneBase:MoveTo( ScrW()-pWidth, ScrH()-pHeight, 0.7, 0, 2, function()
 			gPhone.phoneBase:MakePopup()
@@ -1003,6 +1029,8 @@ end
 --// Moves the phone down and disables it
 function gPhone.hidePhone( callback )
 	if gPhone and gPhone.phoneBase then
+		gPhone.log("Hide phone")
+		
 		local x, y = gPhone.phoneBase:GetPos()
 		
 		gPhone.phoneBase:SetMouseInputEnabled( false )
@@ -1034,6 +1062,8 @@ end
 --// Completely removes the phone from the game
 function gPhone.destroyPhone( callback )
 	if gPhone and gPhone.phoneBase then
+		gPhone.log("Destroy phone")
+		
 		gPhone.phoneBase:Close()
 		gPhone.phoneBase = nil
 		
@@ -1059,11 +1089,11 @@ end
 
 --// Rebuilds the phone as fast as possible or with a time delay
 function gPhone.rebootPhone( timeDelay )
+	gPhone.log("Reboot phone")
 	gPhone.hidePhone( function()
-		print("Hidden")
 		gPhone.destroyPhone( function() 
-			print("Destroyed", timeDelay)
 			timer.Simple(timeDelay or 0.5, function()
+				gPhone.log("Reboot finished")
 				gPhone.buildPhone()
 				gPhone.showPhone()
 			end)
@@ -1084,7 +1114,7 @@ function gPhone.updateSignalStrength()
 		gPhone.SignalStrength = 4
 	elseif distFromOrigin <= 4000 then
 		gPhone.SignalStrength = 3
-	elseif distFromOrigin <= 6000 then
+	elseif distFromOrigin <= 8000 then
 		gPhone.SignalStrength = 2
 	else
 		gPhone.SignalStrength = 1
