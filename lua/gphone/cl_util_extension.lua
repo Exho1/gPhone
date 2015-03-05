@@ -19,7 +19,7 @@ surface.CreateFont( "gPhone_14", {
 
 surface.CreateFont( "gPhone_16", {
 	font = "Roboto Lt",
-	size = 14,
+	size = 14, -- wat
 	weight = 500,
 	antialias = true,
 } )

@@ -11,9 +11,7 @@
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.colors.blue )
-		objects.Back:SetPos( )
-	- Finish apps!!!
-		- Music
+		objects.Back:SetPos()
 	- Perhaps move all text logs serverside
 		- Regardless of position, they need to NOT be in plain text
 		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
@@ -21,24 +19,33 @@
 	- Function to bypass using net.*Table entirely
 	- Reroute all net.Send to my own function so I can easily modify them
 	- Phone/calling
-		- Screen while in a call
-		- No need for screen for being called I don't think, notifications should handle that
-		- Either allow people to use their keyboard while in a call or use +voicerecord
 		- Enable speaking for both players
 		- Fix homescreen broken glitch cause of con commands
 	- 911 number for texting
-	- APP.Hidden property and other app hiding stuff
-	- Dumps do not save in order due to string keys
 	- Redesign apps
 		- Finances
 		- Jobs
 	- Language
-		- Fix missing keys in foreign languages with Egnlsih or proper translation
+		- Fix missing keys in foreign languages with English or proper translation
 	- Disable self-messaging
+	- Configure gm_luaerror
+		- Credit: http://facepunch.com/showthread.php?t=1252625
+	- Music app
+		- Better slider
+		- Proper song saving
+		- Song adder and editor
+		- Progress bar stopping between songs
+		- Previous/next song functionality
+		- Seperation between songs
+		- Fix delete button
+		- http://facepunch.com/showthread.php?t=1453630&p=47253489&viewfull=1#post47253489
+	- Stupid unable to click app bug
+		- OnMousePressed doesnt get called for gPhone.homeIconLayout but does for screen and base
+	- Figure out why missing config values dont save
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.0.0"
+gPhone.version = "0.9.2"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -165,6 +172,12 @@ if CLIENT then
 	for k, v in pairs(files) do
 		include("gphone/lang/"..v)
 	end
+	
+	if system.IsWindows() or system.IsLinux() then
+		--require("luaerror2")
+	else
+		print("[gPhone]: Advanced error tracking disabled due to Mac OS")
+	end
 
 	include("gphone/cl_phone.lua")
  	include("gphone/cl_appbase.lua")
@@ -189,11 +202,4 @@ print([[
 	Created by Exho - STEAM_0:0:53332328
 	Version: ]]..gPhone.version..[[
 ]])
---[[
-print("---// gPhone //---")
-print("- Created by Exho (STEAM_0:0:53332328) -")
-print("- https://github.com/Exho1/gPhone -")
-print("- Do not reupload anywhere -")
-print("---// Version "..gPhone.version.." //---")
-]]
 

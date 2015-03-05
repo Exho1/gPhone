@@ -12,7 +12,7 @@ function gPhone.buildPhone()
 	gPhone.log("Building phone")
 	
 	if game.SinglePlayer() then
-		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! This aint okay")
+		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! Expect errors")
 	end
 
 	gPhone.loadClientConfig()
@@ -351,6 +351,18 @@ function gPhone.buildPhone()
 	
 	-- App badges
 	gPhone.appBadges = {}
+	gPhone.phoneBase.OnMousePressed = function()
+		print("Click phone")
+		--gPhone.homeIconLayout:SetMouseInputEnabled(true)
+		--gPhone.phoneScreen:SetMouseInputEnabled(true)
+	end
+	gPhone.homeIconLayout.OnMousePressed = function()
+		print("Click icons")
+	end
+	gPhone.phoneScreen.OnMousePressed = function()
+		print("Click screen")
+	end
+	
 	gPhone.homeIconLayout.PaintOver = function() 
 		if not gPhone.inFolder() then
 			createBadges( gPhone.appPanels )
@@ -1005,6 +1017,10 @@ function gPhone.showPhone( callback )
 		gPhone.phoneBase:MoveTo( ScrW()-pWidth, ScrH()-pHeight, 0.7, 0, 2, function()
 			gPhone.phoneBase:MakePopup()
 			
+			-- Needed to fix occasional bug where these are not clickable
+			gPhone.homeIconLayout:SetMouseInputEnabled(true)
+			gPhone.phoneScreen:SetMouseInputEnabled(true)
+			
 			if callback != nil then
 				callback()
 			end
@@ -1014,7 +1030,7 @@ function gPhone.showPhone( callback )
 		
 		if firstTimeUsed:GetBool() then
 			gPhone.bootUp()
-			LocalPlayer():gPhoneConCommand("gphone_firsttime 0")
+			LocalPlayer():ConCommand("gphone_firsttime 0")
 		else 
 			gPhone.buildLockScreen()
 		end
@@ -1028,13 +1044,14 @@ end
 
 --// Moves the phone down and disables it
 function gPhone.hidePhone( callback )
-	if gPhone and gPhone.phoneBase then
+	if gPhone and gPhone.phoneBase and gPhone.getPhoneState() != "hidden" then
 		gPhone.log("Hide phone")
 		
 		local x, y = gPhone.phoneBase:GetPos()
 		
 		gPhone.phoneBase:SetMouseInputEnabled( false )
 		gPhone.phoneBase:SetKeyboardInputEnabled( false )
+		gPhone.phoneScreen:SetMouseInputEnabled( false )
 		
 		gPhone.phoneBase:MoveTo( x, ScrH()-40, 0.7, 0, 2, function()
 			gPhone.config.phoneColor.a = 100 -- Fade the alpha
@@ -1044,6 +1061,7 @@ function gPhone.hidePhone( callback )
 			end
 		end)
 		
+		gPhone.appDeleteMode = false
 		gPhone.toHomeScreen()
 		gPhone.setPhoneState( "hidden" )
 		
@@ -1069,9 +1087,11 @@ function gPhone.destroyPhone( callback )
 		
 		gApp.removeTickers()
 		
+		gPhone.appDeleteMode = false
 		gPhone.setPhoneState( "destroyed" )
 		
-		LocalPlayer():gPhoneConCommand("-voicerecord")
+		LocalPlayer():ConCommand("-voicerecord")
+		LocalPlayer():ConCommand("gphone_stopmusic")
 		
 		net.Start("gPhone_DataTransfer")
 			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})

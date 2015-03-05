@@ -237,8 +237,6 @@ function APP.PopulateMessages( id )
 
 	messageTable = gPhone.loadTextMessages()
 	
-	PrintTable(messageTable)
-	
 	-- Panel to write and send new gMessages
 	local writePanelOffset = 30
 	local send, textBox

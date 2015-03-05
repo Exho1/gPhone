@@ -88,10 +88,10 @@ function APP.Run( objects, screen )
 		becomeButton.Paint = function( self, w, h )
 			draw.RoundedBox(0, 0, 0, w, h, Color(140, 0, 0, 250) )
 		end
-		becomeButton.DoClick = function()
-			if requiresVote then
-				LocalPlayer():ConCommand( "darkrp vote "..data.command)
-			else
+		if requiresVote then
+			becomeButton.DoClick = fn.Compose{function()end, fn.Partial(RunConsoleCommand, "darkrp", "vote" .. data.command)}
+		else
+			becomeButton.DoClick = function()
 				LocalPlayer():ConCommand( "darkrp ".. data.command )
 			end
 		end

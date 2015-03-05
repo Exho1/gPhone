@@ -33,6 +33,55 @@ concommand.Add("gphone_logwipe", function()
 	gPhone.wipeLog()
 end)
 
+local api = "http://api.spotify.com/v1/search?type=track&limit=1&q=%s"
+local downloaded_art = {}
+local song_id_lookup = {}
+local songs, track_number = {}, 1
+local function load_album_art(track_name, track_id) -- where id is how you're indexing your music or whatever
+	http.Fetch(api:format(track_name:gsub("%s", "+")), function(body)
+		local data = util.JSONToTable(body)
+		if not data or not data.tracks then return end
+
+		local album = data.tracks.items[1].album
+		if downloaded_art[album.name] then 
+			song_id_lookup[track_id] = downloaded_art[album.name] 
+			return 
+		end
+
+		local image = album.images[track_id] -- 640 x 640 px
+		--download_image(image.url, function(mat)
+		print(image.url, album.name, mat, track_id)
+			downloaded_art[album.name] = mat
+			song_id_lookup[track_id] = mat
+			track_number = track_number + 1
+		--end)
+		local frame = vgui.Create( "DFrame" )
+		frame:SetPos( 100, 100 )
+		frame:SetSize( 700, 700 )
+		frame:SetTitle( "dddd" )
+		frame:SetDraggable( true )
+		frame:MakePopup()
+		
+		local MapImg = vgui.Create( "HTML", frame) 
+		MapImg:SetSize( 640, 640 )
+		MapImg:SetPos(0, 0)
+		MapImg:SetHTML( "<img width='620px' height='620px' src='"..image.url.."'>" )
+	end)
+end
+
+local function get_album_art(track_id)
+	return song_id_lookup[track_id] or ""
+end
+
+concommand.Add("search_song", function(_, _, args)
+	assert(args[1])
+	local track_id = track_number
+	local name = table.concat(args, " ")
+	load_album_art(name, track_id)
+end)
+
+
+
 local plymeta = FindMetaTable( "Player" )
 
 --// Safe console command function since running them breaks the derma
@@ -321,6 +370,30 @@ function gPhone.getAppFromName( name )
 	end
 end
 
+function gPhone.saveMusic( tbl )
+	gPhone.msgC( GPHONE_MSGC_NONE, "Saving music file")
+	
+	json = util.TableToJSON( tbl )
+	
+	file.CreateDir( "gphone" )
+	file.Write( "gphone/music_stations.txt", json)
+end
+
+function gPhone.loadMusic()
+	gPhone.msgC( GPHONE_MSGC_NONE, "Loading music file")
+	
+	if not file.Exists( "gphone/music_stations.txt", "DATA" ) then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate music file!!")
+		gPhone.saveMusic( {} )
+		gPhone.loadMusic()
+	end
+	
+	local contents = file.Read( "gphone/music_stations.txt", "DATA" )
+	local tbl = util.JSONToTable( contents ) 
+	
+	return tbl
+end
+
 --// Discards text files into another folder instead of deleting them from the user's computer
 function gPhone.discardFile( filePath )
 	if file.Exists( filePath, "DATA" ) then
@@ -444,9 +517,8 @@ function gPhone.loadClientConfig()
 	
 	if not file.Exists( "gphone/config.txt", "DATA" ) then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
-		gPhone.saveClientConfig()
 		gPhone.loadClientConfig()
-		return
+		return gPhone.config
 	end
 	
 	local cfgFile = file.Read( "gphone/config.txt", "DATA" )
@@ -462,11 +534,11 @@ function gPhone.loadClientConfig()
 		end
 	end
 	
+	table.Merge( gPhone.config, cfgTable )
+	
 	if shouldSave then
 		gPhone.saveClientConfig()
 	end
-	
-	gPhone.config = cfgTable
 end
 
 --// Retrieves app positions
@@ -616,6 +688,11 @@ function gPhone.checkUpdate()
 		local json = string.sub( body, startPos, endPos )
 		local tbl = util.JSONToTable( json )
 		
+		if tbl == nil then
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Update data returns an invalid table" )
+			return
+		end
+		
 		-- Get json data
 		local webVersion = tbl[1]
 		local description = tbl[2]
@@ -632,7 +709,8 @@ function gPhone.checkUpdate()
 		gPhone.updateTable = {update=isUpdate, version=webVersion, description=description, date=date}
 	end,
 	function (error)
-		-- What now?
+		-- Not actually an update but an error
+		gPhone.incrementBadge( "Settings", "update" )
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to connect to the gPhone webpage to verify versions!" )
 		gPhone.updateTable = {update=true, version="N/A", description=trans(update_check_fail), date="N/A"}
 	end)
@@ -820,7 +898,7 @@ function gPhone.fixHomescreen( tbl )
 			end
 			
 			if v.name == v2.name and v.icon == v2.icon and k ~= k2 then -- Repeated app
-				if tbl[k].name == v.name and tbl[k].name == v2.name then
+				if tbl[k] and tbl[k].name == v.name and tbl[k].name == v2.name then
 					gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at keys: "..k.." and "..k2.."!" )
 					table.remove(tbl, k)
 				end

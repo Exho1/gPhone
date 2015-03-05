@@ -140,3 +140,7 @@ l.no_apps = "No apps"
 l.no_apps_phrase = "There are no apps available, sorry :("
 l.get = "Get"
 l.have = "Have"
+
+-- Music
+l.music = "Music"
+l.music_format_warn = "That is not a valid music url! The file extension should be .mp3 or .wav"

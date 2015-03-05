@@ -34,14 +34,19 @@ gApp["_close_"] = function( app )
 	
 	if app and app.Data then
 		if app.Data.Close then
+			gPhone.log("Calling app close function")
 			app.Data.Close()
 		end
 	end
+	
 	gApp.removeTicker( app )
 	
 	-- Hides all the app children
 	gPhone.removeAllPanels( gApp["_children_"] )
+	
 	gPhone.homeIconLayout:SetVisible( true )
+	gPhone.homeIconLayout:SetMouseInputEnabled(true)
+	gPhone.homeIconLayout:SetKeyboardInputEnabled(true)
 	
 	if gPhone.config.darkStatusBar == true then
 		gPhone.darkenStatusBar()
@@ -51,8 +56,6 @@ gApp["_close_"] = function( app )
 	
 	gPhone.showStatusBar()
 	gPhone.setActiveApp( nil ) 
-	gPhone.phoneBase:SetMouseInputEnabled( true )
-	gPhone.phoneScreen:SetMouseInputEnabled( true )
 	
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
