@@ -1,5 +1,5 @@
 --// English language translations
--- Letters prefixed with a '%' (ex: %s, %i) are for formatted strings, don't break those
+-- Letters prefixed with a '%' (ex: %s, %i) are substituted for variables during run time, don't break those
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
 
 local l = gPhone.createLanguage( "english" )

@@ -19,18 +19,34 @@
 		- Fix homescreen broken glitch cause of con commands
 	- 911 number for texting
 	- Language
-		- Fix missing keys in foreign languages with English or proper translation
+		- Make sure to add new keys to non-English files with the English translations until proper ones are made
+		- Run through the phone to make sure all translations exist
+		- Talk to DJ or Narroby about Spanish
 	- Configure gm_luaerror
+		- IT DONT WORK
 		- Credit: http://facepunch.com/showthread.php?t=1252625
 	- Stupid unable to click app bug
 		- OnMousePressed doesnt get called for gPhone.homeIconLayout but does for screen and base
 	- Figure out why missing config values dont save
-	- Some sort of tutorial when the phone starts up
-	- Set up the default config
+	- Wallpaper
+		- The gPhone is bloated by the backgrounds, 2mb.
+		- Online wallpapers?
+	- Ringtones?
+	- Change gphone_firsttime from a convar to a text file so its saved clientisde instead of serverside
+	- Tutorial
+		- Add pictures and accompanying text
+		- Language translations
+	
+	- Before release
+		- Remove the Derma close button and other temp stuff
+		- Set up the default config
+	- On release
+		- Update the webserver with the correct version number on release 1.0.0 
+		- Update the settings update button to point to the Workshop page for the phone
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.4"
+gPhone.version = "0.9.5"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

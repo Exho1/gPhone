@@ -164,7 +164,7 @@ function gPhone.bootUp()
 	local screen = gPhone.phoneScreen
 	gPhone.setIsAnimating( true )
 	gPhone.setPhoneState( "boot" )
-	
+
 	-- Hide the default home screen
 	local oldScreen = gPhone.phoneScreen.Paint
 	for k, v in pairs(gPhone.phoneScreen:GetChildren()) do
@@ -186,20 +186,17 @@ function gPhone.bootUp()
 			logo:Remove()
 			progressBar:Remove()
 			
-			gPhone.phoneScreen.Paint = oldScreen
-			for k, v in pairs(gPhone.phoneScreen:GetChildren()) do
-				v:SetVisible(true)
-			end
 			gPhone.setIsAnimating( false )
 			
-			gPhone.buildLockScreen()
+			-- Open the tutorial
+			gPhone.beginnerTutorial( oldScreen )
 		end
 		
 		if CurTime() > nextPass then
 			local amount = math.random(3, 10)
 			bootProgress = math.Clamp(bootProgress + amount, 0, progressBar:GetWide())
 			
-			nextPass = CurTime() + math.Rand(0.5, 2)
+			nextPass = CurTime() + math.Rand(0.5, 1)
 		end
 	end
 	progressBar.Paint = function()
@@ -211,6 +208,221 @@ function gPhone.bootUp()
 		draw.RoundedBox(2, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 	end
 	
+end
+
+--// Creates the tutorial for first time users
+function gPhone.beginnerTutorial( oldScreen )
+	local screen = gPhone.phoneScreen
+	
+	-- Prevents this from being called more than once
+	if gPhone.isAnimating() == true then
+		return false
+	end
+	gPhone.setIsAnimating( true )
+	
+	local base = vgui.Create("DPanel", screen)
+	base:SetSize( screen:GetSize() )
+	base:SetPos( 0, 0 )
+	base.Paint = function( self, w, h ) end
+	
+	local title = vgui.Create( "DLabel", base )
+	title:SetText( "Welcome" )
+	title:SetFont("gPhone_24")
+	title:SetColor( color_black )
+	title:SizeToContents()
+	title:SetPos( screen:GetWide()/2 - title:GetWide()/2, screen:GetTall()/3 - title:GetTall()/2 )
+	
+	local lowerText = vgui.Create( "DLabel", base )
+	lowerText:SetText( "Choose your language" )
+	lowerText:SetFont("gPhone_16")
+	lowerText:SetColor( gPhone.colors.grey )
+	lowerText:SizeToContents()
+	local _, y = title:GetPos()
+	lowerText:SetPos( screen:GetWide()/2 - lowerText:GetWide()/2, screen:GetTall()/3 + title:GetTall() - 5 )
+	
+	local languagePicker = vgui.Create( "DComboBox", base )
+	languagePicker:SetSize( screen:GetWide()/2, 30 )
+	languagePicker:SetPos( screen:GetWide()/2 - languagePicker:GetWide()/2, screen:GetTall()/2 - languagePicker:GetTall() )
+	languagePicker:SetValue( trans("language") )
+	languagePicker:SetTextColor( color_black )
+	languagePicker:SetFont( "gPhone_18" )
+	for k, _ in pairs( gPhone.languages ) do
+		if k != "default" then -- Default is a variable not a language
+			languagePicker:AddChoice( k:gsub("^%l", string.upper) )
+		end
+	end
+	languagePicker.OnSelect = function( self, key, val )
+		
+		-- Change the title's text and move it to the center-top
+		local x = title:GetPos()
+		title:MoveTo( x, -title:GetTall(), 0.5, 0, 2, function()
+			gPhone.beginnerSlideshow( base, oldScreen )
+		end)
+		
+		-- Slide the language picker off the screen and remove it
+		local _, y = languagePicker:GetPos()
+		languagePicker:MoveTo( -languagePicker:GetWide() - 10, y, 0.5, 0, 2, function()
+			languagePicker:Remove()
+		end)
+		
+		local _, y = lowerText:GetPos()
+		lowerText:MoveTo( -lowerText:GetWide() - 10, y, 0.5, 0, 2, function()
+			lowerText:Remove()
+		end)
+	end
+end
+
+--// Creates the 'slideshow' for the tutorial
+function gPhone.beginnerSlideshow( base, oldScreen )
+	local screen = gPhone.phoneScreen
+	local title = base:GetChildren()[1]
+	
+	local currentPanel 
+	local nextImage = 1
+	local images = {
+		"vgui/gphone/boot_logo.png",
+		"vgui/gphone/camera.png",
+		"vgui/gphone/music.png",
+		"vgui/gphone/phone.png",
+	}
+	
+	local messages = {
+		"TEST1",
+		"TEST2",
+		"AYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+		"AYYYYYYYYYYYYYYYYYYYYYOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+	}
+	
+	local slideImage = vgui.Create( "DImage", base )
+	slideImage:SetSize( screen:GetWide() - 50, screen:GetTall()/2 )
+	slideImage:SetPos( 25, 50 )
+	slideImage:SetImage( images[nextImage] )
+	currentPanel = slideImage
+	
+	local messageLabel = vgui.Create( "DLabel", base )
+	messageLabel:SetText( messages[nextImage] )
+	messageLabel:SetFont("gPhone_18")
+	messageLabel:SetColor( color_black )
+	messageLabel:SizeToContents()
+	local _, y = slideImage:GetPos()
+	messageLabel:SetPos( screen:GetWide()/2 - messageLabel:GetWide()/2, y + slideImage:GetTall() + 20 )
+	gPhone.wordWrap( messageLabel, base:GetWide(), 35 )
+	
+	nextImage = nextImage + 1
+	
+	local slideImage2 = vgui.Create( "DImage", base )
+	slideImage2:SetSize( screen:GetWide() - 50, screen:GetTall()/2 )
+	slideImage2:SetPos( screen:GetWide() + slideImage:GetWide() + 25, 50 )
+	slideImage2:SetImage( images[nextImage] )
+	
+	local messageLabel2 = vgui.Create( "DLabel", base )
+	messageLabel2:SetText( messages[nextImage] )
+	messageLabel2:SetFont("gPhone_18")
+	messageLabel2:SetColor( color_black )
+	messageLabel2:SizeToContents()
+	local _, y = slideImage:GetPos()
+	messageLabel2:SetPos( screen:GetWide() + messageLabel2:GetWide(), y + slideImage:GetTall() + 20 )
+	gPhone.wordWrap( messageLabel2, base:GetWide(), 35 )
+	
+	local nextButton = vgui.Create( "DButton", base )
+	nextButton:SetText( trans("okay") )
+	nextButton:SetFont("gPhone_16")
+	nextButton:SetColor( color_black )
+	local w, h = gPhone.getTextSize(nextButton:GetText(), nextButton:GetFont())
+	nextButton:SetSize( w * 3, h * 2 )
+	local x, y = screen:GetWide()/2 - nextButton:GetWide()/2, screen:GetTall() - nextButton:GetTall() * 2
+	nextButton:SetPos( x, screen:GetTall() + nextButton:GetTall() )
+	nextButton:MoveTo( x, y, 0.5, 0, 2) -- Move
+	nextButton.Paint = function( self, w, h )
+		if not self:IsDown() then
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+		else
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.darkerWhite)
+		end
+		
+		surface.SetDrawColor( gPhone.colors.grey )
+		surface.DrawOutlinedRect( 0, 0, w, h )
+	end
+	local count = 1
+	local animating = false
+	nextButton.DoClick = function( self )
+		
+		if animating then return end
+		animating = true
+		
+		local slide1
+		local slide2
+		local message1
+		local message2
+		
+		-- Figure out which slide is currently on the screen
+		if currentPanel == slideImage then
+			slide1 = slideImage
+			slide2 = slideImage2
+			message1 = messageLabel
+			message2 = messageLabel2
+		else
+			slide1 = slideImage2
+			slide2 = slideImage
+			message1 = messageLabel2
+			message2 = messageLabel
+		end
+		
+		if count == #images then
+			-- Slide out and remove the active panels
+			local _, y = slide1:GetPos()
+			slide1:MoveTo( -slide1:GetWide(), y, 0.5, 0, 2, function()
+				slide1:Remove()
+			end)
+			local _, y = message1:GetPos()
+			message1:MoveTo( -message1:GetWide(), y, 0.5, 0, 2, function()
+				message1:Remove()
+			end)
+			
+			-- Remove all tutorial panels
+			base:Remove()
+			
+			-- Restore original phone stuff
+			gPhone.phoneScreen.Paint = oldScreen
+			for k, v in pairs(gPhone.phoneScreen:GetChildren()) do
+				v:SetVisible(true)
+			end
+			
+			-- Go to lock screen
+			gPhone.buildLockScreen()
+			animating = false
+			return
+		end
+		
+		local x, y = slide1:GetPos()
+		-- Slide out of view
+		slide1:MoveTo( -slide1:GetWide(), y, 0.5, 0, 2, function()
+			-- Put back on the right
+			if not images[nextImage + 1] then return end
+			
+			slide1:SetPos( screen:GetWide() + slide1:GetWide() + 25, 50 )
+			slide1:SetImage( images[nextImage + 1] )
+			
+			nextImage = nextImage + 1
+		end)
+		
+		local mX, mY = message1:GetPos()
+		message1:MoveTo( -message1:GetWide(), mY, 0.5, 0, 2, function()
+			message1:SetPos( screen:GetWide() + message2:GetWide(), mY )
+			message1:SetText( messages[nextImage] )
+			gPhone.wordWrap( message1, base:GetWide(), 35 )
+		end)
+		
+		-- Slide into frame
+		slide2:MoveTo( x, y, 0.5, 0, 2, function()
+			currentPanel = slide2
+			animating = false
+		end)
+		
+		message2:MoveTo( base:GetWide()/2 - message2:GetWide()/2, mY, 0.5, 0, 2)
+		
+		count = count + 1
+	end
 end
 
 --// Run an animation to unlock the phone's lock screen

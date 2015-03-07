@@ -721,7 +721,7 @@ function gPhone.wordWrap( label, wrapWidth, buffer )
 	label:SizeToContents()
 	local w, h = label:GetSize()
 	
-	if w - buffer >= wrapWidth then -- Gmod's word wrapping is meh, I'll make my own
+	if w - buffer >= wrapWidth - buffer then -- Gmod's word wrapping is meh, I'll make my own
 		local text = label:GetText()
 		surface.SetFont(label:GetFont())
 		
@@ -738,13 +738,20 @@ function gPhone.wordWrap( label, wrapWidth, buffer )
 				if letter == " " then -- Perfect, we create new line on a space
 					table.insert(frags, k, "\r\n")
 				else
+					local foundSpace = false
 					-- Or we have to go back and find one...
 					for i = k, k - 30, -1 do
 						if frags[i] == " " then
 							table.insert(frags, i, "\r\n")
 							table.remove(frags, i + 1)
+							foundSpace = true
 							break
 						end
+					end
+					
+					-- Last resort, split the word
+					if foundSpace == false then
+						table.insert(frags, k, "-\r\n-")
 					end
 				end
 				lineBreaks = lineBreaks + 1
