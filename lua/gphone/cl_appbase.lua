@@ -264,6 +264,7 @@ function gApp.createTicker( app, fps, func )
 		fpsReturn = frameCount / (CurTime() - startTime)
 	end)
 
+	-- Store the hook name in the tickers table
 	gApp["_tickers_"][appName] = "gPhone_AppTicker_"..appName
 end
 
@@ -295,15 +296,19 @@ function gApp.getFPS()
 end
 
 --// Returns an average frame rate
+local nextUpdate = 0
+local lastReturn = 0
 function gApp.getFPSAverage()
-	local fps = tonumber(fpsReturn) or 0
+	local fps = tonumber(fpsReturn)
 	
-	local nextUpdate = 0
-	hook.Add("Think", "gPhone_AppFPSSmooth", function()
+	if fps != nil then
 		if CurTime() > nextUpdate then
-			--nextUpdate = CurTime() + 0.5
+			nextUpdate = CurTime() + (FrameTime() + 0.1)
+			lastReturn	= math.Round(fps, 6)
+			return lastReturn
 		end
-	end)
+		return lastReturn
+	end
 end
 
 

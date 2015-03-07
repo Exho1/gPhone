@@ -69,6 +69,7 @@ l.text_flagged = "To prevent spam, you have been blocked from texting for %i sec
 l.being_called = "%s is calling you!"
 
 -- Settings
+l.wallpapers = "Wallpapers"
 l.airplane_mode = "Airplane Mode"
 l.show_unusable_apps = "Show unusable apps"
 l.reset_app_pos = "Reset icon positions"
@@ -90,6 +91,12 @@ l.wipe_archive_confirm = "Are you sure you want to delete all files in the archi
 l.archive = "Archive"
 l.update = "Update"
 l.set_color = "Set Color"
+
+l.wipe_log_confirm = "Are you sure you want to wipe the log? This cannot be undone"
+l.developer = "Developer"
+l.wipe_log = "Wipe log"
+l.dump_log = "Dump to file"
+l.c_print = "Console Printing"
 
 -- Contacts
 l.contacts = "Contacts"
@@ -144,3 +151,9 @@ l.have = "Have"
 -- Music
 l.music = "Music"
 l.music_format_warn = "That is not a valid music url! The file extension should be .mp3 or .wav"
+l.editor = "Editor"
+l.editor_help = "* Only the song URL is required"
+l.artist_name = "Artist Name"
+l.song_name = "Song Name"
+l.song_url = "Song Url"
+l.album_url = "Album Url" 

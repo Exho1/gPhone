@@ -281,7 +281,6 @@ function gPhone.msgC( enum, ... )
 	if SERVER then 
 		col = Color( 0, 128, 255 )
 	else 
-		if gPhone.config.showConsoleMessages == false then return end
 		col = Color( 255, 255, 100 )
 	end
 
@@ -293,8 +292,11 @@ function gPhone.msgC( enum, ... )
 	
 	-- Log everything that runs through
 	if CLIENT then
-		gPhone.log( "[msgC - "..enum.."]: "..table.concat( args, "   " ) )
+		gPhone.log( table.concat( args, "   " ) )
 	end	
+	
+	-- If console printing is off, don't show the message but it will be logged
+	if gPhone.config.showConsoleMessages == false then return end
 	
 	local textColor
 	if enum == GPHONE_MSGC_WARNING then

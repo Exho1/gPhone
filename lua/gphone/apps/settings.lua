@@ -21,7 +21,9 @@ local generalLevelTabs = {
 	"_SPACE_",
 	trans("language"),
 	trans("color"),
-	trans("archive")
+	trans("archive"),
+	"_SPACE_",
+	trans("developer"),
 }
 
 local homescreenLevelTabs = {
@@ -52,9 +54,17 @@ function APP.Run( objects, screen )
 	objects.Back:SetPos( 10, 25 )
 	objects.Back:SetVisible( false )
 	
-	objects.Layout = vgui.Create( "DIconLayout", screen)
-	objects.Layout:SetSize( screen:GetWide(), screen:GetTall() - 50 )
-	objects.Layout:SetPos( 0, 80 )
+	local offset = 20 -- A little trick to push the scrollbar off the screen
+	objects.LayoutScroll = vgui.Create( "DScrollPanel", screen )
+	objects.LayoutScroll:SetSize( screen:GetWide() + offset, screen:GetTall() - 50 )
+	objects.LayoutScroll:SetPos( 0, 80 )
+	objects.LayoutScroll.Paint = function( self, w, h )
+		draw.RoundedBox(0, 0, self:GetWide(), self:GetTall(), 0, Color(0, 235, 0))
+	end
+	
+	objects.Layout = vgui.Create( "DIconLayout", objects.LayoutScroll )
+	objects.Layout:SetSize( screen:GetWide(), screen:GetTall() - 1 )
+	objects.Layout:SetPos( 0, 1 )
 	objects.Layout:SetSpaceY( 0 )
 	
 	for key, name in pairs( topLevelTabs ) do
@@ -405,8 +415,16 @@ function APP.OpenLowerTab( name, upperTabName )
 			APP.OpenTab( upperTabName )
 		end
 		
-		local background = objects.Layout:Add("DPanel")
-		background:SetSize(screen:GetWide(), screen:GetTall()/1.5)
+		local bg = objects.Layout:Add("DPanel")
+		bg:SetSize(screen:GetWide(), screen:GetTall()/1.5)
+		bg:SetText("")
+		bg.Paint = function( self )
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
+		end
+		
+		local background = vgui.Create("DScrollPanel", bg)
+		local w, h = bg:GetSize()
+		background:SetSize( w + 20, h )
 		background:SetText("")
 		background.Paint = function( self )
 			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
@@ -421,19 +439,24 @@ function APP.OpenLowerTab( name, upperTabName )
 		
 		-- Center the Garry Phone
 		local aboutText = [[
-Contact:
+// Contact:
 exho.steam@gmail.com
 STEAM_0:0:53332328
 
-Source: 
+// Source: 
 https://github.com/Exho1/gPhone
 
-Credits:
-Derma blur - 
+// Credits:
+Derma blur:
 https://github.com/Chessnut/NutScript
-Phone image - 
+
+Album Art:
+Spotify API and Rejax
+
+Phone image: 
 https://creativemarket.com/buatoom
-Icon images - http://www.flaticon.com/
+
+Icon images: http://www.flaticon.com/
 ]]
 
 		local aboutLabel = vgui.Create( "DLabel", background )
@@ -812,8 +835,103 @@ Icon images - http://www.flaticon.com/
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 35, 5 )
-	else
+	elseif name == trans("developer"):lower() then
 		-- Add new lower level
+		APP.PrepareNewTab( trans("developer") )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		local bgPanel = objects.Layout:Add("DPanel")
+		bgPanel:SetSize(screen:GetWide(), screen:GetTall()/2 - 30)
+		bgPanel.Paint = function( self, w, h) 
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+		end
+		
+		-- Rich text is what is used in the console, its exactly what I needed
+		local richtext = vgui.Create( "RichText", bgPanel )
+		richtext:Dock( FILL )
+		
+		-- Add the entirety of the debug log to it
+		for _, tbl in pairs( gPhone.debugLog ) do
+			richtext:InsertColorChange( 40,40,40,255 )
+			richtext:AppendText("["..tbl.time.."]: "..tbl.msg.."\n")
+		end
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+		
+		local options = {
+			trans("wipe_log"),
+			trans("dump_log"),
+			trans("c_print")
+		}
+		
+		for k, v in pairs( options ) do
+			if k == 3 then
+				-- Special, this is a toggle
+				local bgPanel = objects.Layout:Add("DPanel")
+				bgPanel:SetSize(screen:GetWide(), 30)
+				bgPanel.Paint = function( self, w, h) 
+					draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+					
+					draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+				end
+				
+				local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+				toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+				toggleButton:SetBool( gPhone.config.showConsoleMessages )
+				toggleButton.OnValueChanged = function( self, bVal )
+					gPhone.setConfigValue( "showConsoleMessages", bVal )
+				end
+				
+				local title = vgui.Create( "DLabel", bgPanel )
+				title:SetText( v )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			else
+				local layoutButton = objects.Layout:Add("DButton")
+				layoutButton:SetSize(screen:GetWide(), 30)
+				layoutButton:SetText("")
+				layoutButton.Paint = function()
+					if not layoutButton:IsDown() then
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+					else
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+					end
+					
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
+				end
+				layoutButton.DoClick = function( self )
+					if k == 1 then
+						-- Make sure we dont accidentally wipe the debug log
+						gPhone.notifyAlert( {msg=trans("wipe_log_confirm"),
+						title=trans("confirmation"), options={trans("deny"), trans("accept")}}, 
+						nil, 
+						function( pnl, value )
+							gPhone.wipeLog()
+							APP.OpenLowerTab( trans("developer"):lower(), upperTabName )
+						end, 
+						false, 
+						true )
+					else
+						gPhone.dumpLog()
+					end
+				end
+				
+				local title = vgui.Create( "DLabel", layoutButton )
+				title:SetText( v )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			end
+		end
 	end
 	
 end

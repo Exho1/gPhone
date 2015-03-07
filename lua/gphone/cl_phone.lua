@@ -14,7 +14,9 @@ function gPhone.buildPhone()
 	if game.SinglePlayer() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! Expect errors")
 	end
-
+	
+	file.CreateDir( "gphone" )
+	
 	gPhone.loadClientConfig()
 	gPhone.saveClientConfig()
 
@@ -89,29 +91,30 @@ function gPhone.buildPhone()
 	
 	--// Status bar
 	local batteryPercent = vgui.Create( "DLabel", gPhone.phoneScreen )
-	batteryPercent:SetText( "100%" )
+	local nextPass, batteryPerc = CurTime() + math.random(30, 60), 100
+	batteryPercent:SetText( batteryPerc.."%" )
 	batteryPercent:SizeToContents()
 	batteryPercent:SetPos( sWidth - batteryPercent:GetWide() - 23, 0 )
-	local nextPass, battPerc = CurTime() + math.random(30, 60), 100
 	batteryPercent.Think = function()
 		if CurTime() > nextPass then
 			batteryPercent:SetPos( sWidth - batteryPercent:GetWide() - 21, 0)
 			local dropPerc = math.random(1, 3)
 
-			battPerc = battPerc - dropPerc
-			batteryPercent:SetText( battPerc.."%" )
+			batteryPerc = batteryPerc - dropPerc
+			batteryPercent:SetText( batteryPerc.."%" )
 			batteryPercent:SetPos( sWidth - batteryPercent:GetWide() - 20, 0 )
 			
 			nextPass = CurTime() + math.random(60, 180)
 		end
 		
-		if battPerc < math.random(1, 4) then -- Simulate a phone dying, its kinda silly and few people will ever see it
+		if batteryPerc < math.random(1, 4) then -- Simulate a phone dying, its kinda silly and few people will ever see it
+			batteryPerc = 100
+			batteryPercent:SetText( batteryPerc.."%" )
 			gPhone.chatMsg( trans("battery_dead") )
 			gPhone.hidePhone()
 			timer.Simple(math.random(2, 5), function()
 				gPhone.chatMsg( trans("battery_okay") )
 				gPhone.showPhone()
-				battPerc = 100
 			end)
 		end
 	end
@@ -129,10 +132,10 @@ function gPhone.buildPhone()
 		
 		-- Math to determine the size of the battery bar
 		local segments = 11 / 100
-		local batterySize = math.Clamp(battPerc * segments, 1, 11)
+		local batterySize = math.Clamp(batteryPerc * segments, 1, 11)
 		
 		-- Battery bar color
-		if battPerc <= 20 then
+		if batteryPerc <= 20 then
 			col = Color(200, 30, 30) 
 		else
 			col = batteryImage:GetImageColor() 
@@ -142,7 +145,7 @@ function gPhone.buildPhone()
 		draw.RoundedBox( 0, 2, 2, batterySize, 4, col )
 	end
 	
-	gPhone.SignalStrength = 5
+	gPhone.signalStrength = 5
 	
 	local signalDots = {}
 	local xBuffer = 3
@@ -154,7 +157,7 @@ function gPhone.buildPhone()
 		local off = Material( "vgui/gphone/dot_empty.png", "smooth noclamp" )
 		local on = Material( "vgui/gphone/dot_full.png", "smooth noclamp" )
 		signalDots[i].Paint = function( self )
-			if i <= gPhone.SignalStrength then
+			if i <= gPhone.signalStrength then
 				surface.SetMaterial( on ) 
 				surface.SetDrawColor( self:GetImageColor() )
 				surface.DrawTexturedRect(0, 0, self:GetWide(), self:GetTall())
@@ -1002,7 +1005,8 @@ function gPhone.buildPhone()
 	gPhone.setPhoneState( "hidden" )
 	gPhone.config.phoneColor.a = 100
 	
-	-- Check for updates from my website
+	gPhone.loadBadges()
+	-- Check for updates from my website ONCE 
 	gPhone.checkUpdate()
 	
 	gPhone.log("Phone built successfullly")
@@ -1129,15 +1133,15 @@ function gPhone.updateSignalStrength()
 
 	-- rp_Downtown_v2 is 7000 units at its longest point
 	if distFromOrigin <= 1000 then
-		gPhone.SignalStrength = 5
+		gPhone.signalStrength = 5
 	elseif distFromOrigin <= 2000 then
-		gPhone.SignalStrength = 4
+		gPhone.signalStrength = 4
 	elseif distFromOrigin <= 4000 then
-		gPhone.SignalStrength = 3
+		gPhone.signalStrength = 3
 	elseif distFromOrigin <= 8000 then
-		gPhone.SignalStrength = 2
+		gPhone.signalStrength = 2
 	else
-		gPhone.SignalStrength = 1
+		gPhone.signalStrength = 1
 	end
 end
 

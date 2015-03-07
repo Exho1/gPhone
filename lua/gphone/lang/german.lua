@@ -13,6 +13,8 @@ l.kick = "[gPhone]: Nicht genügend Speicher frei, um Speicher freizugeben. - ER
 l.feature_deny = "Das gewünschte Feature is zur Zeit noch nicht implementiert."
 l.error = "Error"
 
+l.default = "Default"
+l.language = "Language"
 l.settings = "Einstellungen"
 l.general = "Allgemein"
 l.wallpaper = "Wallpaper"
@@ -33,7 +35,8 @@ l.app_deny_gm = "Diese App ist nicht für diesen Gamemode geeignet!"
 l.app_deny_group = "Dir fehlt die Berechtigung, diese App zu benutzen!"
 
 -- Requests
-l.confim = "Bestätigung"
+l.confimation = "Bestätigung"
+l.confirm = "Confirm"
 l.request = "Anfrage"
 l.deny = "Ablehnen"
 l.accept = "Akzeptieren"
@@ -66,6 +69,8 @@ l.text_flagged = "Du wurdest für %i sekunden gesperrt, um Spam zu verhindern."
 l.being_called = "%s ruft dicht an!"
 
 -- Settings
+l.wallpapers = "Wallpapers"
+l.airplane_mode = "Airplane Mode"
 l.show_unusable_apps = "Zeige nicht benutzbare Apps"
 l.reset_app_pos = "Icon positionen zurücksetzen"
 l.archive_cleanup = "Archiv aufräumen"
@@ -78,12 +83,20 @@ l.dark_status = "Status Bar verdunkeln"
 l.set_lock = "Setze Lockscreen"
 l.set_home = "Setze Startbildschirm"
 l.reset_homescreen = "Bist du sicher, dass du die Icon Positionen auf dem Startbildschirm zurücksetzen möchtest?"
+l.lang_reboot_warn = "The gPhone will reboot when the language is changed and confirmed"
 
 l.no_description = "Keine Beschreibung verfügbar"
 l.install_u = "Update installieren"
 l.wipe_archive_confirm = "Bist du sicher, dass du alle Datein in dem Archiv löschen möchtest?"
 l.archive = "Archiv"
 l.update = "Update"
+l.set_color = "Set Color"
+
+l.wipe_log_confirm = "Are you sure you want to wipe the log? This cannot be undone"
+l.developer = "Developer"
+l.wipe_log = "Wipe log"
+l.dump_log = "Dump to file"
+l.c_print = "Console Printing"
 
 -- Contacts
 l.contacts = "Kontakte"
@@ -134,3 +147,13 @@ l.no_apps = "Keine apps"
 l.no_apps_phrase = "Es sind zur Zeit keine Apps verfügbar, Sorry :("
 l.get = "Holen"
 l.have = "Haben"
+
+-- Music
+l.music = "Music"
+l.music_format_warn = "That is not a valid music url! The file extension should be .mp3 or .wav"
+l.editor = "Editor"
+l.editor_help = "* Only the song URL is required"
+l.artist_name = "Artist Name"
+l.song_name = "Song Name"
+l.song_url = "Song Url"
+l.album_url = "Album Url" 

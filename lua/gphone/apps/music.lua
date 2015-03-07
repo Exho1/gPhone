@@ -9,7 +9,10 @@ APP.Tags = {"Sound", "Jamz", "Tunes"}
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
+	-- App specific variables
 	APP.OnMusicPlayer = false
+	APP.PlayingData = APP.PlayingData or {} -- Persists
+	APP.Volume = 1
 	
 	objects.Title = vgui.Create( "DLabel", screen )
 	objects.Title:SetText( trans("music") )
@@ -47,7 +50,7 @@ function APP.Run( objects, screen )
 		APP.OpenEditor()
 	end
 	
-	-- Load/merge the music list 
+	-- Load the music list and merge it into the existing one or a new table
 	APP.MusicList = table.Merge(APP.MusicList or {}, gPhone.loadMusic())
 	
 	--[[local temp = {
@@ -74,6 +77,7 @@ function APP.Run( objects, screen )
 		local layoutButton = vgui.Create("DButton", bgPanel)
 		layoutButton:SetSize(screen:GetWide(), 30)
 		layoutButton:SetText("")
+		layoutButton:SetZPos(5)
 		layoutButton.Paint = function()
 			if not layoutButton:IsDown() then
 				draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
@@ -83,6 +87,8 @@ function APP.Run( objects, screen )
 			
 			draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
 		end
+		
+		-- Delete button shamelessly copied from the messages app
 		local deleteOffset = 50
 		local deleteConvo = vgui.Create( "DButton", bgPanel )
 		deleteConvo:SetSize(deleteOffset, layoutButton:GetTall())
@@ -90,6 +96,7 @@ function APP.Run( objects, screen )
 		deleteConvo:SetText( trans("delete") )
 		deleteConvo:SetFont("gPhone_18lite")
 		deleteConvo:SetColor( color_white )
+		deleteConvo:SetZPos(-5)
 		deleteConvo:SetVisible(false)
 		deleteConvo.Paint = function( self, w, h )
 			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.red)
@@ -104,23 +111,27 @@ function APP.Run( objects, screen )
 			objects.Layout:LayoutIcons_TOP()
 		end
 		
-		layoutButton.DoClick = function( self )
+		layoutButton.OnMousePressed = function( self, mCode )
 			local x, y = self:ScreenToLocal( gui.MouseX(), gui.MouseY() )
 			
-			if x >= self:GetWide() - (deleteOffset - 10) and not self.deleteMode  then
-				local bX, bY = self:GetPos()
-				self:MoveTo( bX - deleteOffset, bY, 0.5, 0, -1 )
-				self.deleteMode = true
-				deleteConvo:SetVisible(true)
-				return
-			elseif self.deleteMode then
-				local bX, bY = self:GetPos()
-				self:MoveTo( bX + deleteOffset, bY, 0.5, 0, -1, function() deleteConvo:SetVisible(false) end)
-				self.deleteMode = false
-				return
-			end
+			if mCode != MOUSE_RIGHT then
+				if x >= self:GetWide() - (deleteOffset - 10) and not self.deleteMode  then
+					local bX, bY = self:GetPos()
+					self:MoveTo( bX - deleteOffset, bY, 0.5, 0, -1 )
+					self.deleteMode = true
+					deleteConvo:SetVisible(true)
+					return
+				elseif self.deleteMode then
+					local bX, bY = self:GetPos()
+					self:MoveTo( bX + deleteOffset, bY, 0.5, 0, -1, function() deleteConvo:SetVisible(false) end)
+					self.deleteMode = false
+					return
+				end
 
-			APP.OpenPlayer(data)
+				APP.OpenPlayer(data)
+			else
+				APP.OpenEditor(data)
+			end
 		end
 		
 		local title = vgui.Create( "DLabel", layoutButton )
@@ -131,11 +142,19 @@ function APP.Run( objects, screen )
 		title:SetPos( 35, 5 )
 	end
 	
-	gPhone.saveMusic( APP.MusicList )
+	--gPhone.saveMusic( APP.MusicList )
 end
 
+--// Helper function
+function APP.StopChannel()
+	if IsValid(APP.MusicChannel) then
+		APP.MusicChannel:Stop()
+		hook.Run("IGModAudioStop", channel)
+	end
+end	
+
 function APP.OpenPlayer( data )
-	--[[
+	--[[ Format:
 		data.artist_name, data.song_name, data.album_url, data.song_url
 	]]
 	
@@ -143,10 +162,8 @@ function APP.OpenPlayer( data )
 	local objects = gApp["_children_"]
 	
 	gPhone.setTextAndCenter(objects.Title, "", screen)
-	-- Hide the app's home screen
-	for k, v in pairs(objects.Layout:GetChildren()) do
-		v:SetVisible(false)
-	end
+	gPhone.hideChildren( objects.Layout )
+	
 	APP.OnMusicPlayer = true
 	
 	objects.Back:SetVisible(true)
@@ -161,64 +178,55 @@ function APP.OpenPlayer( data )
 		
 		APP.Run( objects, screen )
 	end
-
-	-- Move all to the layout scroll preferably
+	
+	-- If the song we clicked on differs than the one playing, stop the playing song
+	if APP.MusicChannel != nil then
+		if APP.PlayingData != data then
+			APP.StopChannel()
+		end
+	end
 	
 	local albumCover = vgui.Create( "HTML", objects.LayoutScroll) 
 	local w, h = screen:GetWide(), screen:GetTall()/4 * 2.5
 	albumCover:SetSize( w, h )
 	albumCover:SetPos( 0, 5 )
-	albumCover:SetHTML( "<img width='".. w-20 .."px' height='".. h-20 .."px' src='"..data.albumUrl.."'>" )
-	
-	objects.controlPanel = vgui.Create("DPanel", screen)
-	objects.controlPanel:SetSize( screen:GetWide(), screen:GetTall()/4 )
-	objects.controlPanel:SetPos( 0, screen:GetTall() - objects.controlPanel:GetTall() )
-	objects.controlPanel.Paint = function( self, w, h )
-		--draw.RoundedBox(0, 0, 0, w, h, Color(255, 0,0, 150))
+	if data.albumUrl and data.albumUrl != "" then
+		albumCover:SetHTML( "<img width='".. w-20 .."px' height='".. h-20 .."px' src='"..data.albumUrl.."'>" )
+	else
+		gPhone.msgC( GPHONE_MSGC_NOTIFY, "Manually loading album art")
+		
+		local artist = data.artistName or ""
+		local song = data.songName or ""
+		
+		-- Using the spotify API, find an album cover for the song
+		gPhone.loadAlbumArt(artist.." "..song, 1, function( url )
+			data.albumUrl = url -- Set this to the album's URL for quick loading later
+			gPhone.saveMusic( APP.MusicList )
+			
+			albumCover:SetHTML( "<img width='".. w-20 .."px' height='".. h-20 .."px' src='"..url.."'>" )
+		end)	
 	end
 	
-	--[[objects.sizeLabel = vgui.Create( "DLabel", screen )
-	objects.sizeLabel:SetText( trans("song_url") )
-	objects.sizeLabel:SetFont("gPhone_36")
-	objects.sizeLabel:SizeToContents()
-	objects.sizeLabel:SetVisible( false )
-	objects.sizeLabel:SetPos( screen:GetWide()/2 - objects.sizeLabel:GetWide()/2, 20 )
-	
-	objects.songURL = vgui.Create( "DTextEntry", screen )
-	objects.songURL:SetText( trans("song_url") )
-	objects.songURL:SetFont("gPhone_18")
-	objects.songURL:SetSize( objects.sizeLabel:GetSize() )
-	objects.songURL:SetTextColor( color_black )
-	objects.songURL:SetDrawBorder( false )
-	objects.songURL:SetDrawBackground( false )
-	objects.songURL:SetCursorColor( color_black )
-	objects.songURL:SetHighlightColor( Color(27,161,226) )
-	objects.songURL:SetPos( objects.sizeLabel:GetPos() )
-	objects.songURL.OnChange = function( self )
-		local text = self:GetText()
-		objects.sizeLabel:SetText(text)
-		objects.sizeLabel:SizeToContents()
-		objects.sizeLabel:SetPos( screen:GetWide()/2 - objects.sizeLabel:GetWide()/2, 20 )
-		
-		self:SetSize( objects.sizeLabel:GetSize() )
-		self:SetPos( objects.sizeLabel:GetPos() )
-	end]]
+	local controlPanel = vgui.Create("DPanel", objects.LayoutScroll)
+	controlPanel:SetSize( screen:GetWide(), screen:GetTall()/4 )
+	controlPanel:SetPos( 0, screen:GetTall() - controlPanel:GetTall() - 50 )
+	controlPanel.Paint = function() end
 
-	local timeElapsed = vgui.Create( "DLabel", objects.controlPanel )
+	local timeElapsed = vgui.Create( "DLabel", controlPanel )
 	timeElapsed:SetText( "00:00" )
 	timeElapsed:SetFont("gPhone_12")
 	timeElapsed:SetColor(color_black)
 	timeElapsed:SizeToContents()
 	timeElapsed:SetPos( 7, 3 )
 	
-	local timeLeft = vgui.Create( "DLabel", objects.controlPanel )
+	local timeLeft = vgui.Create( "DLabel", controlPanel )
 	timeLeft:SetText( "00:00" )
 	timeLeft:SetFont("gPhone_12")
 	timeLeft:SetColor(color_black)
 	timeLeft:SizeToContents()
 	timeLeft:SetPos( screen:GetWide() - timeLeft:GetWide() - 7, 3 )
 	
-	local songProgress = vgui.Create( "DPanel", objects.controlPanel )
+	local songProgress = vgui.Create( "DPanel", controlPanel )
 	songProgress:SetSize( screen:GetWide() - 90, 7 )
 	songProgress:SetPos( screen:GetWide()/2 - songProgress:GetWide()/2, 5 )
 	songProgress.progress = 0
@@ -227,7 +235,7 @@ function APP.OpenPlayer( data )
 		draw.RoundedBox(0, 0, 0, w * self.progress, h, gPhone.colors.blue)
 	end
 	
-	local songName = vgui.Create( "DLabel", objects.controlPanel )
+	local songName = vgui.Create( "DLabel", controlPanel )
 	songName:SetText(string.format("%s - %s", data.artistName or "N/A", data.songName or "N/A"))
 	songName:SetFont("gPhone_18")
 	songName:SetColor(color_black)
@@ -235,7 +243,7 @@ function APP.OpenPlayer( data )
 	local _, y = songProgress:GetPos()
 	songName:SetPos( screen:GetWide()/2 - songName:GetWide()/2, y + 15 )
 	
-	local play = vgui.Create("DImageButton", objects.controlPanel)
+	local play = vgui.Create("DImageButton", controlPanel)
 	play:SetSize( 24, 24 )
 	play:SetPos( screen:GetWide()/2 - play:GetWide()/2, y + 50 )
 	play:SetImage("vgui/gphone/play.png")
@@ -254,38 +262,81 @@ function APP.OpenPlayer( data )
 	
 	local x, y = play:GetPos()
 	
-	local back = vgui.Create("DImageButton", objects.controlPanel)
+	local back = vgui.Create("DImageButton", controlPanel)
 	back:SetSize( 24, 24 )
 	back:SetPos( x - back:GetWide() - 50, y )
 	back:SetImage("vgui/gphone/rewind.png")
 	back.DoClick = function( self )
-		if IsValid(APP.MusicChannel) then
-			if songProgress.progress > 0 then
-				-- Restart the song
-				timeElapsed:SetText( "00:00" )
-				timeLeft:SetText( "00:00" )
-				
+		if songProgress.progress > 0 then
+			-- Restart the song
+			timeElapsed:SetText( "00:00" )
+			timeLeft:SetText( "00:00" )
+			
+			if IsValid(APP.MusicChannel) then
+				-- Dont run the hook in this one as it gets restarted
 				APP.MusicChannel:Stop()
 				APP.MusicChannel:Play()
-				songProgress.progress = 0
-			else
-				-- Go back one song
-				
+			end
+			songProgress.progress = 0
+		else
+			-- Go back one song
+			for key, tbl in pairs( APP.MusicList ) do
+				if data == tbl then
+					-- Remove old panels
+					controlPanel:Remove()
+					albumCover:Remove()
+					
+					-- Stop music
+					if IsValid(APP.MusicChannel) then	
+						APP.StopChannel()
+					end
+					
+					-- Build a new player for the previous song
+					if APP.MusicList[key-1] != nil then
+						APP.OpenPlayer( APP.MusicList[key-1] )
+					else
+						APP.OpenPlayer( APP.MusicList[#APP.MusicList] )
+					end
+				end
 			end
 		end
 	end
 	
-	local forward = vgui.Create("DImageButton", objects.controlPanel)
+	local forward = vgui.Create("DImageButton", controlPanel)
 	forward:SetSize( 24, 24 )
 	forward:SetPos( x + forward:GetWide() + 50, y )
 	forward:SetImage("vgui/gphone/f_forward.png")
+	forward.DoClick = function( self )
+		-- Jump forward a song
+		for key, tbl in pairs( APP.MusicList ) do
+			if data == tbl then
+				controlPanel:Remove()
+				albumCover:Remove()
+				if IsValid(APP.MusicChannel) then
+					APP.StopChannel()
+				end
+				if APP.MusicList[key+1] != nil then
+					APP.OpenPlayer( APP.MusicList[key+1] )
+				else
+					APP.OpenPlayer( APP.MusicList[1] )
+				end
+			end
+		end
+	end
 	
-	local volume = vgui.Create("Slider", objects.controlPanel)
+	local volume = vgui.Create("gPhoneSlider", controlPanel)
 	volume:SetWide( screen:GetWide() - 40 )
-	volume:SetPos( screen:GetWide()/2 - volume:GetWide()/2, objects.controlPanel:GetTall() - 30 ) 
+	volume:SetPos( screen:GetWide()/2 - volume:GetWide()/2, controlPanel:GetTall() - 20 ) 
 	volume:SetMin( 0 )
-	volume:SetMax( 1.0 )
-	volume:SetValue( 1 )
+	volume:SetMax( 1 )
+	volume:SetBackgroundColor( gPhone.colors.greyAccent )
+	volume:SetForegroundColor( gPhone.colors.grey )
+	volume:SetKnobColor( Color(190, 190, 190) )
+	volume:SetValue( APP.Volume )
+	volume.OnValueChanged = function( self, val )
+		-- Update the apps volume
+		APP.Volume = val
+	end
 	
 	play.DoClick = function( self )
 		-- If music is playing, pause/play
@@ -303,6 +354,21 @@ function APP.OpenPlayer( data )
 		
 		-- Create a new music channel
 		sound.PlayURL( data.songUrl, "", function( channel, errorID, errorName )
+			APP.PlayingData = data
+			
+			concommand.Add("gphone_stopmusic", function()
+				if IsValid(channel) then
+					APP.StopChannel()
+				end
+			end)
+			
+			-- Hook onto my event that gets called whenever the audio channel stops
+			hook.Add("IGModAudioStop", "gPhone_audioStop", function()
+				gPhone.msgC( GPHONE_MSGC_NONE, "Audio channel stopped")
+				APP.PlayingData = {}
+				APP.MusicChannel = nil
+			end)
+			
 			if not IsValid(channel) then
 				-- Alert the player that they used an invalid url
 				gPhone.notifyAlert( {msg=trans("music_format_warn"),
@@ -311,21 +377,17 @@ function APP.OpenPlayer( data )
 			end
 			
 			APP.MusicChannel = channel
-			
-			channel:SetVolume( volume:GetValue() )
+			if IsValid(volume) then
+				channel:SetVolume( volume:GetValue() )
+			end
 			APP.ProgressBar( play, songProgress, timeElapsed, timeLeft, volume )
-			
-			concommand.Add("gphone_stopmusic", function()
-				if IsValid(channel) then
-					channel:Stop()
-				end
-			end)
 		end)
 	end
 	
 	APP.ProgressBar( play, songProgress, timeElapsed, timeLeft, volume )
 end
 
+--// Handles the progress bar for songs
 function APP.ProgressBar( dPlay, dProgress, dElapsed, dLeft, dVolume )
 	hook.Add("Think", "gPhone_musicProgress", function()
 		if IsValid(APP.MusicChannel) then
@@ -346,7 +408,9 @@ function APP.ProgressBar( dPlay, dProgress, dElapsed, dLeft, dVolume )
 			-- Volume stuff (luckily volume is from 0-1 already)
 			dVolume:SetValue( channel:GetVolume() )
 			dVolume.OnValueChanged = function( self, value )
-				channel:SetVolume( value )
+				if IsValid(channel) then
+					channel:SetVolume( value )
+				end
 			end
 			
 			-- Pause music if we tab out
@@ -372,8 +436,10 @@ function APP.OpenEditor( data )
 			v:SetVisible(false)
 		end
 	end
-	setUpTab( "Editor" )
 	
+	setUpTab( trans("editor") )
+	
+	-- Set up the back button
 	objects.Back:SetVisible(true)
 	objects.Back.DoClick = function()
 		for k, v in pairs(objects) do
@@ -392,18 +458,18 @@ function APP.OpenEditor( data )
 	end
 	
 	local fields = {
-		"Artist Name",
-		"Song Name",
-		"Song Url",
-		"Album Url",
+		trans("artist_name"),
+		trans("song_name"),
+		trans("song_url"),
+		trans("album_url"),
 	}
 	
 	local fieldLabel = vgui.Create( "DLabel", bgPanel )
 	fieldLabel:SetTextColor(Color(0,0,0))
 	fieldLabel:SetFont("gPhone_16")
 	fieldLabel:SetPos( 15, 20 )
-	gPhone.setTextAndCenter( fieldLabel, "* Only the song URL is required", bgPanel )
-	gPhone.wordWrap( fieldLabel, bgPanel:GetWide(), 20 )
+	gPhone.setTextAndCenter( fieldLabel, trans("editor_help"), bgPanel )
+	gPhone.wordWrap( fieldLabel, bgPanel:GetWide(), 20 ) -- Just in case
 	
 	local textEntries = {}
 	
@@ -419,6 +485,7 @@ function APP.OpenEditor( data )
 		textEntries[k] = vgui.Create( "DTextEntry", bgPanel )
 		local text = ""
 		if data then
+			-- If we gave a data table, fill in the blanks
 			if k == 1 then
 				text = data.artistName or ""
 			elseif k == 2 then
@@ -429,7 +496,7 @@ function APP.OpenEditor( data )
 				text = data.albumUrl or ""
 			end
 		end
-		textEntries[k]:SetText( "" )
+		textEntries[k]:SetText( text )
 		textEntries[k]:SetFont("gPhone_18")
 		textEntries[k]:SetSize( 100, 20 )
 		textEntries[k]:SetTextColor( color_black )
@@ -456,7 +523,7 @@ function APP.OpenEditor( data )
 	updateButton:SetSize(screen:GetWide(), 30)
 	updateButton:SetFont("gPhone_18")
 	updateButton:SetTextColor( color_black )
-	updateButton:SetText("Update")
+	updateButton:SetText(trans("update"))
 	updateButton.Paint = function( self, w, h )
 		if not self:IsDown() then
 			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
@@ -466,16 +533,37 @@ function APP.OpenEditor( data )
 		
 	end
 	updateButton.DoClick = function( self )
-		local entry = {
-			artistName=textEntries[1]:GetText(),
-			songName=textEntries[2]:GetText(),
-			albumUrl = textEntries[3]:GetText(),
-			songUrl = textEntries[4]:GetText(),
-		}
-		table.insert(APP.MusicList, entry)
+		if data == nil then
+			-- New song file
+			local entry = {
+				artistName=textEntries[1]:GetText(),
+				songName=textEntries[2]:GetText(),
+				songUrl = textEntries[3]:GetText(),
+				albumUrl = textEntries[4]:GetText(),
+			}
+			table.insert(APP.MusicList, entry)
+		else
+			-- Editing a song file
+			local entry = {
+				artistName=textEntries[1]:GetText(),
+				songName=textEntries[2]:GetText(),
+				songUrl = textEntries[3]:GetText(),
+				albumUrl = textEntries[4]:GetText(),
+			}
+			
+			for key, tbl in pairs( APP.MusicList ) do
+				if data == tbl then
+					APP.MusicList[key] = entry
+				end
+			end
+		end
 		
-		PrintTable(APP.MusicList)
-		--objects.Back:DoClick()
+		-- Gotta stop the music otherwise things break
+		APP.StopChannel()
+		
+		-- Save changes and hop back to main menu
+		gPhone.saveMusic( APP.MusicList )
+		objects.Back:DoClick()
 	end
 end
 

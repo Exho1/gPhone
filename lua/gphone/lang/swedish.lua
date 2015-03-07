@@ -13,6 +13,8 @@ l.kick = "[gPhone]: OTILLÅTEN FÖRFRÅGAN - FELKOD: 0x01B4D0%s"
 l.feature_deny = "Den valda tjänsten har inte lags till än"
 l.error = "Fel"
 
+l.default = "Default"
+l.language = "Language"
 l.settings = "Inställningar"
 l.general = "Allmänt"
 l.wallpaper = "Bakgrund"
@@ -33,7 +35,8 @@ l.app_deny_gm = "Den här appen kan inte användas i denna speltyp!"
 l.app_deny_group = "Du är inte i korrekt grupp för att använda denna app!"
 
 -- Requests
-l.confim = "Bekräftan"
+l.confimation = "Bekräftan"
+l.confirm = "Confirm"
 l.request = "Förfrågan"
 l.deny = "Neka"
 l.accept = "Godkänn"
@@ -66,6 +69,8 @@ l.text_flagged = "Du blockerad från att skicka SMS i %i sekunder på grund av s
 l.being_called = "%s ringer dig!"
 
 -- Settings
+l.wallpapers = "Wallpapers"
+l.airplane_mode = "Airplane Mode"
 l.show_unusable_apps = "Visa oanvändbara appar"
 l.reset_app_pos = "Nollställ ikonpositioner"
 l.archive_cleanup = "Arkivstädning"
@@ -84,6 +89,13 @@ l.install_u = "Installera uppdatering"
 l.wipe_archive_confirm = "Är du säker på att du vill rensa alla filer från ditt arkiv? (kan ej bli ogjort)"
 l.archive = "Arkiv"
 l.update = "Uppdatering"
+l.set_color = "Set Color"
+
+l.wipe_log_confirm = "Are you sure you want to wipe the log? This cannot be undone"
+l.developer = "Developer"
+l.wipe_log = "Wipe log"
+l.dump_log = "Dump to file"
+l.c_print = "Console Printing"
 
 -- Contacts
 l.contacts = "Kontakter"
@@ -134,3 +146,13 @@ l.no_apps = "Inga appar"
 l.no_apps_phrase = "Tyvärr inga appar tillgängliga"
 l.get = "Hämta"
 l.have = "Har"
+
+-- Music
+l.music = "Music"
+l.music_format_warn = "That is not a valid music url! The file extension should be .mp3 or .wav"
+l.editor = "Editor"
+l.editor_help = "* Only the song URL is required"
+l.artist_name = "Artist Name"
+l.song_name = "Song Name"
+l.song_url = "Song Url"
+l.album_url = "Album Url" 

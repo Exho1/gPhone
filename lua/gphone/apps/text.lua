@@ -397,7 +397,9 @@ function APP.NewConversation()
 	local playerPanels = {}
 	local playerList = {}
 	for k, v in pairs( player.GetAll() ) do 
-		table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
+		if v != LocalPlayer() then
+			table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
+		end
 	end
 	
 	--table.insert(playerList, {name="Emergency Services", number=911})

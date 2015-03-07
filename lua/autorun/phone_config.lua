@@ -1,51 +1,36 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 2/22/14
--- Phone source: https://creativemarket.com/buatoom/6422-iPhone5-Flat-Template
--- Icon sources: http://www.flaticon.com/
+-- Version: 3/7/14
 
 --[[ To Do:
 	- Multiplayer
+		- Make it work
 		- App variable which defines a function to run to start a multiplayer game
 		- Replace the horrid multiplayer request system with my new one
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.colors.blue )
 		objects.Back:SetPos()
-	- Perhaps move all text logs serverside
-		- Regardless of position, they need to NOT be in plain text
-		- If encrpyted, perhaps store the key on the server and only decrypt serverside then send the table to the client
 	- Moving apps in folders
+		- Add the missing feature chat message until its added
 	- Function to bypass using net.*Table entirely
-	- Reroute all net.Send to my own function so I can easily modify them
 	- Phone/calling
 		- Enable speaking for both players
 		- Fix homescreen broken glitch cause of con commands
 	- 911 number for texting
-	- Redesign apps
-		- Finances
-		- Jobs
 	- Language
 		- Fix missing keys in foreign languages with English or proper translation
-	- Disable self-messaging
 	- Configure gm_luaerror
 		- Credit: http://facepunch.com/showthread.php?t=1252625
-	- Music app
-		- Better slider
-		- Proper song saving
-		- Song adder and editor
-		- Progress bar stopping between songs
-		- Previous/next song functionality
-		- Seperation between songs
-		- Fix delete button
-		- http://facepunch.com/showthread.php?t=1453630&p=47253489&viewfull=1#post47253489
 	- Stupid unable to click app bug
 		- OnMousePressed doesnt get called for gPhone.homeIconLayout but does for screen and base
 	- Figure out why missing config values dont save
+	- Some sort of tutorial when the phone starts up
+	- Set up the default config
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.2"
+gPhone.version = "0.9.4"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -81,21 +66,22 @@ else
 		-- Fallback in case either wallpaper is nil
 		fallbackWallpaper = "vgui/gphone/wallpapers/wood.png",
 		
-		-- Held key to open/close the gPhone
+		-- Key held to open/close the gPhone
 		openKey = KEY_G, 
-		-- Time to hold the key in order to open/close the gPhone
+		-- Time to hold the above in order to open/close the gPhone
 		keyHoldTime = 0.75,
 		-- Time after showing the homescreen to unlock it 
 		openLockDelay = 1,
 		
 		-- Removes files in the data/gphone/archive folder after a time period has elapsed
 		deleteArchivedFiles = true,
+		-- Time period to delete up files in the archive if the above value is true
 		daysToCleanupArchive = 14,
 			
 		-- Default phone color
 		phoneColor = Color(255,255,255,255),
 		
-		-- Disables incoming notifications 
+		-- Disables incoming notification banners and alerts
 		airplaneMode = false,
 	}
 	
@@ -144,6 +130,7 @@ if SERVER then
 		AddCSLuaFile("gphone/lang/"..v)
 	end
 	
+	-- Have to include the language file before the languages or errors result
 	include("gphone/sh_lang.lua")
 	
 	-- Include languages
@@ -176,7 +163,7 @@ if CLIENT then
 	if system.IsWindows() or system.IsLinux() then
 		--require("luaerror2")
 	else
-		print("[gPhone]: Advanced error tracking disabled due to Mac OS")
+		--print("[gPhone]: Advanced error tracking disabled due to Mac OS")
 	end
 
 	include("gphone/cl_phone.lua")
@@ -188,6 +175,9 @@ if CLIENT then
  	include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")
 	include("vgui/backbutton.lua")
+	
+	-- Check for updates from my website ONCE 
+	gPhone.checkUpdate()
 end
 
 print([[

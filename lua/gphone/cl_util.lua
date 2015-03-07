@@ -3,7 +3,7 @@
 local client = LocalPlayer()
 local trans = gPhone.getTranslation
 
---// Console commands
+--// Builds the phone
 concommand.Add("gphone_build", function()
 	if gPhone.exists() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot have multiple instances of the gPhone running!" )
@@ -12,6 +12,7 @@ concommand.Add("gphone_build", function()
 	gPhone.buildPhone()
 end)
 
+--// Destroys the phone
 concommand.Add("gphone_destroy", function()
 	if not gPhone.exists() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "No instances of the gPhone are open" )
@@ -21,78 +22,57 @@ concommand.Add("gphone_destroy", function()
 	gPhone.setPhoneState( "destroyed" )
 end)
 
+--// Prints the phone's version
 concommand.Add("gphone_version", function()
 	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the gPhone version: "..gPhone.version )
 end)
 
+--// Dumps the event log to a text file
 concommand.Add("gphone_dump", function()
 	gPhone.dumpLog()
 end)
 
+--// Wipes the event log table
 concommand.Add("gphone_logwipe", function()
 	gPhone.wipeLog()
 end)
 
+--// Stops the active music channel (gets overriden by the the music app)
+concommand.Add("gphone_stopmusic", function()
+	gPhone.msgC( GPHONE_MSGC_WARNING, "No active music channel to stop!" )
+end)
+
+--// Simulates searching an 'artist song' pair to get an album url
+concommand.Add("gphone_searchsong", function(_, _, args)
+	assert(args[1])
+	local name = table.concat(args, " ")
+	gPhone.loadAlbumArt(name, 1, function( url )
+		print("Found album cover: "..url)
+	end)
+end)
+
+--// Spotify API album finding code provided by Rejax (STEAM_0:1:45852799)
 local api = "http://api.spotify.com/v1/search?type=track&limit=1&q=%s"
-local downloaded_art = {}
-local song_id_lookup = {}
-local songs, track_number = {}, 1
-local function load_album_art(track_name, track_id) -- where id is how you're indexing your music or whatever
+function gPhone.loadAlbumArt(track_name, track_id, callback) -- where id is how you're indexing your music or whatever
 	http.Fetch(api:format(track_name:gsub("%s", "+")), function(body)
 		local data = util.JSONToTable(body)
 		if not data or not data.tracks then return end
 
 		local album = data.tracks.items[1].album
-		if downloaded_art[album.name] then 
-			song_id_lookup[track_id] = downloaded_art[album.name] 
-			return 
-		end
-
 		local image = album.images[track_id] -- 640 x 640 px
-		--download_image(image.url, function(mat)
-		print(image.url, album.name, mat, track_id)
-			downloaded_art[album.name] = mat
-			song_id_lookup[track_id] = mat
-			track_number = track_number + 1
-		--end)
-		local frame = vgui.Create( "DFrame" )
-		frame:SetPos( 100, 100 )
-		frame:SetSize( 700, 700 )
-		frame:SetTitle( "dddd" )
-		frame:SetDraggable( true )
-		frame:MakePopup()
 		
-		local MapImg = vgui.Create( "HTML", frame) 
-		MapImg:SetSize( 640, 640 )
-		MapImg:SetPos(0, 0)
-		MapImg:SetHTML( "<img width='620px' height='620px' src='"..image.url.."'>" )
+		if callback != nil then
+			callback( image.url ) 
+		end
 	end)
 end
 
-local function get_album_art(track_id)
-	return song_id_lookup[track_id] or ""
-end
-
-concommand.Add("search_song", function(_, _, args)
-	assert(args[1])
-	local track_id = track_number
-	local name = table.concat(args, " ")
-	load_album_art(name, track_id)
-end)
-
-
-
 local plymeta = FindMetaTable( "Player" )
 
---// Safe console command function since running them breaks the derma
+--// Deprecated
 function plymeta:gPhoneConCommand( cmd )
-	self:ConCommand( cmd ) 
-	
-	if IsValid(gPhone.phoneBase) then
-		gPhone.phoneBase:SetMouseInputEnabled( true )
-		gPhone.phoneScreen:SetMouseInputEnabled( true )
-		gPhone.homeIconLayout:SetMouseInputEnabled( true )
-	end
+	print("USING DEPRECATED GPHONE COMMAND", debug.traceback())
+	self:ConCommand(cmd)
 end
 
 -- TEMPORARY
@@ -126,6 +106,7 @@ end)
 concommand.Add("reqgame", function()
 	gPhone.requestGame(LocalPlayer(), "gPong")
 end)
+
 -- END TEMPORARY
 
 --// Chat messages
@@ -151,7 +132,7 @@ function gPhone.log( string )
 	end
 end
 
---// Dumps the current debug log to a text file and clears it
+--// Dumps the current debug log to a text file
 function gPhone.dumpLog()
 	local date = os.date("%c")
 	date = string.gsub(date, "/", "-")
@@ -167,7 +148,7 @@ function gPhone.dumpLog()
 	end
 	gPhone.msgC( GPHONE_MSGC_NONE, "Log successfully dumped")
 	
-	gPhone.debugLog = {}
+	--gPhone.debugLog = {}
 end
 
 --// Clears the debug log
@@ -176,6 +157,7 @@ function gPhone.wipeLog()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Wiped debug log")
 end
 
+--// Iterates through a table to remove panels
 function gPhone.removeAllPanels( tbl )
 	for k, v in pairs(tbl) do
 		if type(v) != "table" then
@@ -257,6 +239,7 @@ function gPhone.hideChildren( pnl )
 	end
 end
 
+--// Hide or show children of a panel
 function gPhone.showChildren( pnl )
 	if not IsValid( pnl ) then return end
 	
@@ -267,6 +250,7 @@ function gPhone.showChildren( pnl )
 	end
 end
 
+--// Hides app objects
 function gPhone.hideAppObjects()
 	if not IsValid( pnl ) then return end
 	
@@ -294,6 +278,7 @@ function gPhone.darkenStatusBar()
 	end
 end
 
+--// Color the status bar
 function gPhone.lightenStatusBar() 
 	for class, tab in pairs(gPhone.StatusBar) do
 		if class == "text" then
@@ -362,6 +347,7 @@ function gPhone.setTextAndCenter(label, text, parent, vertical)
 	end
 end
 
+--// Returns an app table from its name
 function gPhone.getAppFromName( name )
 	for _, data in pairs( gPhone.apps ) do
 		if data.name:lower() == name:lower() then
@@ -370,6 +356,7 @@ function gPhone.getAppFromName( name )
 	end
 end
 
+--// Music App
 function gPhone.saveMusic( tbl )
 	gPhone.msgC( GPHONE_MSGC_NONE, "Saving music file")
 	
@@ -379,6 +366,7 @@ function gPhone.saveMusic( tbl )
 	file.Write( "gphone/music_stations.txt", json)
 end
 
+--// Music App
 function gPhone.loadMusic()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Loading music file")
 	
@@ -438,13 +426,16 @@ function gPhone.archiveCleanup()
 	end
 end
 
+--// Modifies the config table with the key and value provided
 function gPhone.setConfigValue( key, val )
 	for k, v in pairs( gPhone.config ) do
 		if k:lower() == key:lower() then
 			if type(v) == type(val) then
+				gPhone.msgC( GPHONE_MSGC_NOTIFY, "Changed config key: "..key.." to "..tostring(val).." from "..tostring(v))
 				gPhone.config[k] = val
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to modify config values for "..key.." with different types: "..type(v).." and "..type(val))
+				return
 			end
 		end
 	end
@@ -517,14 +508,14 @@ function gPhone.loadClientConfig()
 	
 	if not file.Exists( "gphone/config.txt", "DATA" ) then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to locate config file!!")
-		gPhone.loadClientConfig()
+		gPhone.saveClientConfig()
 		return gPhone.config
 	end
 	
 	local cfgFile = file.Read( "gphone/config.txt", "DATA" )
 	local cfgTable = util.JSONToTable( cfgFile ) 
 	
-	-- Make sure the config file accepts new values
+	-- Search for values that exist in the config table but not the file
 	local shouldSave = false
 	for k, v in pairs( gPhone.config ) do
 		if not cfgTable[k] and type(v) != "IMaterial" then
@@ -534,7 +525,7 @@ function gPhone.loadClientConfig()
 		end
 	end
 	
-	table.Merge( gPhone.config, cfgTable )
+	gPhone.config = cfgTable
 	
 	if shouldSave then
 		gPhone.saveClientConfig()
@@ -634,18 +625,18 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 	
 	local app = gPhone.getActiveApp()
 	if app and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
-		print(app.Data.CurrentConvo)
 		if app.Data.CurrentConvo == ply:SteamID() then
-			print("Update - In app")
+			gPhone.log("Received message - In app")
 			app.Data.UpdateMessages( idFormat ) 
 		end
 	elseif gPhone.isOpen() then -- In phone
-		print("Update - Phone")
+		gPhone.log("Received message - In phone")
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	else -- Not in phone
-		print("Update - Out")
+		gPhone.log("Received message - Out of phone")
 		gPhone.vibrate()
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
+		return
 	end
 	
 	if not bSelf then
@@ -677,6 +668,12 @@ end
 
 --// Checks the local gPhone version with the newest version
 function gPhone.checkUpdate()
+	for k, v in pairs( gPhone.getBadgesForApp( "settings" ) ) do
+		if v == "update" then
+			return -- Dont need to check update if a badge exists for an update
+		end
+	end
+	
 	local isUpdate = false
 	http.Fetch( "http://exho1.github.io/gphone/index.html", 
 	function ( body, len, headers, code )
@@ -689,7 +686,7 @@ function gPhone.checkUpdate()
 		local tbl = util.JSONToTable( json )
 		
 		if tbl == nil then
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Update data returns an invalid table" )
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Update data returnd an invalid table" )
 			return
 		end
 		
@@ -767,10 +764,59 @@ function gPhone.wordWrap( label, wrapWidth, buffer )
 	end
 end
 
--- Adds a red badge to a homescreen app with a unique id
+--// Writes a badge table {app=string, id=string} to a text file to be loaded when the phone opens
+function gPhone.cacheBadge( tbl )
+	if not file.Exists("gphone/offlines_badges.txt", "DATA") then
+		local json = util.TableToJSON( {tbl} ) 
+		file.Write( "gphone/offlines_badges.txt", json)
+		return
+	end
+	
+	local cache = file.Read( "gphone/offlines_badges.txt", "DATA" )
+	local cTable = util.JSONToTable( cache ) 
+	
+	for k, v in pairs( cTable ) do
+		if v.id != tbl.id and v.app != tbl.app then
+			table.insert(cTable, tbl)
+		end
+	end
+	
+	local json = util.TableToJSON( cTable ) 
+		
+	file.Write( "gphone/offlines_badges.txt", json)
+end
+
+--// Loads any badges that were incremented while the phone was offline
+function gPhone.loadBadges()
+	if not file.Exists("gphone/offlines_badges.txt", "DATA") then return end
+	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Loading offlines badges file")
+	
+	local cache = file.Read( "gphone/offlines_badges.txt", "DATA" )
+	local cTable = util.JSONToTable( cache ) 
+	
+	if cTable == nil then return end
+	
+	for k, data in pairs(cTable) do
+		if data.app != nil and data.id != nil then
+			gPhone.incrementBadge( data.app, data.id )
+		end
+	end
+	
+	-- Remove the file, its not needed anymore
+	file.Delete( "gphone/offlines_badges.txt")
+end
+
+--// Adds a red badge to a homescreen app with a unique id
 function gPhone.incrementBadge( app, id )
 	id = string.lower( id )
 	
+	if not gPhone.exists() or not gPhone.phoneBase then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot increment badge for unopened phone")
+		gPhone.cacheBadge( {app=app,id=id} )
+		return
+	end
+	
+	gPhone.appBadges = gPhone.appBadges or {}
 	gPhone.appBadges[app] = gPhone.appBadges[app] or {}
 	
 	-- Check for repeats of the same badge id
@@ -791,8 +837,9 @@ function gPhone.incrementBadge( app, id )
 	end
 end
 
--- Removes a badge id or removes all the ids for a specific app
+--// Removes a badge id or removes all the ids for a specific app
 function gPhone.decrementBadge( app, id, bAll )
+	gPhone.appBadges = gPhone.appBadges or {}
 	gPhone.appBadges[app] = gPhone.appBadges[app] or {}
 	
 	for k, v in pairs( gPhone.appBadges[app] ) do
@@ -813,6 +860,17 @@ function gPhone.decrementBadge( app, id, bAll )
 		end
 	end
 	gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted remove badge for nonexistant id: "..id )
+end
+
+--// Returns the badge table for the given app name
+function gPhone.getBadgesForApp( name )
+	name = name:lower()
+	gPhone.appBadges = gPhone.appBadges or {}
+	
+	if gPhone.appBadges[name] then
+		return gPhone.appBadges[name]
+	end
+	return {}
 end
 
 --// Saves a table entry for an application
@@ -869,7 +927,7 @@ function gPhone.hasAppData( app )
 	return false
 end
 
---// Internal - Cleans up errors and repeated apps on the homescreen
+--// Cleans up errors and repeated apps on the homescreen - You shouldn't call this
 function gPhone.fixHomescreen( tbl )
 	for k, v in pairs( tbl ) do
 		if v.name:lower() == "n/a" then -- Invalid name 
@@ -883,14 +941,12 @@ function gPhone.fixHomescreen( tbl )
 				for k3, v3 in pairs( v.apps ) do
 					if v2.name == v3.name and v2.icon == v3.icon then -- App exists in both folder and homescreen
 						gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app at key: "..k2.." and in folder: "..strTable.." key: "..k3)
-						print(v2.name, v3.name)
 						table.remove(tbl, k2)
 					end
 					
 					for k4, v4 in pairs( v.apps ) do
 						if v3.name == v4.name and v3.icon == v4.icon and k3 ~= k4 then -- Repeated app in a folder
 							gPhone.msgC( GPHONE_MSGC_WARNING, "Repeated app in folder: "..strTable..". Keys: "..k3.." and "..k4)
-							print(v3.name, v4.name)
 							table.remove(tbl[k2].apps, k)
 						end
 					end
