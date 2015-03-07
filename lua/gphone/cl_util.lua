@@ -121,6 +121,26 @@ net.Receive( "gPhone_ChatMsg", function( len, ply )
 	gPhone.chatMsg( net.ReadString() )
 end)
 
+--// Returns true if this function has not been called in the last second. Pretty bad implementation
+local called = nil
+local lastTraceback = ""
+function gPhone.firstTimeCalled()
+	if called then
+		return false
+	else
+		called = true
+		
+		local disable = CurTime() + 1
+		hook.Add("Think", "gPhone_firstTimeCool", function()
+			if CurTime() > disable then
+				called = false
+			end
+		end)
+		
+		return true
+	end	
+end
+
 --// Appends a string to the end of the gPhone log table with the time as the key
 function gPhone.log( string )
 	table.insert( gPhone.debugLog, {time=os.date("%X"), msg=string})
@@ -568,25 +588,27 @@ end
 --// Sends a text message 
 function gPhone.sendTextMessage( target, msg ) 
 	local ply = util.getPlayerByNick( target )
-	local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
-	
-	local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
-	
-	print("Send text to ", target)
-	
-	-- Off to the server!
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
-	net.SendToServer()
-	
-	-- If the server has flagged us as a spammer our message should not appear in the app
-	-- The message does get sent to the server, though, so that we can receive a "X seconds left" message
-	if LocalPlayer():GetNWBool("gPhone_CanText", true) == false then return end
-	
-	-- Store the sent text on the client
-	msgTable.self = true
-	msgTable.sender = LocalPlayer():Nick()
-	gPhone.receiveTextMessage( msgTable, true )
+	if IsValid(ply) then
+		local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
+		
+		local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
+		
+		gPhone.log("Sending text to ", target)
+		
+		-- Off to the server!
+		net.Start("gPhone_DataTransfer")
+			net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
+		net.SendToServer()
+		
+		-- If the server has flagged us as a spammer our message should not appear in the app
+		-- The message does get sent to the server, though, so that we can receive a "X seconds left" message
+		if LocalPlayer():GetNWBool("gPhone_CanText", true) == false then return end
+		
+		-- Store the sent text on the client
+		msgTable.self = true
+		msgTable.sender = LocalPlayer():Nick()
+		gPhone.receiveTextMessage( msgTable, true )
+	end
 end
 
 --// Saves a text message to an existing txt document or a new one
@@ -599,14 +621,9 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 	else
 		ply = util.getPlayerByNick( tbl.target )
 	end
-	--[[if bSelf then
-		ply = util.getPlayerByNick( tbl.sender )
-	else
-		ply = util.getPlayerByNick( tbl.target )
-	end]]
 	local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
 	
-	print("Received text", bSelf, tbl.sender, tbl.target, idFormat)
+	gPhone.log("Received text from "..tbl.sender)
 	
 	if file.Exists( "gphone/messages/"..idFormat..".txt", "DATA" ) then
 		local readFile = file.Read( "gphone/messages/"..idFormat..".txt", "DATA" )

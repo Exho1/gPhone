@@ -23,20 +23,24 @@
 		- Run through the phone to make sure all translations exist
 		- Talk to DJ or Narroby about Spanish
 	- Configure gm_luaerror
-		- IT DONT WORK
+		- IT DONT WORK. If I can't figure it out, remove it
 		- Credit: http://facepunch.com/showthread.php?t=1252625
-	- Stupid unable to click app bug
-		- OnMousePressed doesnt get called for gPhone.homeIconLayout but does for screen and base
 	- Figure out why missing config values dont save
 	- Wallpaper
 		- The gPhone is bloated by the backgrounds, 2mb.
 		- Online wallpapers?
 	- Ringtones?
 	- Change gphone_firsttime from a convar to a text file so its saved clientisde instead of serverside
+	- Music icon on status bar
 	- Tutorial
 		- Add pictures and accompanying text
 		- Language translations
-	
+		- Slides:
+			- Basic usage which can cover a couple slides
+				- Texting
+				- Phone calls
+			- Lua errors and dumping to file
+			- Missing features
 	- Before release
 		- Remove the Derma close button and other temp stuff
 		- Set up the default config
@@ -46,7 +50,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.5"
+gPhone.version = "0.9.6"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

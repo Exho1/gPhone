@@ -27,6 +27,7 @@ end
 
 -- Removes application panels and restores the home screen
 gApp["_close_"] = function( app )
+	print(table.Count(gApp["_children_"]))
 	gPhone.log("gApp Close")
 	gPhone.phoneScreen.Paint = oldScreenPaint
 	gPhone.phoneScreen.Think = oldScreenThink
@@ -41,8 +42,9 @@ gApp["_close_"] = function( app )
 	
 	gApp.removeTicker( app )
 	
-	-- Hides all the app children
+	-- Removes all the apps children panels
 	gPhone.removeAllPanels( gApp["_children_"] )
+	gApp["_children_"] = {}
 	
 	gPhone.homeIconLayout:SetVisible( true )
 	gPhone.homeIconLayout:SetMouseInputEnabled(true)
@@ -60,6 +62,7 @@ gApp["_close_"] = function( app )
 	net.Start("gPhone_DataTransfer")
 		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
 	net.SendToServer()
+	print(table.Count(gApp["_children_"]))
 end
 
 --// Grabs all app files and runs them

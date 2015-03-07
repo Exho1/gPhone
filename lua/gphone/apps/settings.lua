@@ -826,6 +826,7 @@ Icon images: http://www.flaticon.com/
 			local lang = languagePicker:GetValue() 
 			if lang:lower() != "language" and lang != gPhone.getActiveLanguage() then
 				gPhone.setActiveLanguage( lang )
+				gPhone.rebootPhone()
 			end
 		end
 		

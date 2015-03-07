@@ -323,7 +323,7 @@ function gPhone.buildPhone()
 	
 	-- Helper function to create app badges
 	local function createBadges( tbl, bInFolder )
-		for k, data in pairs( gPhone.appPanels ) do
+		for k, data in pairs( tbl ) do
 			if gPhone.appBadges[data.name] then
 				local badges = #gPhone.appBadges[data.name]
 				if badges > 0 then
@@ -354,19 +354,8 @@ function gPhone.buildPhone()
 	
 	-- App badges
 	gPhone.appBadges = {}
-	gPhone.phoneBase.OnMousePressed = function()
-		print("Click phone")
-		--gPhone.homeIconLayout:SetMouseInputEnabled(true)
-		--gPhone.phoneScreen:SetMouseInputEnabled(true)
-	end
-	gPhone.homeIconLayout.OnMousePressed = function()
-		print("Click icons")
-	end
-	gPhone.phoneScreen.OnMousePressed = function()
-		print("Click screen")
-	end
 	
-	gPhone.homeIconLayout.PaintOver = function() 
+	gPhone.homeIconLayout.PaintOver = function()
 		if not gPhone.inFolder() then
 			createBadges( gPhone.appPanels )
 		else
@@ -515,10 +504,11 @@ function gPhone.buildPhone()
 						gPhone.closeFolder()
 					else
 						print("Should move apps in folder")
+						if gPhone.firstTimeCalled() then
+							gPhone.chatMsg( trans("feature_deny") ) 
+						end
 						--table.insert(gPhone.appPanels, {name=v.name, icon=v.icon, pnl=bgPanel, inFolder=true} )
 						--gPhone.getActiveFolder().apps[k] = {pnl=bgPanel, name=v.name, icon=v.icon}
-					
-						
 					end
 				
 				-- Creating a folder and adding apps to it

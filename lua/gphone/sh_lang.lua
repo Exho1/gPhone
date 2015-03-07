@@ -36,7 +36,6 @@ if CLIENT then
 			end
 			
 			LocalPlayer():gPhoneConCommand("gphone_language "..lang)
-			gPhone.rebootPhone()
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempt to set active language to invalid ("..lang..")")
 			LocalPlayer():gPhoneConCommand("gphone_language english")

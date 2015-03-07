@@ -511,9 +511,18 @@ function APP.NewConversation()
 	sendButton.DoClick = function()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
+			local ply = util.getPlayerByNick(messageTarget:GetText())
+			
+			if not IsValid( ply ) or ply == LocalPlayer() then
+				gPhone.notifyAlert( {msg=trans("invalid_player_warn"),
+				title=trans("error"), options={trans("okay")}}, 
+				nil, nil, true, true )
+				return
+			end
+			
 			gPhone.setTextAndCenter(objects.Title, trans("messages"),  screen)
 			
-			gPhone.sendTextMessage( messageTarget:GetText(), messageBox:GetText() ) 
+			gPhone.sendTextMessage(ply, messageBox:GetText() ) 
 			messageBox:SetText("")
 			
 			-- Remove all the objects
@@ -530,7 +539,7 @@ function APP.NewConversation()
 			objects.LayoutScroll:SetSize( oldW, oldH + 30 )
 			
 			-- Build the conversation screen
-			APP.PopulateMessages( util.getPlayerByNick(messageTarget:GetText()):SteamID() )
+			APP.PopulateMessages( ply:SteamID() )
 		end
 	end
 end

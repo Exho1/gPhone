@@ -253,6 +253,11 @@ function gPhone.beginnerTutorial( oldScreen )
 	end
 	languagePicker.OnSelect = function( self, key, val )
 		
+		-- Set language
+		if val:lower() != "language" and val != gPhone.getActiveLanguage() then
+			gPhone.setActiveLanguage( val )
+		end
+		
 		-- Change the title's text and move it to the center-top
 		local x = title:GetPos()
 		title:MoveTo( x, -title:GetTall(), 0.5, 0, 2, function()
