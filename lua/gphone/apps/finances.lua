@@ -18,7 +18,7 @@ function APP.Run( objects, screen )
 		"_SPACE_",
 		"Wire Funds",
 		--"_SPACE_",
-		"Transaction Log",
+		--"Transaction Log", -- Removed because its a pretty bad idea
 	}
 	
 	local isButton = { -- Is the object a button? Poor way of handling this

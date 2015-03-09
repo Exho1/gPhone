@@ -14,17 +14,17 @@ if SERVER then
 		hook.Run( "gPhone_receivedClientData", ply, header, data )
 		
 		if header == GPHONE_MONEY_TRANSFER then -- Money transaction
+			-- Make sure we are in DarkRP
 			if not ply.getDarkRPVar then
 				gPhone.chatMsg( ply, trans("transfer_fail_gm") )
 			end
 			
 			local amount = tonumber(data.amount)
 			local target = data.target
-			local plyWallet = tonumber(ply:getDarkRPVar("money"))
+			local plyWallet = tonumber(ply:getDarkRParV("money"))
 			
 			-- Cooldowns to prevent spam
 			if ply:getTransferCooldown() > 0 then
-				gPhone.chatMsg( ply, "You must wait "..math.Round(ply:getTransferCooldown()).."s before sending more money" )
 				gPhone.chatMsg( ply, string.format( trans("transfer_fail_cool"), math.Round(ply:getTransferCooldown()) ) )
 				return
 			end
@@ -36,13 +36,10 @@ if SERVER then
 			end
 			
 			-- If a negative or string amount got through, stop it
-			if amount < 0 or amount == nil then 
+			if amount < 0 or amount == nil or amount != math.abs(amount)  then 
 				gPhone.chatMsg( ply, trans("transfer_fail_amount") )
 				gPhone.kick( ply, 23 ) 
 				return
-			else
-				-- Force the amount to be positive. If a negative value is passed then the 'exploiter' will still transfer the cash 
-				amount = math.abs(amount) 
 			end
 			
 			-- Make sure the player has this money and didn't cheat it on the client
@@ -107,7 +104,7 @@ if SERVER then
 					ply:SetNWBool("gPhone_CanText", false)
 					ply.TextCooldown = gPhone.config.textSpamCooldown
 					
-					gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been caught spamming the texting system" )
+					gPhone.msgC( GPHONE_MSGC_WARNING, ply:Nick().." has been flagged for spamming the texting system" )
 					gPhone.chatMsg( ply, string.format( trans("text_flagged"), ply.TextCooldown ) )
 					ply.MessageCount = 0 
 					
@@ -133,7 +130,7 @@ if SERVER then
 			
 			lastText = CurTime()
 		elseif header == GPHONE_STATE_CHANGED then -- The phone has been opened or closed
-			local phoneOpen = data.open
+			local phoneOpen = data[1]
 			if phoneOpen == true then
 				ply:SetNWBool("gPhone_Open", true)
 				hook.Run( "gPhone_built", ply )
@@ -141,7 +138,7 @@ if SERVER then
 				ply:SetNWBool("gPhone_Open", false)
 			end
 		elseif header == GPHONE_CUR_APP then
-			ply:SetNWString("gPhone_CurApp", data.app)
+			ply:SetNWString("gPhone_CurApp", data.app or "")
 		elseif header == GPHONE_NET_REQUEST then
 			gPhone.receiveRequest( data )
 		elseif header == GPHONE_NET_RESPONSE then
@@ -172,6 +169,7 @@ if SERVER then
 		end
 	end)
 	
+	-- An 'eh' method of making sure the net messages are not spammed. 
 	local nextCheck = 0
 	hook.Add("Think", "gPhone_netAntiSpam", function()
 		if CurTime() > nextCheck then
@@ -240,17 +238,17 @@ if CLIENT then
 			
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Unable phone function "..func.."!")
 		elseif header == GPHONE_MONEY_CONFIRMED then
-			local writeTable = {}
+			--[[local writeTable = {}
 			data.header = nil
 			data = data[1]
 			
-			--[[
+			
 				Problemo:
 			On Client - ALL transactions for any server will show up
 			On Server - Server gets flooded with tons of .txt documents that might only contain 1 transaction
 			
 			No limit on logs
-			]]
+			
 			
 			if file.Exists( "gphone/appdata/t_log.txt", "DATA" ) then
 				local readFile = file.Read( "gphone/appdata/t_log.txt", "DATA" )
@@ -276,6 +274,7 @@ if CLIENT then
 		
 			file.CreateDir( "gphone" )
 			file.Write( "gphone/appdata/t_log.txt", json)
+			]]
 		elseif header == GPHONE_TEXT_MSG then
 			local tbl = data.data
 			tbl.self = false

@@ -12,26 +12,24 @@
 		objects.Back:SetTextColor( gPhone.colors.blue )
 		objects.Back:SetPos()
 	- Moving apps in folders
-		- Add the missing feature chat message until its added
 	- Function to bypass using net.*Table entirely
 	- Phone/calling
 		- Enable speaking for both players
-		- Fix homescreen broken glitch cause of con commands
-	- 911 number for texting
+		- Test it again
+		- Finish implementing group calling
 	- Language
 		- Make sure to add new keys to non-English files with the English translations until proper ones are made
 		- Run through the phone to make sure all translations exist
 		- Talk to DJ or Narroby about Spanish
-	- Configure gm_luaerror
-		- IT DONT WORK. If I can't figure it out, remove it
-		- Credit: http://facepunch.com/showthread.php?t=1252625
 	- Figure out why missing config values dont save
 	- Wallpaper
 		- The gPhone is bloated by the backgrounds, 2mb.
 		- Online wallpapers?
 	- Ringtones?
-	- Change gphone_firsttime from a convar to a text file so its saved clientisde instead of serverside
-	- Music icon on status bar
+	- Sounds?
+	- More games
+		- Find Flappy Garry guy or make own Flappy Garry
+		- Snake
 	- Tutorial
 		- Add pictures and accompanying text
 		- Language translations
@@ -41,16 +39,29 @@
 				- Phone calls
 			- Lua errors and dumping to file
 			- Missing features
+	- Optimization
+		- Phase out using string keys for networked tables
+		- Sending methods?
+			- http://facepunch.com/showthread.php?t=1450721&p=47267092&viewfull=1#post47267092
+			- No tables at all:
+				- Write an int with the header
+				- Send all data
+				- Write header again to end 
+	- Settings app
+		- Music tab with the 2 music related config bools
 	- Before release
+		- Make sure you can't self message in the messages app
+		- Remove all TEMP stuff
 		- Remove the Derma close button and other temp stuff
 		- Set up the default config
+		- Remove all prints and replace neccessary ones with gPhone.msgC(
 	- On release
 		- Update the webserver with the correct version number on release 1.0.0 
 		- Update the settings update button to point to the Workshop page for the phone
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.6"
+gPhone.version = "0.9.7"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -64,14 +75,21 @@ if SERVER then
 		-- Time to prevent another text from being sent after a player is flagged as a spammer
 		textSpamCooldown = 10, 
 		
+		-- Should we display debug console messages called with the msgC function? 
+		showConsoleMessages = true,
+		
 		-- Admin groups 
 		adminGroups = {"owner", "superadmin", "admin"}
 	}
 else
 	gPhone.debugLog = {}
 	
-	--// Clientside config
+	--// Clientside config - Most of these values have Derma bindings so they can be changed during run time
 	gPhone.config = {
+		
+		-- Default phone color
+		phoneColor = Color(255,255,255,255),
+		
 		-- Should we display debug console messages called with the msgC function? 
 		showConsoleMessages = true,
 		-- Should apps that we cannot use be shown on the home screen?
@@ -97,9 +115,11 @@ else
 		deleteArchivedFiles = true,
 		-- Time period to delete up files in the archive if the above value is true
 		daysToCleanupArchive = 14,
-			
-		-- Default phone color
-		phoneColor = Color(255,255,255,255),
+		
+		-- Pauses the music from the Music app when you tab out of Garry's Mod
+		stopMusicOnTabOut = true,
+		-- Whether or not the phone should search online for album covers
+		autoFindAlbumCovers = true,
 		
 		-- Disables incoming notification banners and alerts
 		airplaneMode = false,
@@ -178,12 +198,6 @@ if CLIENT then
 	local files = file.Find( "gphone/lang/*.lua", "LUA" )
 	for k, v in pairs(files) do
 		include("gphone/lang/"..v)
-	end
-	
-	if system.IsWindows() or system.IsLinux() then
-		--require("luaerror2")
-	else
-		--print("[gPhone]: Advanced error tracking disabled due to Mac OS")
 	end
 
 	include("gphone/cl_phone.lua")

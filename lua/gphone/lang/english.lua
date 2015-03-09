@@ -140,6 +140,7 @@ l.send = "Send"
 l.new_msg = "New message"
 l.to = "To:"
 l.invalid_player_warn = "That is not a valid player or number to send a message to"
+l.message_len_warn = "That text message is too long to be sent!"
 
 -- Store
 l.no_homescreen_space = "You do not have enough homescreen space to add a new app!"

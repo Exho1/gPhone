@@ -46,7 +46,7 @@ function plymeta:hasPhoneOpen()
 end
 
 function plymeta:getActiveApp()
-	return string.Trim( self:GetNWString("gPhone_CurApp", nil) )
+	return string.Trim( self:GetNWString("gPhone_CurApp", "") )
 end
 
 function plymeta:getPhoneNumber()
@@ -317,8 +317,8 @@ function gPhone.steamIDToPhoneNumber( plyOrID )
 	end
 	
 	local idFragments = string.Explode( ":", bPlayer and plyOrID:SteamID() or plyOrID );
-	
-	--local areaCode = idFragments[2]
+
+	--local areaCode = idFragments[2] -- Very low chance not including the 1 or 0 will conflict
 	local number = idFragments[3]
 	local numberFragments = string.Explode( "", number )
 	

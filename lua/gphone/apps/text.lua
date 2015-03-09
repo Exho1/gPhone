@@ -250,10 +250,48 @@ function APP.PopulateMessages( id )
 	textBox = vgui.Create( "DTextEntry", objects.WritePanel )
 	textBox:SetText( "" )
 	textBox:SetTextColor(Color(0,0,0))
+	textBox:SetMultiline( false )
 	textBox:SetFont("gPhone_14")
 	textBox:SetSize( screen:GetWide()/3 * 2, 20 )
 	textBox:SetPos( 30, 5 )
-	textBox.OnEnter = function()
+	textBox.lines = 1
+	textBox.OnEnter = function( self )
+		
+		--[[ Failed multiline code
+		if self.lines > 6 or self:GetText():len() > 160 then 
+			-- Prevent the user from typing long messages
+			self:SetText(string.sub(self:GetText(), 1, self:GetText():len()-1))
+			return 
+		end
+		
+		if gPhone.getTextSize( self:GetText(), self:GetFont() ) > (self:GetWide() * self.lines) - 10 then
+			local h = objects.WritePanel:GetTall()
+			objects.WritePanel:SetSize( objects.WritePanel:GetWide(), h + writePanelOffset )
+			objects.WritePanel:SetPos( 0, screen:GetTall() - objects.WritePanel:GetTall())
+			
+			local h = self:GetTall()
+			self:SetSize( self:GetWide(), h + 20 )
+			local x = self:GetPos()
+			self:SetPos( x, objects.WritePanel:GetTall()/2 - self:GetTall()/2 )
+			self.lines = self.lines + 1
+		elseif self.lines > 1 then
+			if gPhone.getTextSize( self:GetText(), self:GetFont() ) < self:GetWide() * (self.lines-1) - 10 then
+				local h = objects.WritePanel:GetTall()
+				h = math.Clamp( h - writePanelOffset, writePanelOffset, screen:GetTall()/3 )
+				objects.WritePanel:SetSize( objects.WritePanel:GetWide(), h)
+				objects.WritePanel:SetPos( 0, screen:GetTall() - objects.WritePanel:GetTall() )
+				
+				local h = self:GetTall()
+				h = math.Clamp( h - 20, 20, screen:GetTall()/3)
+				self:SetSize( self:GetWide(), h )
+				
+				self.lines = self.lines - 1
+			end
+		elseif self.lines == 1 then
+			textBox:SetSize( screen:GetWide()/3 * 2, 20 )
+			textBox:SetPos( 30, 5 )
+		end]]
+		
 		-- Simulate clicking the send button for efficiency
 		send:DoClick()
 	end
@@ -267,12 +305,19 @@ function APP.PopulateMessages( id )
 	send.DoClick = function()
 		-- Send a text message
 		if textBox:GetText() != nil and textBox:GetText() != "" then
-			local nick = util.getPlayerByID( id ):Nick()
-			local text = textBox:GetText()
-			gPhone.sendTextMessage( util.getPlayerByID( id ):Nick(), textBox:GetText() ) 
-			textBox:SetText("")
-			
-			objects.LayoutScroll:SetSize( oldW, oldH )
+			if textBox:GetText():len() > 160 then
+				-- Prevent the user from sending long messages
+				gPhone.notifyAlert( {msg=trans("message_len_warn"),
+				title=trans("messages"), options={trans("okay")}}, 
+				nil,nil,true,true)
+			else
+				local nick = util.getPlayerByID( id ):Nick()
+				local text = textBox:GetText()
+				gPhone.sendTextMessage( util.getPlayerByID( id ):Nick(), textBox:GetText() ) 
+				textBox:SetText("")
+				
+				objects.LayoutScroll:SetSize( oldW, oldH )
+			end
 		end
 	end
 	
@@ -306,15 +351,48 @@ function APP.PopulateMessages( id )
 				draw.RoundedBox(6, 0, 0, w, h, col)
 			end
 			
+			-- This label used to hold the message but now is used only for sizing purposes
 			local message = vgui.Create( "DLabel", background )
 			message:SetText( tbl.message )
 			message:SetTextColor( textcol )
 			message:SetFont("gPhone_14")
 			message:SizeToContents()
 			message:SetPos( 5, 5 )
+			message:SetVisible(false)
 			message.Paint = function() end
 			
-			gPhone.wordWrap( message, background:GetWide(), 10 )
+			-- This is used to properly size the 'background' element
+			gPhone.wordWrap( message, background:GetWide(), 10 ) 
+			
+			-- A non-editable DTextEntry represents the text message now
+			local message2 = vgui.Create( "DTextEntry", background )
+			message2:SetText( tbl.message )
+			message2:SetTextColor( textcol )
+			message2:SetMultiline( true )
+			--message2:SetEditable(false)
+			message2:SetFont("gPhone_14")
+			message2:SetDrawBorder( false )
+			message2:SetDrawBackground( false )
+			message2:SetCursorColor( color_black )
+			message2:SetHighlightColor( Color(27,161,226) )
+			local w, h = message:GetSize()
+			message2:SetSize( w + 10, h + 5 )
+			message2:SetPos( 2.5, 2.5 )
+			message2.Think = function( self )
+				if self:GetValue() != tbl.message then
+					self:SetValue( tbl.message )
+				end
+			end
+			message2.SetValue = function( self, val ) -- Override the default function to prevent any typing
+				--if ( vgui.GetKeyboardFocus() == self ) then return end
+				
+				--local CaretPos = self:GetCaretPos()
+
+				self:SetText( tbl.message )
+				self:OnValueChange( tbl.message )
+				
+				--self:SetCaretPos( CaretPos )
+			end
 
 			-- Clamp the width to 2/3s of the screen width and the height to the screen height
 			local w, h = message:GetSize()
@@ -397,9 +475,9 @@ function APP.NewConversation()
 	local playerPanels = {}
 	local playerList = {}
 	for k, v in pairs( player.GetAll() ) do 
-		if v != LocalPlayer() then
+		--if v != LocalPlayer() then
 			table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
-		end
+		--end
 	end
 	
 	--table.insert(playerList, {name="Emergency Services", number=911})
@@ -512,8 +590,8 @@ function APP.NewConversation()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
 			local ply = util.getPlayerByNick(messageTarget:GetText())
-			
-			if not IsValid( ply ) or ply == LocalPlayer() then
+			--if not IsValid( util.getPlayerByNick(messageTarget:GetText()) ) or ply == LocalPlayer() then
+			if not IsValid( ply ) then
 				gPhone.notifyAlert( {msg=trans("invalid_player_warn"),
 				title=trans("error"), options={trans("okay")}}, 
 				nil, nil, true, true )
@@ -522,7 +600,7 @@ function APP.NewConversation()
 			
 			gPhone.setTextAndCenter(objects.Title, trans("messages"),  screen)
 			
-			gPhone.sendTextMessage(ply, messageBox:GetText() ) 
+			gPhone.sendTextMessage(messageTarget:GetText(), messageBox:GetText() ) 
 			messageBox:SetText("")
 			
 			-- Remove all the objects

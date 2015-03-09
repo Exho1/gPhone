@@ -53,6 +53,30 @@ function APP.Run( objects, screen )
 	-- Load the music list and merge it into the existing one or a new table
 	APP.MusicList = table.Merge(APP.MusicList or {}, gPhone.loadMusic())
 	
+	-- Check for new sound files
+	local soundFiles = file.Find( "sound/gphone/music/*", "GAME" )
+	for k, v in pairs( soundFiles ) do
+		local dontAdd = false
+		for o, p in pairs( APP.MusicList ) do
+			-- We dont need to add songs that have already been added, obviously
+			if "sound/gphone/music/"..v == p.songUrl then
+				dontAdd = true
+			end
+		end
+		
+		if dontAdd then break end
+		gPhone.log("Adding new song to music app "..v )
+		
+		-- Create a new song entry 
+		local song = {
+			artistName = "IMPORT",
+			songName = string.StripExtension( v ),
+			albumUrl = "",
+			songUrl = "sound/gphone/music/"..v,
+		}
+		table.insert(APP.MusicList, song)
+	end
+	
 	--[[local temp = {
 		artistName="Submersed",
 		songName="Hollow",
@@ -155,7 +179,7 @@ end
 
 function APP.OpenPlayer( data )
 	--[[ Format:
-		data.artist_name, data.song_name, data.album_url, data.song_url
+		data.artistName, data.songName, data.albumUrl, data.songUrl
 	]]
 	
 	local screen = gPhone.phoneScreen
@@ -198,13 +222,15 @@ function APP.OpenPlayer( data )
 		local artist = data.artistName or ""
 		local song = data.songName or ""
 		
-		-- Using the spotify API, find an album cover for the song
-		gPhone.loadAlbumArt(artist.." "..song, 1, function( url )
-			data.albumUrl = url -- Set this to the album's URL for quick loading later
-			gPhone.saveMusic( APP.MusicList )
-			
-			albumCover:SetHTML( "<img width='".. w-20 .."px' height='".. h-20 .."px' src='"..url.."'>" )
-		end)	
+		if gPhone.config.autoFindAlbumCovers == true then
+			-- Using the spotify API, find an album cover for the song
+			gPhone.loadAlbumArt(artist.." "..song, 1, function( url )
+				data.albumUrl = url -- Set this to the album's URL for quick loading later
+				gPhone.saveMusic( APP.MusicList )
+				
+				albumCover:SetHTML( "<img width='".. w-20 .."px' height='".. h-20 .."px' src='"..url.."'>" )
+			end)	
+		end
 	end
 	
 	local controlPanel = vgui.Create("DPanel", objects.LayoutScroll)
@@ -353,7 +379,8 @@ function APP.OpenPlayer( data )
 		self.isPlaying = !self.isPlaying
 		
 		-- Create a new music channel
-		sound.PlayURL( data.songUrl, "", function( channel, errorID, errorName )
+		
+		local function setUpChannel( channel, errorID, errorName )
 			APP.PlayingData = data
 			
 			concommand.Add("gphone_stopmusic", function()
@@ -381,7 +408,16 @@ function APP.OpenPlayer( data )
 				channel:SetVolume( volume:GetValue() )
 			end
 			APP.ProgressBar( play, songProgress, timeElapsed, timeLeft, volume )
-		end)
+		end
+		
+		-- Play either the url or file of the song
+		if string.find( data.songUrl, "http://" ) then
+			print("URL")
+			sound.PlayURL( data.songUrl, "", setUpChannel )
+		else
+			print("FILE")
+			sound.PlayFile( data.songUrl, "", setUpChannel )
+		end
 	end
 	
 	APP.ProgressBar( play, songProgress, timeElapsed, timeLeft, volume )
@@ -390,7 +426,7 @@ end
 --// Handles the progress bar for songs
 function APP.ProgressBar( dPlay, dProgress, dElapsed, dLeft, dVolume )
 	hook.Add("Think", "gPhone_musicProgress", function()
-		if IsValid(APP.MusicChannel) then
+		if IsValid(APP.MusicChannel) and IsValid(dProgress) and IsValid(dPlay) then
 			local channel = APP.MusicChannel
 			if not APP.OnMusicPlayer then
 				return
@@ -414,7 +450,7 @@ function APP.ProgressBar( dPlay, dProgress, dElapsed, dLeft, dVolume )
 			end
 			
 			-- Pause music if we tab out
-			if not system.HasFocus() then
+			if not system.HasFocus() and gPhone.config.stopMusicOnTabOut == true then
 				channel:Pause()
 				dPlay.isPlaying = false
 			end

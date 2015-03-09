@@ -35,10 +35,10 @@ if CLIENT then
 				hook.Run( "gPhone_languageChanged", gPhone.getActiveLanguage(), lang )
 			end
 			
-			LocalPlayer():gPhoneConCommand("gphone_language "..lang)
+			LocalPlayer():ConCommand("gphone_language "..lang)
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempt to set active language to invalid ("..lang..")")
-			LocalPlayer():gPhoneConCommand("gphone_language english")
+			LocalPlayer():ConCommand("gphone_language english")
 			return
 		end
 	end

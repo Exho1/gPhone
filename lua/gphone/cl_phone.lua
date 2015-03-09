@@ -3,7 +3,6 @@
 local client = LocalPlayer()
 local trans = gPhone.getTranslation
 local phone = Material( "vgui/gphone/gphone.png" )
-local firstTimeUsed = CreateClientConVar("gphone_firsttime", "1", true, true)	
 
 --// Builds the phone 
 function gPhone.buildPhone()
@@ -188,11 +187,11 @@ function gPhone.buildPhone()
 		end
 	end
 	
-	gPhone.StatusBar = { -- Gotta keep track of all the status bar elements
+	gPhone.statusBar = { -- Gotta keep track of all the status bar elements
 		["text"] = { battery=batteryPercent, network=serviceProvider, time=phoneTime },
 		["image"] = { battery=batteryImage, unpack(signalDots) },
 	}
-	gPhone.StatusBarHeight = 15
+	gPhone.statusBarHeight = 15
 	
 	--// Build the homescreen
 	
@@ -1022,16 +1021,16 @@ function gPhone.showPhone( callback )
 		
 		gPhone.config.phoneColor.a = 255
 		
-		if firstTimeUsed:GetBool() then
+		if gPhone.getShowTutorial() then
 			gPhone.bootUp()
-			LocalPlayer():ConCommand("gphone_firsttime 0")
+			gPhone.setSeenTutorial( true )
 		else 
 			gPhone.buildLockScreen()
 		end
 		
 		-- Tell the server we are done and the phone is ready to be used
 		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_STATE_CHANGED, open=true})
+			net.WriteTable({header=GPHONE_STATE_CHANGED, true})
 		net.SendToServer()
 	end
 end

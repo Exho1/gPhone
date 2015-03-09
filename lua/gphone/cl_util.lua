@@ -42,9 +42,13 @@ concommand.Add("gphone_stopmusic", function()
 	gPhone.msgC( GPHONE_MSGC_WARNING, "No active music channel to stop!" )
 end)
 
+concommand.Add("gphone_enabletutorial", function()
+	gPhone.setSeenTutorial( false )
+end)
+
 --// Simulates searching an 'artist song' pair to get an album url
 concommand.Add("gphone_searchsong", function(_, _, args)
-	assert(args[1])
+	--assert(args[1])
 	local name = table.concat(args, " ")
 	gPhone.loadAlbumArt(name, 1, function( url )
 		print("Found album cover: "..url)
@@ -56,7 +60,9 @@ local api = "http://api.spotify.com/v1/search?type=track&limit=1&q=%s"
 function gPhone.loadAlbumArt(track_name, track_id, callback) -- where id is how you're indexing your music or whatever
 	http.Fetch(api:format(track_name:gsub("%s", "+")), function(body)
 		local data = util.JSONToTable(body)
-		if not data or not data.tracks then return end
+		if not data or not data.tracks or not data.tracks.items or not data.tracks.items[1] then 
+			return 
+		end
 
 		local album = data.tracks.items[1].album
 		local image = album.images[track_id] -- 640 x 640 px
@@ -69,11 +75,6 @@ end
 
 local plymeta = FindMetaTable( "Player" )
 
---// Deprecated
-function plymeta:gPhoneConCommand( cmd )
-	print("USING DEPRECATED GPHONE COMMAND", debug.traceback())
-	self:ConCommand(cmd)
-end
 
 -- TEMPORARY
 
@@ -120,6 +121,22 @@ end
 net.Receive( "gPhone_ChatMsg", function( len, ply )
 	gPhone.chatMsg( net.ReadString() )
 end)
+
+--// Returns true if the player does not have the file showing that they have seen the tutorial
+function gPhone.getShowTutorial()
+	return !file.Exists( "gphone/tutorial_viewed.txt", "DATA" )
+end
+
+--// Creates or deletes the file to determine if the phone tutorial will be shown on boot
+function gPhone.setSeenTutorial( b )
+	if b == true then
+		gPhone.msgC( GPHONE_MSGC_NONE, "Created seen tutorial file")
+		file.Write( "gphone/tutorial_viewed.txt", "AYE LADDIE" )
+	else
+		gPhone.msgC( GPHONE_MSGC_NONE, "Deleted seen tutorial file")
+		file.Delete( "gphone/tutorial_viewed.txt" )
+	end
+end
 
 --// Returns true if this function has not been called in the last second. Pretty bad implementation
 local called = nil
@@ -283,16 +300,16 @@ end
 
 --// Color the status bar
 function gPhone.darkenStatusBar()
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		if class == "text" then
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetTextColor(Color(0,0,0))
+				pnl:SetFGColor( color_black )
 			end
 		else
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetImageColor(Color(0,0,0))
+				pnl:SetImageColor( color_black)
 			end
 		end
 	end
@@ -300,24 +317,29 @@ end
 
 --// Color the status bar
 function gPhone.lightenStatusBar() 
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		if class == "text" then
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetTextColor(Color(255,255,255))
+				pnl:SetFGColor( color_white )
 			end
 		else
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetImageColor(Color(255,255,255))
+				pnl:SetImageColor( color_white )
 			end
 		end
 	end
 end
 
+--// Returns a value, subject to change, to compensate for status bar height
+function gPhone.getStatusBarHeight()
+	return gPhone.statusBarHeight
+end
+
 --// Show or hide the entire status bar or portions
 function gPhone.showStatusBar()
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		for k, pnl in pairs(tab) do
 			pnl:SetVisible(true)
 		end
@@ -325,7 +347,7 @@ function gPhone.showStatusBar()
 end
 
 function gPhone.showStatusBarElement( name )
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		if tab[string.lower(name)] then
 			tab[string.lower(name)]:SetVisible(true)
 		end
@@ -333,7 +355,7 @@ function gPhone.showStatusBarElement( name )
 end
 
 function gPhone.hideStatusBar()
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		for k, pnl in pairs(tab) do
 			pnl:SetVisible(false)
 		end
@@ -341,7 +363,7 @@ function gPhone.hideStatusBar()
 end
 
 function gPhone.hideStatusBarElement( name )
-	for class, tab in pairs(gPhone.StatusBar) do
+	for class, tab in pairs(gPhone.statusBar) do
 		if tab[string.lower(name)] then
 			tab[string.lower(name)]:SetVisible(false)
 		end
