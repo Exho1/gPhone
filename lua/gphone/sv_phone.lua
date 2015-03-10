@@ -154,31 +154,25 @@ function gPhone.kick( ply, code )
 	ply:Kick( string.format( trans("kick"), code ) )
 end
 
---// Confirms a transaction
-function gPhone.confirmTransaction( ply, tbl )
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=GPHONE_MONEY_CONFIRMED, tbl} ) 
-	net.Send( ply )
-end
-
---// Sends a notification to the player using one of the GPHONE_NOTIFY enumeratiosn
-function gPhone.notifyPlayer( ply, sender, text, enum )
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=enum, sender=sender, text=text} )
-	net.Send( ply )
-end
-
 --// Runs a function in the gPhone app table
 function gPhone.runAppFunction( ply, app, name, ... )
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=GPHONE_RUN_APPFUNC, app=app, func=name, args={...}} ) 
+	net.Start("gPhone_RunFunction")
+		--gPhone.writeTable({"app", app, name, {...}})
+		net.WriteString("app")
+		net.WriteString(app)
+		net.WriteString(name)
+		net.WriteTable({...})
 	net.Send( ply )
 end
 
 --// Runs a function in the gPhone table
 function gPhone.runFunction( ply, name, ... )
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=GPHONE_RUN_FUNC, func=name, args={...}} ) 
+	net.Start("gPhone_RunFunction")
+		--gPhone.writeTable({"phone", "", name, {...}})
+		net.WriteString("phone")
+		net.WriteString("")
+		net.WriteString(name)
+		net.WriteTable({...})
 	net.Send( ply )
 end
 
@@ -186,9 +180,7 @@ end
 hook.Add("PlayerInitialSpawn", "gPhone_generateNumber", function( ply )
 	ply:generatePhoneNumber()
 
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable( {header=GPHONE_BUILD} )
-	net.Send( ply )
+	gPhone.runFunction( ply, "buildPhone" )
 end)
 
 hook.Add("PlayerDeath", "gPhone_HideOnDeath", function( ply )

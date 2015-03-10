@@ -62,8 +62,7 @@ function plymeta:getPhoneNumber()
 		if SERVER then
 			number = self:generatePhoneNumber()
 		else
-			net.Start("gPhone_DataTransfer")
-				net.WriteTable( {header=GPHONE_NEW_NUMBER} )
+			net.Start("gPhone_GenerateNumber")
 			net.SendToServer()
 			return gPhone.invalidNumber
 		end
@@ -102,10 +101,10 @@ end
 
 --// Helper function for inverting the sender and target of a table
 function gPhone.flipSenderTarget( tbl )
-	local target = tbl.target
-	local sender = tbl.sender
-	tbl.sender = target
-	tbl.target = sender
+	local target = tbl[1]
+	local sender = tbl[2]
+	tbl[2] = target
+	tbl[1] = sender
 	
 	return tbl
 end
@@ -114,130 +113,148 @@ gPhone.requestIDs = {}
 
 --// Ping-pong request and response functions using the net library
 --[[
-	Send table format: 
-		{target = player, sender = player, app = string, msg = string}
-	Server:
-		gPhone.sendRequest( {sender=ply, app="Name", msg="Hello"}, ply2 )
-	Client:
-		gPhone.sendRequest( {app="Name", msg="Hello"}, ply )
-	
+	Request table format: 
+		[1] = Target
+		[2] = Sender
+		[3] = App
+		[4] = Message
+		[5] = Id
+		[6] = Accepted
+	Response table format:
+		[1] = Target
+		[2] = Sender
+		[3] = App
+		[4] = Id
+		[5] = Accepted
 	1. Request: Client1 -> Server (if started on server, this step is skipped)
 	2. Request: Server -> Client2
 	3. Response: Client2 -> Server
 	4. Response: Server -> Client1
 ]]
 function gPhone.sendRequest( tbl, ply )
-	tbl.header = GPHONE_NET_REQUEST
-	
 	if SERVER then
 		-- Log the request and send to target
 		local id = #gPhone.requestIDs+1
 		gPhone.requestIDs[id] = {responded=false, accepted=false, 
-		target=tbl.target, sender=tbl.sender, app=tbl.app}
+		target=ply, sender=tbl[2], app=tbl[3]}
 		
-		tbl.id = id
+		tbl[5] = id
 		
 		-- Sender should be manually declared when sending from the server
-		tbl.target = ply
+		tbl[1] = ply
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( tbl )
+		net.Start("gPhone_Request")
+			--net.WriteTable( tbl )
+			gPhone.writeTable( tbl )
 		net.Send( ply )
 		
 		return id
 	else
-		tbl.sender = LocalPlayer()
-		tbl.target = ply
+		tbl[2] = LocalPlayer()
+		tbl[1] = ply
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( tbl )
+		net.Start("gPhone_Request")
+			--net.WriteTable( tbl )
+			gPhone.writeTable( tbl )
 		net.SendToServer()
 	end
 end
 
 function gPhone.receiveRequest( tbl )
+	local id = tbl[5]
+	
 	if SERVER then
 		-- If it started on the client, log it
-		if not tbl.id then
-			local id = #gPhone.requestIDs+1
-			gPhone.requestIDs[id] = {target=tbl.target, sender=tbl.sender, sendTime=CurTime()}
-			tbl.id = id
+		if not id then
+			id = #gPhone.requestIDs+1
+			gPhone.requestIDs[id] = {target=tbl[1], sender=tbl[2], sendTime=CurTime()}
+			tbl[5] = id
 		end
 		
-		hook.Run( "gPhone_requestSent", tbl.sender, tbl.target, tbl, id )
+		hook.Run( "gPhone_requestSent", tbl[2], tbl[1], tbl, id )
 		gPhone.sendRequest( tbl, tbl.target )
 	else
 		-- Recieve the request and alert the client
-		gPhone.notifyAlert( {msg=tbl.msg, title=trans("request"), options={trans("deny"), trans("accept")}},
+		gPhone.notifyAlert( {msg=tbl[4], title=trans("request"), options={trans("deny"), trans("accept")}},
 		function( pnl, value )
-			 gPhone.sendResponse( {target=tbl.sender, bAccepted=false, id=tbl.id, app=tbl.app}, tbl.sender )
+			gPhone.sendResponse( {[1] = tbl[2], [6]=false, [5]=id, [3]=tbl[3]},
+			tbl[2] )
 		end,
 		function( pnl, value )
 			-- On accept, send response and run app
-			local msg 
-			local sendTable = {target=tbl.sender, bAccepted=true, id=tbl.id, app=tbl.app, msg=msg}
+			local msg -- Um... Why doesn't this get assigned to anything?
+			local sendTable = {[1]=tbl[2], [6]=true, [5]=id, [3]=tbl[3]}
 			
-			gPhone.sendResponse( sendTable, tbl.sender )
-			gPhone.runApp( tbl.app )
+			gPhone.sendResponse( sendTable, tbl[2] )
+			gPhone.runApp( tbl[3] )
 		end,
 		false, true)
 	end
 end
 
 function gPhone.sendResponse( tbl, ply )
-	local sendTable = {header=GPHONE_NET_RESPONSE, sender=ply}
-	table.Merge( sendTable, tbl )
-	
 	if SERVER then
 		-- Foward response to target
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( sendTable )
+		net.Start("gPhone_Response")
+			gPhone.writeTable( tbl )
 		net.Send( ply )
 	else
 		-- This is a response so flip the roles around
-		sendTable = gPhone.flipSenderTarget( sendTable )
+		local sendTable = tbl
+		sendTable[1] = ply
+		sendTable[2] = tbl[1]
+		-- The third entry doesn't change
+		sendTable[4] = tbl[5]
+		sendTable[5] = tbl[6]
+		sendTable[6] = nil -- Shrink the table
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable( sendTable )
+		net.Start("gPhone_Response")
+			gPhone.writeTable( sendTable )
 		net.SendToServer()
 	end
 end
 
 function gPhone.receiveResponse( tbl )
 	if SERVER then	
+		local id = tbl[4]
+		
 		-- Update response table
-		gPhone.requestIDs[tbl.id].responded = true
-		gPhone.requestIDs[tbl.id].accepted = tbl.bAccepted
-		gPhone.requestIDs[tbl.id].receiveTime = CurTime()
+		if gPhone.requestIDs[id] then
+			gPhone.requestIDs[id].responded = true
+			gPhone.requestIDs[id].accepted = tbl.bAccepted
+			gPhone.requestIDs[id].receiveTime = CurTime()
+		end
 	
-		hook.Run( "gPhone_responseSent", tbl.sender, tbl.target, tbl, id )
+		hook.Run( "gPhone_responseSent", tbl[2], tbl[1], tbl, id )
 		-- Forward the response
-		gPhone.sendResponse( tbl, tbl.target )
+		gPhone.sendResponse( tbl, tbl[1] )
 		
 		timer.Simple(5, function()
-			if tbl.id and gPhone.requestIDs[tbl.id] then
-				gPhone.requestIDs[tbl.id] = {}
+			if id and gPhone.requestIDs[id] then
+				gPhone.requestIDs[id] = {}
 			end
 		end)
 	else
 		-- Generate a response text based off the string table
 		local message 
-		if tbl.bAccepted == true then
-			if gPhone.acceptedStrings[tbl.app:lower()] then
-				message = string.format(gPhone.acceptedStrings[tbl.app:lower()], tbl.sender:Nick())
+		local app = tbl[3]
+		local sender = tbl[2]
+		if tbl[5] == true then
+			if gPhone.acceptedStrings[app:lower()] then
+				message = string.format(gPhone.acceptedStrings[app:lower()], sender:Nick())
 			else
-				message = string.format( trans("accept_fallback"), tbl.sender:Nick(), tbl.app )
+				message = string.format( trans("accept_fallback"), sender:Nick(), app )
 			end
 		else
-			if gPhone.deniedStrings[tbl.app:lower()] then
-				message = string.format(gPhone.deniedStrings[tbl.app:lower()], tbl.sender:Nick())
+			if gPhone.deniedStrings[app:lower()] then
+				message = string.format(gPhone.deniedStrings[app:lower()], sender:Nick())
 			else
-				message = string.format( trans("deny_fallback"), tbl.sender:Nick(), tbl.app )
+				message = string.format( trans("deny_fallback"), sender:Nick(), app)
 			end
 		end
 		
 		-- Receive the response and notify with a banner
-		gPhone.notifyBanner( {msg=message, app=tbl.app or "ERROR"} )
+		gPhone.notifyBanner( {msg=message, app=app or "ERROR"} )
 	end
 end	
 
@@ -246,10 +263,21 @@ function gPhone.waitForResponse( id, callback )
 	local startTime = CurTime()
 	
 	if gPhone.requestIDs[id] then
+		local startTime = CurTime()
 		hook.Add("Think", "gPhone_waitFor"..id, function()
-			if gPhone.requestIDs[id].responded == true then
-				callback( gPhone.requestIDs[id].accepted, gPhone.requestIDs[id] )
-				hook.Remove("Think", "gPhone_waitFor"..id)
+			if gPhone.requestIDs[id] then
+				if gPhone.requestIDs[id].responded == true then
+					callback( gPhone.requestIDs[id].accepted, gPhone.requestIDs[id] )
+					hook.Remove("Think", "gPhone_waitFor"..id)
+				elseif CurTime() - startTime > 15 then
+					local ply = gPhone.requestIDs[id].target
+					
+					gPhone.notifyBanner( {msg=string.format(trans("response_timeout"), ply:Nick()),
+					app="gPhone", title=trans("confirmation")}, nil)
+					gPhone.requestIDs[id] = {}
+					
+					hook.Remove("Think", "gPhone_waitFor"..id)
+				end
 			end
 		end)
 	end
@@ -356,16 +384,20 @@ end
 
 --// Utility function to grab a player object from a string
 function util.getPlayerByNick( name, bExact )
-	for k, v in pairs(player.GetAll()) do
-		if bExact then 
-			if v:Nick() == name then
-				return v
-			end
-		else
-			if v:Nick():lower() == name:lower() then
-				return v
+	if name != nil then
+		for k, v in pairs(player.GetAll()) do
+			if bExact then 
+				if v:Nick() == name then
+					return v
+				end
+			else
+				if v:Nick():lower() == name:lower() then
+					return v
+				end
 			end
 		end
+	else
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempt to get player for nil nick!\n", debug.traceback())
 	end
 end
 

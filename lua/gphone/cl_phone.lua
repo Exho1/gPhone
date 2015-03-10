@@ -79,6 +79,7 @@ function gPhone.buildPhone()
 	phoneTime:SetText( os.date("%I:%M %p") )
 	phoneTime:SizeToContents()
 	phoneTime:SetPos( sWidth/2 - phoneTime:GetWide()/2, 0 )
+	phoneTime.Paint = gPhone.dLabelPaintOverride
 	phoneTime.Think = function()
 		if CurTime() > nextTimeUpdate then
 			phoneTime:SetText(os.date("%I:%M %p"))
@@ -117,6 +118,7 @@ function gPhone.buildPhone()
 			end)
 		end
 	end
+	batteryPercent.Paint = gPhone.dLabelPaintOverride
 	
 	local batteryImage = vgui.Create("DImage", gPhone.phoneScreen)
 	batteryImage:SetSize( 16, 8 )
@@ -174,6 +176,7 @@ function gPhone.buildPhone()
 	serviceProvider:SizeToContents()
 	local lastDot = signalDots[#signalDots]
 	serviceProvider:SetPos( lastDot:GetPos() + lastDot:GetWide() + 5, 0 )
+	serviceProvider.Paint = gPhone.dLabelPaintOverride
 	
 	gPhone.homeButton = vgui.Create( "DButton", gPhone.phoneBase )
 	gPhone.homeButton:SetSize( hWidth, hHeight )
@@ -1023,14 +1026,14 @@ function gPhone.showPhone( callback )
 		
 		if gPhone.getShowTutorial() then
 			gPhone.bootUp()
-			gPhone.setSeenTutorial( true )
+			--gPhone.setSeenTutorial( true )
 		else 
 			gPhone.buildLockScreen()
 		end
 		
 		-- Tell the server we are done and the phone is ready to be used
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_STATE_CHANGED, true})
+		net.Start("gPhone_StateChange")
+			net.WriteBool(true)
 		net.SendToServer()
 	end
 end
@@ -1060,12 +1063,12 @@ function gPhone.hidePhone( callback )
 		
 		gApp.removeTickers()
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
+		net.Start("gPhone_StateChange")
+			net.WriteBool(false)
 		net.SendToServer()
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_CUR_APP, app=nil})
+		net.Start("gPhone_App")
+			net.WriteString("")
 		net.SendToServer()
 	end
 end
@@ -1086,12 +1089,12 @@ function gPhone.destroyPhone( callback )
 		LocalPlayer():ConCommand("-voicerecord")
 		LocalPlayer():ConCommand("gphone_stopmusic")
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_STATE_CHANGED, open=false})
+		net.Start("gPhone_StateChange")
+			net.WriteBool(false)
 		net.SendToServer()
 		
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_CUR_APP, app=nil})
+		net.Start("gPhone_App")
+			net.WriteString("")
 		net.SendToServer()
 		
 		if callback != nil then

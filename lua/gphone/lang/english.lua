@@ -43,6 +43,7 @@ l.accept = "Accept"
 l.no = "No"
 l.yes = "Yes"
 l.okay = "Okay"
+l.response_timeout = "%s did not respond to your request in time"
 
 l.accept_fallback = "%s has accepted your request to use %s"
 l.phone_accept = "%s has accepted your call"

@@ -18,6 +18,7 @@
 		- Test it again
 		- Finish implementing group calling
 	- Language
+		- Translate the finances app
 		- Make sure to add new keys to non-English files with the English translations until proper ones are made
 		- Run through the phone to make sure all translations exist
 		- Talk to DJ or Narroby about Spanish
@@ -27,6 +28,7 @@
 		- Online wallpapers?
 	- Ringtones?
 	- Sounds?
+	- Add some way to find local player id
 	- More games
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
@@ -39,14 +41,12 @@
 				- Phone calls
 			- Lua errors and dumping to file
 			- Missing features
-	- Optimization
+	- Text color doesnt stay on update for status bar
+	- New Networking
 		- Phase out using string keys for networked tables
-		- Sending methods?
-			- http://facepunch.com/showthread.php?t=1450721&p=47267092&viewfull=1#post47267092
-			- No tables at all:
-				- Write an int with the header
-				- Send all data
-				- Write header again to end 
+		- Document orders of integer keys
+		- Texting uses the default net.WriteTable because my version seems to mix up the keys
+		
 	- Settings app
 		- Music tab with the 2 music related config bools
 	- Before release
@@ -61,7 +61,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.7"
+gPhone.version = "0.9.8"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -141,7 +141,18 @@ else
 end
 
 if SERVER then
-	util.AddNetworkString("gPhone_DataTransfer")
+	--util.AddNetworkString("gPhone_DataTransfer")
+	util.AddNetworkString("gPhone_GenerateNumber")
+	util.AddNetworkString("gPhone_StateChange")
+	util.AddNetworkString("gPhone_RunFunction")
+	util.AddNetworkString("gPhone_Notify")
+	util.AddNetworkString("gPhone_App")
+	util.AddNetworkString("gPhone_Text")
+	util.AddNetworkString("gPhone_Call")
+	util.AddNetworkString("gPhone_Request")
+	util.AddNetworkString("gPhone_Response")
+	util.AddNetworkString("gPhone_Transfer")
+	
 	util.AddNetworkString("gPhone_MultiplayerData")
 	util.AddNetworkString("gPhone_MultiplayerStream")
 	util.AddNetworkString("gPhone_ChatMsg")

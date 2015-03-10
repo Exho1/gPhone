@@ -181,6 +181,12 @@ function gPhone.bootUp()
 	progressBar:SetPos( screen:GetWide()/2 - progressBar:GetWide()/2, screen:GetTall()/2 + 15 )
 	local bootProgress = 0
 	local nextPass = 0
+	
+	-- TEMP
+	if true then
+		bootProgress = 75
+	end
+	
 	progressBar.Think = function()
 		if bootProgress >= 75 then -- Finished fake booting
 			logo:Remove()
@@ -258,6 +264,13 @@ function gPhone.beginnerTutorial( oldScreen )
 			gPhone.setActiveLanguage( val )
 		end
 		
+		if val != "english" then
+			-- Reimport all the apps so the translation takes effect
+			gPhone.removedApps = {}
+			gPhone.apps = {}
+			gPhone.importApps()
+		end
+		
 		-- Change the title's text and move it to the center-top
 		local x = title:GetPos()
 		title:MoveTo( x, -title:GetTall(), 0.5, 0, 2, function()
@@ -292,7 +305,7 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 	}
 	
 	local messages = {
-		"TEST1",
+		"Welcome to the Garry Phone! This is a short tutorial that will teach you the basics of the phone",
 		"TEST2",
 		"AYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
 		"AYYYYYYYYYYYYYYYYYYYYYOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
@@ -309,9 +322,11 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 	messageLabel:SetFont("gPhone_18")
 	messageLabel:SetColor( color_black )
 	messageLabel:SizeToContents()
+	gPhone.wordWrap( messageLabel, base:GetWide(), 35 )
 	local _, y = slideImage:GetPos()
 	messageLabel:SetPos( screen:GetWide()/2 - messageLabel:GetWide()/2, y + slideImage:GetTall() + 20 )
-	gPhone.wordWrap( messageLabel, base:GetWide(), 35 )
+	
+	print(messageLabel:GetPos())
 	
 	nextImage = nextImage + 1
 	
@@ -620,6 +635,8 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 	
 	local bgPanel = gPhone.alertPanel
 	
+	tbl.msg = tbl.msg or "N/A"
+	
 	local message = vgui.Create( "DLabel", bgPanel )
 	message:SetTextColor( color_black )
 	message:SetFont("gPhone_16")
@@ -639,7 +656,7 @@ function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, 
 	title:SetFont("gPhone_18")
 	local x, y = message:GetPos()
 	title:SetPos( 0, 10 )
-	gPhone.setTextAndCenter(title, tbl.title, bgPanel)
+	gPhone.setTextAndCenter(title, tbl.title or "N/A", bgPanel)
 	
 	local optionPanels = {}
 	local x = 0
@@ -720,14 +737,18 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 		wordLimit = 122
 	end
 	
-	tbl.app = tbl.app or ""
+	tbl.app = tbl.app or "N/A"
 	
 	-- Get the app icon
 	local icon = "ERROR"
-	for _, data in pairs( gPhone.apps ) do
-		if data.name:lower() == tbl.app:lower() then
-			icon = data.icon
+	if tbl.app:lower() != "gphone" then
+		for _, data in pairs( gPhone.apps ) do
+			if data.name:lower() == tbl.app:lower() then
+				icon = data.icon
+			end
 		end
+	else
+		icon = "vgui/gphone/boot_logo.png"
 	end
 	
 	gPhone.bannerPanel = vgui.Create( "DPanel", screen )
@@ -770,8 +791,12 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	appImage.DoClick = function()
 		-- App icon will launch you into the app
 		closePanel( bgPanel )
-		gPhone.runApp( string.lower( tbl.app ) )
+		if tbl.app:lower() != "gphone" then
+			gPhone.runApp( string.lower( tbl.app ) )
+		end
 	end
+	
+	tbl.msg = tbl.msg or "N/A"
 	
 	local message = vgui.Create( "DLabel", bgPanel )
 	message:SetTextColor( color_white )
@@ -788,7 +813,7 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	local title = vgui.Create( "DLabel", bgPanel )
 	title:SetTextColor( color_white )
 	title:SetFont("gPhone_16")
-	title:SetText( tbl.title or tbl.app )
+	title:SetText( tbl.title or tbl.app or "N/A" )
 	title:SizeToContents()
 	local x, y = message:GetPos()
 	title:SetPos( 40, 5 )

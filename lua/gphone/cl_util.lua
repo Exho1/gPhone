@@ -42,9 +42,35 @@ concommand.Add("gphone_stopmusic", function()
 	gPhone.msgC( GPHONE_MSGC_WARNING, "No active music channel to stop!" )
 end)
 
+--// Removes the file that disables the tutorial on booting
 concommand.Add("gphone_enabletutorial", function()
 	gPhone.setSeenTutorial( false )
 end)
+
+--// Removes all files in the /data/ folder related the gPhone. Use for compatibility issues
+--[[concommand.Add("gphone_reset", function()
+	-- Archive
+	local files = file.Find( "gphone/archive/*.txt", "DATA" ) 
+	for k, v in pairs(files) do file.Delete( "gphone/archive/"..v ) end
+	
+	-- Data
+	local files = file.Find( "gphone/data/*.txt", "DATA" ) 
+	for k, v in pairs(files) do file.Delete( "gphone/data/"..v ) end
+	
+	-- Dumps
+	local files = file.Find( "gphone/dumps/*.txt", "DATA" ) 
+	for k, v in pairs(files) do file.Delete( "gphone/dumps/"..v ) end
+	
+	-- Messages
+	local files = file.Find( "gphone/messages/*.txt", "DATA" ) 
+	for k, v in pairs(files) do file.Delete( "gphone/messages/"..v ) end
+	
+	-- Base folder stuff
+	local files = files.Find( "gphone/*.txt" ) 
+	for k, v in pairs(files) do file.Delete( "gphone/"..v ) end
+	
+	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Removed all phone data files" )
+end)]]
 
 --// Simulates searching an 'artist song' pair to get an album url
 concommand.Add("gphone_searchsong", function(_, _, args)
@@ -102,10 +128,6 @@ concommand.Add("notify_i", function()
 	end, 
 	false, 
 	true )
-end)
-
-concommand.Add("reqgame", function()
-	gPhone.requestGame(LocalPlayer(), "gPong")
 end)
 
 -- END TEMPORARY
@@ -298,13 +320,18 @@ function gPhone.hideAppObjects()
 	end
 end
 
+--// Overrides the Paint function for DLabels to fix the SetTextColor function
+function gPhone.dLabelPaintOverride( pnl, w, h )
+	pnl:SetFGColor( pnl:GetTextColor() or color_white ) 
+end
+
 --// Color the status bar
 function gPhone.darkenStatusBar()
 	for class, tab in pairs(gPhone.statusBar) do
 		if class == "text" then
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetFGColor( color_black )
+				pnl:SetTextColor( color_black )
 			end
 		else
 			for k, pnl in pairs(tab) do
@@ -321,7 +348,7 @@ function gPhone.lightenStatusBar()
 		if class == "text" then
 			for k, pnl in pairs(tab) do
 				if not IsValid(pnl) then return end
-				pnl:SetFGColor( color_white )
+				pnl:SetTextColor( color_white )
 			end
 		else
 			for k, pnl in pairs(tab) do
@@ -613,13 +640,32 @@ function gPhone.sendTextMessage( target, msg )
 	if IsValid(ply) then
 		local idFormat = gPhone.steamIDToFormat( ply:SteamID() )
 		
-		local msgTable = {target=target, time=os.date( "%I:%M%p" ), date = os.date( "%x" ), message=msg }
+		--[[
+			Format:
+			[1] = Date
+			[2] = Time
+			[3] = Message
+			[4] = Target
+			[5] = Sender
+			[6] = Self
+		]]
+		
+		local msgTable = {
+			[1] = os.date( "%x" ),
+			[2] = os.date( "%I:%M%p" ),
+			[3] = msg,
+			[4] = target,
+		}
 		
 		gPhone.log("Sending text to ", target)
 		
+		PrintTable(msgTable)
 		-- Off to the server!
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_TEXT_MSG, tbl=msgTable})
+		net.Start("gPhone_Text")
+			net.WriteString( os.date( "%x" ) )
+			net.WriteString( os.date( "%I:%M%p" ) )
+			net.WriteString( msg )
+			net.WriteString( target )
 		net.SendToServer()
 		
 		-- If the server has flagged us as a spammer our message should not appear in the app
@@ -627,15 +673,24 @@ function gPhone.sendTextMessage( target, msg )
 		if LocalPlayer():GetNWBool("gPhone_CanText", true) == false then return end
 		
 		-- Store the sent text on the client
-		msgTable.self = true
-		msgTable.sender = LocalPlayer():Nick()
+		msgTable[6] = true
+		msgTable[5] = LocalPlayer():Nick()
 		gPhone.receiveTextMessage( msgTable, true )
 	end
 end
 
 --// Saves a text message to an existing txt document or a new one
 function gPhone.receiveTextMessage( tbl, bSelf )
-	-- tbl.sender, tbl.target, tbl.self, tbl.time, tbl.date, tbl.message,
+	-- Restructure the table to use string keys since it wont be networked from now on
+	tbl = {
+		["date"] = tbl[1],
+		["time"] = tbl[2],
+		["message"] = tbl[3],
+		["target"] = tbl[4],
+		["sender"] = tbl[5],
+		["self"] = tbl[6],
+	}
+	
 	local writeTable = {}
 	local ply
 	if tbl.target == LocalPlayer():Nick() then
@@ -668,6 +723,7 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 			gPhone.log("Received message - In app")
 			app.Data.UpdateMessages( idFormat ) 
 		end
+		return
 	elseif gPhone.isOpen() then -- In phone
 		gPhone.log("Received message - In phone")
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )

@@ -168,8 +168,8 @@ function APP.StartCall( number )
 
 	if connectedNumbers[number] then
 		print("Online")
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_START_CALL, number=number})
+		net.Start("gPhone_Call")
+			net.WriteString(number)
 		net.SendToServer()
 		
 		-- Wait until we have entered the call to enter the calling screen
@@ -327,8 +327,8 @@ function APP.EndCall( bAppClose )
 	
 	LocalPlayer():ConCommand("-voicerecord")
 	
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable({header=GPHONE_END_CALL})
+	net.Start("gPhone_Call")
+		net.WriteString("end")
 	net.SendToServer()
 	
 	if bAppClose != true then

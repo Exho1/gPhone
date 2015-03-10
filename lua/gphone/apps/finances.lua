@@ -184,8 +184,9 @@ function APP.ButtonClick( objects, name )
 			
 			gPhone.msgC( GPHONE_MSGC_NONE, "Transaction send to the server for verification" )
 			-- Send the transaction data to the server
-			net.Start("gPhone_DataTransfer")
-				net.WriteTable( {header=GPHONE_MONEY_TRANSFER, target=targetPlayer, amount=moneyAmount} )
+			net.Start("gPhone_Transfer")
+				net.WriteString(tostring(moneyAmount))
+				net.WriteString(targetPlayer)
 			net.SendToServer()
 		end
 		
@@ -268,7 +269,7 @@ end
 
 local bg = Material( "vgui/gphone/wallpapers/finances_bg.png" )
 function APP.Paint(screen)
-	draw.RoundedBox(0, 0, 0, screen:GetWide(), gPhone.StatusBarHeight, Color(0, 0, 0))
+	draw.RoundedBox(0, 0, 0, screen:GetWide(), gPhone.statusBarHeight, Color(0, 0, 0))
 	
 	surface.SetMaterial( bg )
 	surface.SetDrawColor(255,255,255)

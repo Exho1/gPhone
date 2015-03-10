@@ -4,7 +4,7 @@ local trans = gPhone.getTranslation
 APP.PrintName = "Messages"
 APP.Icon = "vgui/gphone/messages.png"
 APP.Author = "Exho"
-APP.Tags = {"Messaging", "Contact", "Communication"}
+APP.Tags = {"Texts", "Contact", "Communication"}
 
 APP.CurrentConvo = nil
 function APP.Run( objects, screen )
@@ -141,10 +141,11 @@ function APP.PopulateMain( layout )
 		local w, h = senderName:GetSize()
 		senderName:SetSize( screen:GetWide() - 35, h)
 		senderName:SetPos( 25, 2 )
-		
+
 		-- Create a time or date stamp 
-		local dateStamp = tbl[#tbl].date
-		local timeStamp = tbl[#tbl].time
+		local lastSent = tbl[#tbl]
+		local dateStamp = lastSent.date
+		local timeStamp = lastSent.time
 		if curDate != dateStamp then
 			local dateFrags = string.Explode( "/", curDate )
 			local stampFrags = string.Explode( "/", dateStamp )
@@ -180,7 +181,7 @@ function APP.PopulateMain( layout )
 		lastTime:SetPos( background:GetWide() - lastTime:GetWide() - 5, 3 )
 		
 		local lastMsg = vgui.Create( "DLabel", background )
-		lastMsg:SetText( tbl[#tbl].message )
+		lastMsg:SetText( lastSent.message or "" )
 		lastMsg:SetTextColor(Color(90,90,90))
 		lastMsg:SetFont("gPhone_14")
 		lastMsg:SizeToContents()
@@ -328,7 +329,7 @@ function APP.PopulateMessages( id )
 	local messageCount = 0
 	local function createConversation( tbl )
 		tbl = tbl or {}
-		
+
 		local yBuffer = 0
 		for k, tbl in pairs( tbl ) do
 			objects.LayoutScroll.Paint = function( self, w, h )
@@ -337,7 +338,7 @@ function APP.PopulateMessages( id )
 			
 			-- Manage colors
 			local col, textcol
-			if tbl.sender == LocalPlayer():Nick() then
+			if tbl.self then
 				col = Color(80, 235, 80)
 				textcol = color_white
 			else
@@ -351,22 +352,23 @@ function APP.PopulateMessages( id )
 				draw.RoundedBox(6, 0, 0, w, h, col)
 			end
 			
+			local textMessage = tbl.message
+			
 			-- This label used to hold the message but now is used only for sizing purposes
 			local message = vgui.Create( "DLabel", background )
-			message:SetText( tbl.message )
+			message:SetText( textMessage )
 			message:SetTextColor( textcol )
 			message:SetFont("gPhone_14")
 			message:SizeToContents()
 			message:SetPos( 5, 5 )
 			message:SetVisible(false)
-			message.Paint = function() end
 			
 			-- This is used to properly size the 'background' element
 			gPhone.wordWrap( message, background:GetWide(), 10 ) 
 			
 			-- A non-editable DTextEntry represents the text message now
 			local message2 = vgui.Create( "DTextEntry", background )
-			message2:SetText( tbl.message )
+			message2:SetText( textMessage )
 			message2:SetTextColor( textcol )
 			message2:SetMultiline( true )
 			--message2:SetEditable(false)
@@ -379,8 +381,8 @@ function APP.PopulateMessages( id )
 			message2:SetSize( w + 10, h + 5 )
 			message2:SetPos( 2.5, 2.5 )
 			message2.Think = function( self )
-				if self:GetValue() != tbl.message then
-					self:SetValue( tbl.message )
+				if self:GetValue() != textMessage then
+					self:SetValue( textMessage )
 				end
 			end
 			message2.SetValue = function( self, val ) -- Override the default function to prevent any typing
@@ -388,8 +390,8 @@ function APP.PopulateMessages( id )
 				
 				--local CaretPos = self:GetCaretPos()
 
-				self:SetText( tbl.message )
-				self:OnValueChange( tbl.message )
+				self:SetText( textMessage )
+				self:OnValueChange( textMessage )
 				
 				--self:SetCaretPos( CaretPos )
 			end

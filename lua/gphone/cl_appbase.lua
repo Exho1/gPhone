@@ -58,8 +58,8 @@ gApp["_close_"] = function( app )
 	gPhone.showStatusBar()
 	gPhone.setActiveApp( nil ) 
 	
-	net.Start("gPhone_DataTransfer")
-		net.WriteTable({header=GPHONE_CUR_APP, app=nil})
+	net.Start("gPhone_App")
+		net.WriteString("")
 	net.SendToServer()
 end
 
@@ -171,8 +171,8 @@ function gPhone.runApp(name)
 		end
 		
 		-- Updates to the server with the current app
-		net.Start("gPhone_DataTransfer")
-			net.WriteTable({header=GPHONE_CUR_APP, app=app.Data.PrintName})
+		net.Start("gPhone_App")
+			net.WriteString(app.Data.PrintName)
 		net.SendToServer()
 		
 		-- All seems to be be good, run the application
