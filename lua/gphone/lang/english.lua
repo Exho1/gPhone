@@ -29,6 +29,17 @@ l.service_provider = "Garry"
 l.folder_fallback = "Folder"
 l.invalid_folder_name = "Invalid"
 
+-- Tutorial
+l.tut_welcome = "Welcome to the Garry Phone! This is a brief introduction about the basics of the phone"
+l.tut_folders = "Use the homescreen to create folders and move around apps just like a real iPhone"
+l.tut_delete = "Hold down the right mouse button to toggle app deletion mode"
+l.tut_text = "Text your friends in game using the messages app! Click the right side to delete the conversation"
+l.tut_wallpaper = "Change your home and lock screen wallpapers using pictures from your computer"
+l.tut_music = "Stream music from the internet or off your computer with the music app!"
+l.tut_translate = "Want to help translate? Add me on Steam and you could be in the phone's credits!"
+l.tut_coders = "Coders: Check the wiki on Github and the example app included to help you make apps"
+l.tut_end = "Forgive me for any errors or missing features, coding takes time and I am not perfect.. Enjoy!"
+
 -- App base
 l.app_error = "[App Error]"
 l.app_deny_gm = "This app cannot be used in this gamemode!"

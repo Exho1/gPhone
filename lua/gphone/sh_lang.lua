@@ -57,8 +57,13 @@ function gPhone.createLanguage( name )
 			string.format("Unable to get translation for (#%s) in language (%s)",
 			k, gPhone.getActiveLanguage()))
 			
-			gPhone.languages[name][k] = "##"..k
-			return "##"..k
+			if gPhone.config.replaceMissingTranslations == true then
+				gPhone.languages[name][k] = gPhone.languages["english"][k]
+				return gPhone.languages["english"][k]
+			else
+				gPhone.languages[name][k] = "##"..k
+				return "##"..k
+			end
 		end
 	})
 	

@@ -450,6 +450,10 @@ https://github.com/Exho1/gPhone
 Derma blur:
 https://github.com/Chessnut/NutScript
 
+German Translation:
+
+Swedish Translation:
+
 Album Art:
 Spotify API and Rejax
 

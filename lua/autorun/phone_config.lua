@@ -32,15 +32,6 @@
 	- More games
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
-	- Tutorial
-		- Add pictures and accompanying text
-		- Language translations
-		- Slides:
-			- Basic usage which can cover a couple slides
-				- Texting
-				- Phone calls
-			- Lua errors and dumping to file
-			- Missing features
 	- Text color doesnt stay on update for status bar
 	- New Networking
 		- Phase out using string keys for networked tables
@@ -49,6 +40,7 @@
 		
 	- Settings app
 		- Music tab with the 2 music related config bools
+		- Toggle binding for 'replaceMissingTranslations'
 	- Before release
 		- Make sure you can't self message in the messages app
 		- Remove all TEMP stuff
@@ -61,7 +53,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.8"
+gPhone.version = "0.9.85"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -120,6 +112,9 @@ else
 		stopMusicOnTabOut = true,
 		-- Whether or not the phone should search online for album covers
 		autoFindAlbumCovers = true,
+		
+		-- Replaces missing language keys with their english alternative
+		replaceMissingTranslations = true,
 		
 		-- Disables incoming notification banners and alerts
 		airplaneMode = false,

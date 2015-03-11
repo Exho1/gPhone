@@ -298,22 +298,33 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 	local currentPanel 
 	local nextImage = 1
 	local images = {
+		-- These images file names are out of order.. Oops
 		"vgui/gphone/boot_logo.png",
-		"vgui/gphone/camera.png",
-		"vgui/gphone/music.png",
-		"vgui/gphone/phone.png",
+		"vgui/gphone/tutorial_1.png",
+		"vgui/gphone/tutorial_4.png",
+		"vgui/gphone/tutorial_2.png",
+		"vgui/gphone/tutorial_3.png",
+		"vgui/gphone/tutorial_7.png",
+		"vgui/gphone/tutorial_6.png",
+		"vgui/gphone/tutorial_5.png",
+		"vgui/gphone/boot_logo.png",
 	}
 	
 	local messages = {
-		"Welcome to the Garry Phone! This is a short tutorial that will teach you the basics of the phone",
-		"TEST2",
-		"AYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
-		"AYYYYYYYYYYYYYYYYYYYYYOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+		trans("tut_welcome"),
+		trans("tut_folders"),
+		trans("tut_delete"),
+		trans("tut_text"),
+		trans("tut_wallpaper"),
+		trans("tut_music"),
+		trans("tut_translate"),
+		trans("tut_coders"),
+		trans("tut_end"),
 	}
 	
 	local slideImage = vgui.Create( "DImage", base )
-	slideImage:SetSize( screen:GetWide() - 50, screen:GetTall()/2 )
-	slideImage:SetPos( 25, 50 )
+	slideImage:SetSize( screen:GetWide() - 30, screen:GetTall()/2 )
+	slideImage:SetPos( 15, 30 )
 	slideImage:SetImage( images[nextImage] )
 	currentPanel = slideImage
 	
@@ -324,15 +335,13 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 	messageLabel:SizeToContents()
 	gPhone.wordWrap( messageLabel, base:GetWide(), 35 )
 	local _, y = slideImage:GetPos()
-	messageLabel:SetPos( screen:GetWide()/2 - messageLabel:GetWide()/2, y + slideImage:GetTall() + 20 )
-	
-	print(messageLabel:GetPos())
+	messageLabel:SetPos( screen:GetWide()/2 - messageLabel:GetWide()/2, y + slideImage:GetTall() + 10 )
 	
 	nextImage = nextImage + 1
 	
 	local slideImage2 = vgui.Create( "DImage", base )
-	slideImage2:SetSize( screen:GetWide() - 50, screen:GetTall()/2 )
-	slideImage2:SetPos( screen:GetWide() + slideImage:GetWide() + 25, 50 )
+	slideImage2:SetSize( screen:GetWide() - 30, screen:GetTall()/2 )
+	slideImage2:SetPos( screen:GetWide() + slideImage:GetWide() + 15, 30 )
 	slideImage2:SetImage( images[nextImage] )
 	
 	local messageLabel2 = vgui.Create( "DLabel", base )
@@ -341,7 +350,7 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 	messageLabel2:SetColor( color_black )
 	messageLabel2:SizeToContents()
 	local _, y = slideImage:GetPos()
-	messageLabel2:SetPos( screen:GetWide() + messageLabel2:GetWide(), y + slideImage:GetTall() + 20 )
+	messageLabel2:SetPos( screen:GetWide() + messageLabel2:GetWide(), y + slideImage:GetTall() + 10 )
 	gPhone.wordWrap( messageLabel2, base:GetWide(), 35 )
 	
 	local nextButton = vgui.Create( "DButton", base )
@@ -420,7 +429,7 @@ function gPhone.beginnerSlideshow( base, oldScreen )
 			-- Put back on the right
 			if not images[nextImage + 1] then return end
 			
-			slide1:SetPos( screen:GetWide() + slide1:GetWide() + 25, 50 )
+			slide1:SetPos( screen:GetWide() + slide1:GetWide() + 15, 30 )
 			slide1:SetImage( images[nextImage + 1] )
 			
 			nextImage = nextImage + 1
