@@ -610,8 +610,7 @@ NonCommercial 4.0 International License.
 				
 			end
 			layoutButton.DoClick = function()
-				-- TEMP: Replace later with a link to the workshop page
-				gui.OpenURL( "http://steamcommunity.com/id/Exho1/myworkshopfiles/?appid=4000" )
+				gui.OpenURL( http://steamcommunity.com/sharedfiles/filedetails/?id=407945478" )
 			end
 			
 			local title = vgui.Create( "DLabel", layoutButton )

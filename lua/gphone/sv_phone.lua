@@ -18,6 +18,10 @@ files = file.Find( "materials/vgui/gphone/apps/*.png", "GAME" ) -- App images
 for k, v in pairs(files) do
 	resource.AddFile("materials/vgui/gphone/apps/"..v)
 end
+files = file.Find( "sound/gphone/*", "GAME" ) -- Sounds
+for k, v in pairs(files) do
+	resource.AddFile("sound/gphone/"..v)
+end
 
 --// Meta table
 local plymeta = FindMetaTable( "Player" )

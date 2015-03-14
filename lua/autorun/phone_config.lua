@@ -31,6 +31,7 @@
 	- More games
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
+	- If you are called when the phone is closed, you can't really do anything about it
 		
 	- On release
 		- Update the webserver with the correct version number on release 1.0.0 
