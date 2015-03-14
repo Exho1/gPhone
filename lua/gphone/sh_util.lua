@@ -221,8 +221,11 @@ function gPhone.receiveResponse( tbl )
 		-- Update response table
 		if gPhone.requestIDs[id] then
 			gPhone.requestIDs[id].responded = true
-			gPhone.requestIDs[id].accepted = tbl.bAccepted
+			gPhone.requestIDs[id].accepted = tbl[5]
 			gPhone.requestIDs[id].receiveTime = CurTime()
+		else
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to receive response for invalid request id: "..id )
+			
 		end
 	
 		hook.Run( "gPhone_responseSent", tbl[2], tbl[1], tbl, id )

@@ -152,9 +152,11 @@ end
 function APP.OpenTab( name )
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
-	name = string.lower( name )
 	
-	if name == trans("wallpaper"):lower() then
+	name = string.lower( name )
+	local nameEn = gPhone.phraseToEnglish( name ):lower()
+	
+	if nameEn == "wallpaper" then
 		APP.PrepareNewTab( trans("wallpaper") )
 		
 		objects.Back:SetVisible( true )
@@ -288,7 +290,7 @@ function APP.OpenTab( name )
 				gPhone.saveClientConfig()
 			end
 		end
-	elseif name == trans("general"):lower() then
+	elseif nameEn == "general" then
 		APP.PrepareNewTab( trans("general"))
 		
 		objects.Back:SetVisible( true )
@@ -326,7 +328,7 @@ function APP.OpenTab( name )
 				title:SetPos( 35, 5 )
 			end
 		end
-	elseif name == trans("homescreen"):lower() then
+	elseif nameEn == "homescreen" then
 		APP.PrepareNewTab( trans("homescreen") )
 		
 		objects.Back:SetVisible( true )
@@ -406,8 +408,9 @@ function APP.OpenLowerTab( name, upperTabName )
 	local screen = gPhone.phoneScreen
 	
 	name = name:lower()
+	local nameEn = gPhone.phraseToEnglish( name ):lower()
 	
-	if name == trans("about"):lower() then
+	if nameEn == "about" then
 		APP.PrepareNewTab( trans("about") )
 		
 		objects.Back:SetVisible( true )
@@ -565,7 +568,7 @@ Icon images: http://www.flaticon.com/
 		else
 			-- Your software is up to date
 		end
-	elseif name == trans("color"):lower() then	
+	elseif nameEn == "color" then	
 		APP.PrepareNewTab( trans("color") )
 		
 		objects.Back:SetVisible( true )
@@ -634,7 +637,7 @@ Icon images: http://www.flaticon.com/
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 15, 5 )
-	elseif name == trans("archive"):lower() then
+	elseif nameEn == "archive" then
 		APP.PrepareNewTab( trans("archive") )
 		
 		objects.Back:SetVisible( true )
@@ -763,7 +766,7 @@ Icon images: http://www.flaticon.com/
 				title:SetPos( 35, 5 )
 			end
 		end
-	elseif name == trans("language"):lower() then
+	elseif nameEn == "language" then
 		APP.PrepareNewTab( trans("language") )
 		
 		objects.Back:SetVisible( true )
@@ -771,6 +774,7 @@ Icon images: http://www.flaticon.com/
 			APP.OpenTab( upperTabName )
 		end
 		
+		-- Warning
 		local bgPanel = objects.Layout:Add("DPanel")
 		bgPanel:SetSize(screen:GetWide(), 60)
 		bgPanel.Paint = function( self, w, h) 
@@ -789,6 +793,7 @@ Icon images: http://www.flaticon.com/
 		fake:SetSize(screen:GetWide(), 30)
 		fake.Paint = function() end
 		
+		-- Language combo box
 		local bgPanel = objects.Layout:Add("DPanel")
 		bgPanel:SetSize(screen:GetWide(), 30)
 		bgPanel.Paint = function( self, w, h) 
@@ -814,6 +819,7 @@ Icon images: http://www.flaticon.com/
 		fake:SetSize(screen:GetWide(), 30)
 		fake.Paint = function() end
 		
+		-- Confirm button
 		local layoutButton = objects.Layout:Add("DButton")
 		layoutButton:SetSize(screen:GetWide(), 30)
 		layoutButton:SetText("")
@@ -840,7 +846,34 @@ Icon images: http://www.flaticon.com/
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 35, 5 )
-	elseif name == trans("developer"):lower() then
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+		
+		-- Missing phrases toggle
+		local bgPanel = objects.Layout:Add("DPanel")
+		bgPanel:SetSize(screen:GetWide(), 30)
+		bgPanel.Paint = function( self, w, h) 
+			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+			
+			draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+		end
+		
+		local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+		toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+		toggleButton:SetBool( gPhone.config.replaceMissingTranslations )
+		toggleButton.OnValueChanged = function( self, bVal )
+			gPhone.setConfigValue( replaceMissingTranslations, bVal )
+		end
+		
+		local title = vgui.Create( "DLabel", bgPanel )
+		title:SetText( "Replace missing" )
+		title:SetTextColor(Color(0,0,0))
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 35, 5 )
+	elseif nameEn == "developer" then
 		-- Add new lower level
 		APP.PrepareNewTab( trans("developer") )
 		

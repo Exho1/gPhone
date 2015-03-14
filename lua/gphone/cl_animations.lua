@@ -182,11 +182,6 @@ function gPhone.bootUp()
 	local bootProgress = 0
 	local nextPass = 0
 	
-	-- TEMP
-	if true then
-		bootProgress = 75
-	end
-	
 	progressBar.Think = function()
 		if bootProgress >= 75 then -- Finished fake booting
 			logo:Remove()

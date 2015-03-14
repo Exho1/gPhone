@@ -80,6 +80,17 @@ function gPhone.getTranslationEN( id )
 	return gPhone.languages["english"][id:lower()]
 end
 
+--// Translates the given phrase to its English equivalent
+function gPhone.phraseToEnglish( phrase, originalLang )
+	originalLang = originalLang or gPhone.getActiveLanguage()
+	
+	for id, text in pairs( gPhone.languages[originalLang] ) do
+		if text:lower() == phrase:lower() then
+			return gPhone.languages["english"][id]
+		end
+	end	
+end	
+
 --// Used for fast, direct language lookups in functions that are called often (abbreviated as 'l')
 function gPhone.getLanguageTable()
 	return gPhone.languages[gPhone.getActiveLanguage()]

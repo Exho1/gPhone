@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 3/7/14
+-- Version: 3/11/14
 
 --[[ To Do:
 	- Multiplayer
@@ -32,15 +32,9 @@
 	- More games
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
-	- Text color doesnt stay on update for status bar
-	- New Networking
-		- Phase out using string keys for networked tables
-		- Document orders of integer keys
-		- Texting uses the default net.WriteTable because my version seems to mix up the keys
-		
 	- Settings app
 		- Music tab with the 2 music related config bools
-		- Toggle binding for 'replaceMissingTranslations'
+		
 	- Before release
 		- Make sure you can't self message in the messages app
 		- Remove all TEMP stuff
@@ -53,7 +47,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.85"
+gPhone.version = "0.9.86"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

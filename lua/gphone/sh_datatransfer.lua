@@ -212,27 +212,32 @@ if SERVER then
 	net.Receive( "gPhone_Call", function( len, ply )
 		local number = net.ReadString()
 		
+		print(number)
 		if number != "end" then -- Start a call
 			local callingNum = ply:getPhoneNumber()
 			
 			local targetPly = gPhone.getPlayerByNumber( number )
 			
 			local reqStr = string.format( trans("being_called"), ply:Nick() )
-			local id = gPhone.sendRequest( {[2]=ply, [3]="phone", [4]=reqStr}, targetPly )
+			local id = gPhone.sendRequest( {[2]=ply, [3]="Phone", [4]=reqStr}, targetPly )
 			
 			gPhone.waitForResponse( id, function( bAccepted, tbl ) 
+				print("Got response", bAccepted)
+				PrintTable(tbl)
 				if bAccepted == true then
+					print("Should create call", ply, targetPly )
 					gPhone.createCall( ply, targetPly )
-				else
-					
 				end
 			end)
 		else -- End a call
 			local id = gPhone.getCallID( ply )
 			gPhone.endCall( id )
+			
+			--gPhone.notifyPlayer( "banner", ply, {msg="Call ended", app="Phone"} )
 		end
 	end)
 end
+
 
 if CLIENT then
 	--// Runs a function on the phone or in an application
@@ -310,7 +315,27 @@ if CLIENT then
 		gPhone.receiveTextMessage( data )
 	end)
 	
-
+	net.Receive( "gPhone_Notify", function( len, ply )
+		local type = net.ReadBit()
+		print("Receive", type)
+		if type == 1 then -- Banner
+			local msg = net.ReadString()
+			local app = net.ReadString()
+			local title = net.ReadString()
+			
+			-- Create a banner (no function for clicking though
+			gPhone.notifyBanner( {msg=msg, app=app, title=title} )
+		else -- Alert
+			local msg = net.ReadString()
+			local title = net.ReadString()
+			local option1 = net.ReadString()
+			local option2 = net.ReadString()
+			local oneOption = net.ReadBool()
+			
+			gPhone.notifyAlert( {msg=msg, title=title, options={ option1, option2} }, 
+			nil, nil, oneOption, true )
+		end
+	end)
 end
 
 --[[ TEMP

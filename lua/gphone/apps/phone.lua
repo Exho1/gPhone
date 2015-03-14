@@ -107,7 +107,6 @@ function APP.CreateKeypad( objects )
 			numButton:SetColor( color_black )
 			local matCircle = Material("vgui/gphone/circle.png")
 			numButton.Paint = function( self, w, h )
-				--draw.RoundedBox(10, 0, 0, w, h, color_black)
 				surface.SetDrawColor( Color(218,165,32) ) -- TEMP: Need either a netural color or wallpaper
 				surface.SetMaterial( matCircle ) 
 				surface.DrawTexturedRect( 0, 0, w, h )
@@ -174,7 +173,9 @@ function APP.StartCall( number )
 		
 		-- Wait until we have entered the call to enter the calling screen
 		hook.Add("Think", "gPhone_callWait", function()
+			--print(LocalPlayer():inCall())
 			if LocalPlayer():inCall() then
+				print("Open call screen")
 				APP.OpenCallScreen( number, CurTime() )
 				hook.Remove("Think", "gPhone_callWait")
 			end

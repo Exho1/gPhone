@@ -38,7 +38,7 @@ l.tut_wallpaper = "Change your home and lock screen wallpapers using pictures fr
 l.tut_music = "Stream music from the internet or off your computer with the music app!"
 l.tut_translate = "Want to help translate? Add me on Steam and you could be in the phone's credits!"
 l.tut_coders = "Coders: Check the wiki on Github and the example app included to help you make apps"
-l.tut_end = "Forgive me for any errors or missing features, coding takes time and I am not perfect.. Enjoy!"
+l.tut_end = "That only scratches the surface of the phone's features. Have fun!!"
 
 -- App base
 l.app_error = "[App Error]"

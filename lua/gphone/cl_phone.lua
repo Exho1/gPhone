@@ -1026,7 +1026,7 @@ function gPhone.showPhone( callback )
 		
 		if gPhone.getShowTutorial() then
 			gPhone.bootUp()
-			--gPhone.setSeenTutorial( true )
+			gPhone.setSeenTutorial( true )
 		else 
 			gPhone.buildLockScreen()
 		end

@@ -33,6 +33,7 @@ end
 
 function plymeta:generatePhoneNumber()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Generating number for "..self:Nick() )
+	
 	local number = self:GetPData( "gPhone_Number", gPhone.invalidNumber )
 	if number != gPhone.invalidNumber and number != "0" then
 		gPhone.msgC( GPHONE_MSGC_NONE, self:Nick().." has phone number: "..self:GetPData( "gPhone_Number"))
@@ -70,6 +71,7 @@ function gPhone.createCall( ply1, ply2 )
 			id = #gPhone.callingPlayers + 1
 			
 			print("Created call", ply1, ply2)
+			gPhone.msgC(GPHONE_MSGC_NONE, "Created call between "..tostring(ply1).." and "..tostring(ply2))
 			gPhone.callingPlayers[id] = {ply1, ply2}
 			ply1:SetNWBool("gPhone_InCall", true)
 			ply2:SetNWBool("gPhone_InCall", true)
@@ -82,8 +84,6 @@ end
 --// End a created call from its id
 function gPhone.endCall( id )
 	if gPhone.callingPlayers[id] then
-		print("Ended call")
-		
 		for k, caller in pairs( gPhone.callingPlayers[id] ) do
 			caller:SetNWBool("gPhone_InCall", false)
 		end
@@ -130,7 +130,6 @@ hook.Add("Think", "gPhone_phoneOverhead", function()
 	end
 end)
 
-
 --// Sends a message to appears in the player's chat box
 function gPhone.chatMsg( ply, text )
 	net.Start("gPhone_ChatMsg")
@@ -152,6 +151,29 @@ end
 --// Kicks a player and gives them a fancy hex string to make it look legit or something
 function gPhone.kick( ply, code ) 
 	ply:Kick( string.format( trans("kick"), code ) )
+end
+
+--// Sends a notification to the player
+function gPhone.notifyPlayer( type, ply, tbl, bOneOption )
+	type = type:lower()
+	
+	if type == "banner" then
+		net.Start( "gPhone_Notify" )
+			net.WriteBit( true )
+			net.WriteString( tbl.msg or tbl.message )
+			net.WriteString( tbl.app )
+			net.WriteString( tbl.title or tbl.app ) 
+		net.Send( ply )
+	else
+		net.Start( "gPhone_Notify" )
+			net.WriteBit( false )
+			net.WriteString( tbl.msg or tbl.message )
+			net.WriteString( tbl.title )
+			net.WriteString( tbl.options[1] )
+			net.WriteString( tbl.options[2] )
+			net.WriteBool( bOneOption )
+		net.Send( ply )
+	end
 end
 
 --// Runs a function in the gPhone app table
