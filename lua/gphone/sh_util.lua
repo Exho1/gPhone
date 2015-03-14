@@ -9,6 +9,7 @@ for k, v in pairs(files) do
 end
 
 --// Net Message Header Enumerations
+--[[
 GPHONE_MP_REQUEST = 1
 GPHONE_MP_REQUEST_RESPONSE = 2
 GPHONE_MP_PLAYER_QUIT = 3
@@ -27,6 +28,7 @@ GPHONE_START_CALL = 18
 GPHONE_NET_REQUEST = 19
 GPHONE_NET_RESPONSE = 20
 GPHONE_END_CALL = 21
+]]
 
 --// Language strings for requests. [appname] = string.format("%s...", playerNick)
 gPhone.deniedStrings = {
@@ -76,6 +78,7 @@ function plymeta:inMPGame()
 	return self:GetNWBool("gPhone_InMPGame", false)
 end
 
+--// Returns if the player is in a call
 function plymeta:inCall()
 	return self:GetNWBool("gPhone_InCall", false)
 end
@@ -270,16 +273,17 @@ function gPhone.waitForResponse( id, callback )
 		hook.Add("Think", "gPhone_waitFor"..id, function()
 			if gPhone.requestIDs[id] then
 				if gPhone.requestIDs[id].responded == true then
-					callback( gPhone.requestIDs[id].accepted, gPhone.requestIDs[id] )
 					hook.Remove("Think", "gPhone_waitFor"..id)
+					
+					callback( gPhone.requestIDs[id].accepted, gPhone.requestIDs[id] )
 				elseif CurTime() - startTime > 15 then
+					hook.Remove("Think", "gPhone_waitFor"..id)
+					
 					local ply = gPhone.requestIDs[id].target
 					
 					gPhone.notifyBanner( {msg=string.format(trans("response_timeout"), ply:Nick()),
 					app="gPhone", title=trans("confirmation")}, nil)
 					gPhone.requestIDs[id] = {}
-					
-					hook.Remove("Think", "gPhone_waitFor"..id)
 				end
 			end
 		end)

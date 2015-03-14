@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 3/11/14
+-- Version: 3/14/14
 
 --[[ To Do:
 	- Multiplayer
@@ -15,39 +15,30 @@
 	- Function to bypass using net.*Table entirely
 	- Phone/calling
 		- Enable speaking for both players
-		- Test it again
 		- Finish implementing group calling
+	- Selfie camera
 	- Language
-		- Translate the finances app
-		- Make sure to add new keys to non-English files with the English translations until proper ones are made
-		- Run through the phone to make sure all translations exist
 		- Talk to DJ or Narroby about Spanish
 	- Figure out why missing config values dont save
 	- Wallpaper
 		- The gPhone is bloated by the backgrounds, 2mb.
 		- Online wallpapers?
-	- Ringtones?
+	- Networking
+		- Move P2P request/response system to not use Write/ReadTable
 	- Sounds?
-	- Add some way to find local player id
+	- Settings app
+		- Update tab needs something when you are up to date
 	- More games
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
-	- Settings app
-		- Music tab with the 2 music related config bools
 		
-	- Before release
-		- Make sure you can't self message in the messages app
-		- Remove all TEMP stuff
-		- Remove the Derma close button and other temp stuff
-		- Set up the default config
-		- Remove all prints and replace neccessary ones with gPhone.msgC(
 	- On release
 		- Update the webserver with the correct version number on release 1.0.0 
 		- Update the settings update button to point to the Workshop page for the phone
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "0.9.86"
+gPhone.version = "1.0.0"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -112,6 +103,8 @@ else
 		
 		-- Disables incoming notification banners and alerts
 		airplaneMode = false,
+		-- Vibrates the phone instead of playing a sound when applicable
+		vibrate = false,
 	}
 	
 	--// Color palatte for apps

@@ -3,7 +3,6 @@
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
 
 local l = gPhone.createLanguage( "english" )
---local trans = gPhone.getTranslation
 
 -- General
 l.title = "The Garry Phone"
@@ -83,6 +82,9 @@ l.being_called = "%s is calling you!"
 -- Settings
 l.wallpapers = "Wallpapers"
 l.airplane_mode = "Airplane Mode"
+l.vibrate = "Vibrate"
+l.stop_on_tab = "Stop music on tab"
+l.find_album_covers = "Find album covers"
 l.show_unusable_apps = "Show unusable apps"
 l.reset_app_pos = "Reset icon positions"
 l.archive_cleanup = "Archive cleanup"
@@ -117,12 +119,16 @@ l.back = "Back"
 l.number = "Number"
 
 -- Phone
+l.phone = "Phone"
 l.mute = "Mute"
 l.unmute = "Unmute"
 l.keypad = "Keypad"
 l.speaker = "Speaker"
 l.add = "Add"
 l.end_call = "End call"
+l.cannot_call = "%s cannot be called at this moment! Sorry"
+l.hung_up_on = "Your call has been ended by the person you were calling"
+l.invalid_player_phone = "That is not a valid number to call!"
 
 -- Pong
 l.gpong = "gPong"
@@ -171,3 +177,15 @@ l.artist_name = "Artist Name"
 l.song_name = "Song Name"
 l.song_url = "Song Url"
 l.album_url = "Album Url" 
+
+-- Finances
+l.finances = "Finances"
+l.transfer = "Transfer"
+l.current_user = "Current User: %s"
+l.balance = "Balance: $%s"
+l.salary = "Salary: $%s"
+l.wire_money = "Wire Funds"
+l.wire_invalid_player = "Invalid target to wire money to!"
+l.wire_invalid_amount = "Invalid amount of money to wire!"
+l.wire_no_money = "You do not have enough money to send!"
+l.receiver = "Receiver"

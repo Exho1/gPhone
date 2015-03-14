@@ -412,10 +412,10 @@ function APP.OpenPlayer( data )
 		
 		-- Play either the url or file of the song
 		if string.find( data.songUrl, "http://" ) then
-			print("URL")
+			gPhone.log("Playing song from url")
 			sound.PlayURL( data.songUrl, "", setUpChannel )
 		else
-			print("FILE")
+			gPhone.log("Playing song from file")
 			sound.PlayFile( data.songUrl, "", setUpChannel )
 		end
 	end

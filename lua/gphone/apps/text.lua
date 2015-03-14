@@ -477,9 +477,9 @@ function APP.NewConversation()
 	local playerPanels = {}
 	local playerList = {}
 	for k, v in pairs( player.GetAll() ) do 
-		--if v != LocalPlayer() then
+		if v != LocalPlayer() then -- Comment out to enable self messaging
 			table.insert(playerList, {name=v:Nick(), number=v:getPhoneNumber()})
-		--end
+		end
 	end
 	
 	--table.insert(playerList, {name="Emergency Services", number=911})
@@ -592,8 +592,8 @@ function APP.NewConversation()
 		-- Create a new conversation
 		if messageBox:GetText() != nil and messageBox:GetText() != "" then
 			local ply = util.getPlayerByNick(messageTarget:GetText())
-			--if not IsValid( util.getPlayerByNick(messageTarget:GetText()) ) or ply == LocalPlayer() then
-			if not IsValid( ply ) then
+			
+			if not IsValid( ply ) or ply == LocalPlayer() then  -- Comment out to enable self messaging
 				gPhone.notifyAlert( {msg=trans("invalid_player_warn"),
 				title=trans("error"), options={trans("okay")}}, 
 				nil, nil, true, true )

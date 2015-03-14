@@ -8,11 +8,13 @@ APP.Tags = {"Manage", "Config"}
 
 local topLevelTabs = {
 	trans("airplane_mode"),
+	trans("vibrate"),
 	"_SPACE_",
 	trans("general"),
 	trans("wallpaper"),
 	trans("homescreen"),
 	"_SPACE_", 
+	trans("music")
 }
 
 local generalLevelTabs = {
@@ -30,6 +32,11 @@ local homescreenLevelTabs = {
 	{text=trans("show_unusable_apps"), button=false},
 	{text="_SPACE_", button=false},
 	{text=trans("reset_app_pos"), button=true},
+}
+
+local musicLevelTabs = {
+	[trans("stop_on_tab")] = "stopMusicOnTabOut",
+	[trans("find_album_covers")] = "autoFindAlbumCovers",
 }
 
 local archivePanels = {
@@ -68,11 +75,12 @@ function APP.Run( objects, screen )
 	objects.Layout:SetSpaceY( 0 )
 	
 	for key, name in pairs( topLevelTabs ) do
+		local lName = name:lower()
 		if name == "_SPACE_" then
 			local fake = objects.Layout:Add("DPanel")
 			fake:SetSize(screen:GetWide(), 30)
 			fake.Paint = function() end
-		elseif name:lower() != trans("airplane_mode"):lower() then
+		elseif lName != trans("airplane_mode"):lower() and lName != trans("vibrate"):lower() then
 			local layoutButton = objects.Layout:Add("DButton")
 			layoutButton:SetSize(screen:GetWide(), 30)
 			layoutButton:SetText("")
@@ -104,11 +112,18 @@ function APP.Run( objects, screen )
 				draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
 			end
 			
+			local cfg
+			if gPhone.phraseToEnglish(name):lower() == "airplane mode" then
+				cfg = "airplaneMode"
+			else
+				cfg = "vibrate"
+			end
+			
 			local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
 			toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
-			toggleButton:SetBool( gPhone.config.airplaneMode )
+			toggleButton:SetBool( gPhone.config[cfg] )
 			toggleButton.OnValueChanged = function( self, bVal )
-				gPhone.setConfigValue( "airplaneMode", bVal )
+				gPhone.setConfigValue( cfg, bVal )
 			end
 			
 			local title = vgui.Create( "DLabel", bgPanel )
@@ -400,6 +415,38 @@ function APP.OpenTab( name )
 				title:SetPos( 35, 5 )
 			end
 		end
+	elseif nameEn == "music" then
+		APP.PrepareNewTab( trans("music") )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.ToMainScreen()
+		end
+		
+		for name, key in pairs( musicLevelTabs ) do
+		
+			local bgPanel = objects.Layout:Add("DPanel")
+			bgPanel:SetSize(screen:GetWide(), 30)
+			bgPanel.Paint = function( self, w, h) 
+				draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+				
+				draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+			end
+			
+			local toggleButton = vgui.Create("gPhoneToggleButton", bgPanel)
+			toggleButton:SetPos( bgPanel:GetWide() - toggleButton:GetWide() - 10, 2 )
+			toggleButton:SetBool( gPhone.config[key] )
+			toggleButton.OnValueChanged = function( self, bVal )
+				gPhone.setConfigValue( key, bVal )
+			end
+			
+			local title = vgui.Create( "DLabel", bgPanel )
+			title:SetText( name )
+			title:SetTextColor(Color(0,0,0))
+			title:SetFont("gPhone_18")
+			title:SizeToContents()
+			title:SetPos( 35, 5 )
+		end
 	end
 end
 
@@ -443,8 +490,7 @@ function APP.OpenLowerTab( name, upperTabName )
 		-- Center the Garry Phone
 		local aboutText = [[
 // Contact:
-exho.steam@gmail.com
-STEAM_0:0:53332328
+Exho - STEAM_0:0:53332328
 
 // Source: 
 https://github.com/Exho1/gPhone
@@ -453,9 +499,9 @@ https://github.com/Exho1/gPhone
 Derma blur:
 https://github.com/Chessnut/NutScript
 
-German Translation:
-
-Swedish Translation:
+Translations:
+Tomelyr - STEAM_0:0:9136467
+Donkie - https://github.com/Donkie
 
 Album Art:
 Spotify API and Rejax
@@ -463,7 +509,13 @@ Spotify API and Rejax
 Phone image: 
 https://creativemarket.com/buatoom
 
-Icon images: http://www.flaticon.com/
+Icon images: 
+http://www.flaticon.com/
+
+// fin
+The Garry Phone by Exho is licensed 
+under a Creative Commons Attribution-
+NonCommercial 4.0 International License.
 ]]
 
 		local aboutLabel = vgui.Create( "DLabel", background )
@@ -472,8 +524,11 @@ Icon images: http://www.flaticon.com/
 		aboutLabel:SetFont("gPhone_14")
 		local x, y = titleLabel:GetPos()
 		aboutLabel:SetPos( 10, y + titleLabel:GetTall() + 10 )
+		--aboutLabel:SetSize( background:GetSize() )
+		aboutLabel:SizeToContents()
+		aboutLabel:SetWrap(true)
 		
-		gPhone.wordWrap( aboutLabel, background:GetWide(), 10 )
+		--gPhone.wordWrap( aboutLabel, background:GetWide(), 10 )
 		
 	elseif name == trans("update"):lower() then
 		APP.PrepareNewTab( trans("update") )
@@ -487,8 +542,8 @@ Icon images: http://www.flaticon.com/
 		local uData = gPhone.updateTable
 		
 		if uData.update then
-			local background = objects.Layout:Add("DPanel")
-			background:SetSize(screen:GetWide(), screen:GetTall()/2.4)
+			local background = objects.Layout:Add("DScrollPanel")
+			background:SetSize(screen:GetWide() + 20, screen:GetTall()/2.4)
 			background:SetText("")
 			background.Paint = function( self )
 				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
@@ -536,8 +591,8 @@ Icon images: http://www.flaticon.com/
 			local _, dY = descriptionLabel:GetPos()
 			dY = dY + descriptionLabel:GetTall()
 			
-			local w, h = background:GetSize()
-			background:SetSize( w, dY + 10 )
+			--local w, h = background:GetSize()
+			--background:SetSize( w, dY + 10 )
 			
 			local fake = objects.Layout:Add("DPanel")
 			fake:SetSize(screen:GetWide(), 30)

@@ -82,6 +82,26 @@ function gPhone.rotateToPortrait()
 	gPhone.setIsAnimating( false )
 end
 
+function gPhone.textSound()
+	if gPhone.config.vibrate == true then
+		gPhone.vibrate()
+	else
+		surface.PlaySound( "gphone/tritone.mp3" )
+	end
+end
+
+function gPhone.calledSound()
+	if gPhone.config.vibrate == true then
+		gPhone.vibrate()
+	else
+		surface.PlaySound( "gphone/opening.mp3" )
+	end
+end
+
+function gPhone.stopSound()
+	LocalPlayer():ConCommand( "stopsound" )
+end
+
 --// vibrate the phone if its in its passive state
 function gPhone.vibrate()
 	if not gPhone.isOpen() and IsValid( gPhone.phoneBase ) then
@@ -156,6 +176,8 @@ function gPhone.vibrate()
 				gPhone.setIsAnimating( false )
 			end)
 		end)
+	else -- Dont do the jiggle if the phone is open, just play the sound
+		surface.PlaySound( "gphone/vibrate.wav" )
 	end
 end
 
@@ -616,6 +638,11 @@ gPhone.alertPanel = nil
 function gPhone.notifyAlert( tbl, optionFunction1, optionFunction2, bOneOption, bCloseOnSelect )
 	local screen = gPhone.phoneScreen
 	
+	if not gPhone.isOpen() or not gPhone.exists() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to open alert notification on invalid phone")
+		return
+	end
+	
 	if gPhone.config.airplaneMode then
 		gPhone.msgC( GPHONE_MSGC_NOTIFY, "Hid alert due to airplane mode")
 		return
@@ -721,6 +748,11 @@ function gPhone.notifyBanner( tbl, onClickFunc )
 	local screen = gPhone.phoneScreen
 	local initialO = gPhone.orientation
 	local initialS = gPhone.phoneState
+	
+	if not gPhone.isOpen() or not gPhone.exists() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to open banner notification on invalid phone")
+		return
+	end
 	
 	if gPhone.config.airplaneMode then
 		gPhone.msgC( GPHONE_MSGC_NOTIFY, "Hid banner due to airplane mode")

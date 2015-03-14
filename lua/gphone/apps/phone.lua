@@ -23,6 +23,15 @@ function APP.Run( objects, screen )
 	objects.layout:SetSpaceY( 0 )
 
 	APP.CreateKeypad( objects )
+	
+	-- Throws the player into a call if the server says they are in one
+	hook.Add("Think", "gPhone_callWait", function()
+		if LocalPlayer():inCall() then
+			gPhone.msgC( GPHONE_MSGC_NOTIFY, "Now in call, opening call screen")
+			APP.OpenCallScreen( LocalPlayer():GetNWString("gPhone_CallingNumber"), CurTime() )
+			hook.Remove("Think", "gPhone_callWait")
+		end
+	end)
 end
 
 function APP.CreateKeypad( objects )
@@ -115,14 +124,16 @@ function APP.CreateKeypad( objects )
 				editNumber( num )
 			end
 		elseif num == "_PHONE_" then
-			local numButton = vgui.Create("DButton", buttonBG)
-			numButton:SetSize( 50, 50 )
-			numButton:SetPos( 15 + xBuffer, 15 + yBuffer )
-			numButton:SetText( "" )
-			numButton:SetColor( color_white )
+			APP.NextCall = 0
+			
+			local callButton = vgui.Create("DButton", buttonBG)
+			callButton:SetSize( 50, 50 )
+			callButton:SetPos( 15 + xBuffer, 15 + yBuffer )
+			callButton:SetText( "" )
+			callButton:SetColor( color_white )
 			local matPhone = Material( "vgui/gphone/phone_icon.png" )
 			local matCircle = Material("vgui/gphone/circle_filled.png")
-			numButton.Paint = function( self, w, h )
+			callButton.Paint = function( self, w, h )
 				--draw.RoundedBox(10, 0, 0, w, h, color_black)
 				surface.SetDrawColor( gPhone.colors.green )
 				surface.SetMaterial( matCircle ) 
@@ -132,8 +143,12 @@ function APP.CreateKeypad( objects )
 				surface.SetMaterial( matPhone ) 
 				surface.DrawTexturedRect( 5, 5, w-10, h-10 )
 			end
-			numButton.DoClick = function( self )
-				APP.StartCall( numberText:GetText() )
+			callButton.DoClick = function( self )
+				if CurTime() > APP.NextCall then
+					-- Start the call
+					APP.StartCall( numberText:GetText() )
+					APP.NextCall = CurTime() + 1
+				end
 			end
 		end
 		
@@ -163,25 +178,34 @@ function APP.StartCall( number )
 	local screen = gPhone.phoneScreen
 	
 	local connectedNumbers = gPhone.getPhoneNumbers()
-	PrintTable(connectedNumbers)
+	local ply = gPhone.getPlayerByNumber( number )
 
-	if connectedNumbers[number] then
-		print("Online")
+	-- Comment out to enable self calling
+	--[[if ply == LocalPlayer() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, number.." is tied to local player")
+		
+		gPhone.notifyAlert( {msg=trans("invalid_player_phone"),
+		title=trans("error"), options={trans("okay")}}, 
+		nil, nil, true, true )
+		return
+	end]]
+	
+	if connectedNumbers[number] and IsValid(ply) then
+		gPhone.msgC( GPHONE_MSGC_NONE, number.." is tied to an online player! Calling..")
+		
+		-- Send the request to the server
 		net.Start("gPhone_Call")
 			net.WriteString(number)
 		net.SendToServer()
 		
-		-- Wait until we have entered the call to enter the calling screen
-		hook.Add("Think", "gPhone_callWait", function()
-			--print(LocalPlayer():inCall())
-			if LocalPlayer():inCall() then
-				print("Open call screen")
-				APP.OpenCallScreen( number, CurTime() )
-				hook.Remove("Think", "gPhone_callWait")
-			end
-		end)
+		APP.NextCall = CurTime() + 5
 	else
 		gPhone.msgC( GPHONE_MSGC_WARNING, number.." is not tied to an online player!" )
+		
+		gPhone.notifyAlert( {msg=trans("invalid_player_phone"),
+		title=trans("error"), options={trans("okay")}}, 
+		nil, nil, true, true )
+		return
 	end
 end
 
@@ -190,6 +214,20 @@ function APP.OpenCallScreen( number, timeStarted )
 	local screen = gPhone.phoneScreen
 	
 	LocalPlayer():ConCommand("+voicerecord")
+	
+	hook.Add("Think", "gPhone_callScreenHandler", function()
+		if not LocalPlayer():inCall() then
+			gPhone.log("Phone call ended by other party")
+			
+			LocalPlayer():ConCommand("-voicerecord")
+			gPhone.notifyBanner( {app="Phone", title=trans("phone"), msg=trans("hung_up_on")} )
+			
+			gPhone.removeAllPanels( objects )
+			APP.Run( objects, screen )
+			
+			hook.Remove("Think", "gPhone_callScreenHandler")
+		end
+	end)
 	
 	local buttons = {
 		trans("mute"):lower(),

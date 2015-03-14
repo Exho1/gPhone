@@ -46,7 +46,6 @@ function plymeta:generatePhoneNumber()
 	
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
-	print("Generated number "..number)
 end 
 
 function plymeta:inCallWith( ply2 )
@@ -70,11 +69,14 @@ function gPhone.createCall( ply1, ply2 )
 		if IsValid(ply1) and IsValid(ply2) then
 			id = #gPhone.callingPlayers + 1
 			
-			print("Created call", ply1, ply2)
 			gPhone.msgC(GPHONE_MSGC_NONE, "Created call between "..tostring(ply1).." and "..tostring(ply2))
 			gPhone.callingPlayers[id] = {ply1, ply2}
 			ply1:SetNWBool("gPhone_InCall", true)
 			ply2:SetNWBool("gPhone_InCall", true)
+			
+			-- To keep track of who they are currently calling
+			ply1:SetNWString("gPhone_CallingNumber", ply2:getPhoneNumber())
+			ply2:SetNWString("gPhone_CallingNumber", ply1:getPhoneNumber())
 		end	
 	end
 	
@@ -84,8 +86,12 @@ end
 --// End a created call from its id
 function gPhone.endCall( id )
 	if gPhone.callingPlayers[id] then
+		gPhone.msgC(GPHONE_MSGC_NONE, "Ended call id ("..id..")")
 		for k, caller in pairs( gPhone.callingPlayers[id] ) do
 			caller:SetNWBool("gPhone_InCall", false)
+			
+			-- Set it to their number to prevent errors
+			caller:SetNWString("gPhone_CallingNumber", caller:getPhoneNumber())
 		end
 		
 		gPhone.callingPlayers[id] = {}
@@ -111,6 +117,11 @@ function gPhone.getCallID( ply )
 			return id
 		end
 	end
+end
+
+--// Returns a table of players for that id
+function gPhone.getCallParticipants( id )
+	return gPhone.callingPlayers[id]
 end
 
 --// Manages all of the current calls
@@ -171,7 +182,7 @@ function gPhone.notifyPlayer( type, ply, tbl, bOneOption )
 			net.WriteString( tbl.title )
 			net.WriteString( tbl.options[1] )
 			net.WriteString( tbl.options[2] )
-			net.WriteBool( bOneOption )
+			net.WriteBool( bOneOption or false )
 		net.Send( ply )
 	end
 end

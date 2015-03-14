@@ -1,6 +1,6 @@
 ----// Shared Multiplayer Handler //----
 
-
+--[[
 gPhone.connectedPlayers = gPhone.connectedPlayers or {}
 
 if SERVER then
@@ -166,11 +166,11 @@ if SERVER then
 	end)
 	
 	-- Function name conflicts
-	--[[function gPhone.sendResponse( ply, game, msg )
+	function gPhone.sendResponse( ply, game, msg )
 		net.Start("gPhone_MultiplayerData")
 			net.WriteTable( {header=GPHONE_MP_REQUEST_RESPONSE, game=game, msg=msg} )
 		net.Send( ply )	
-	end]]
+	end
 	
 	function gPhone.invitePlayer( ply, sender, game )
 		net.Start("gPhone_MultiplayerData")
@@ -299,4 +299,8 @@ if CLIENT then
 		end
 	end)
 end
+
+]]
+
+
 

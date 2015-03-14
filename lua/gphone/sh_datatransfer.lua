@@ -25,9 +25,6 @@ local trans = gPhone.getTranslation
 			Texting "HOW BOUT DEM BYTES" - 385
 ]]
 
---gPhone.writeTable( tbl )
---gPhone.readTable()
-
 if SERVER then
 
 	--// Sets a networked variable based on the phone's state
@@ -72,6 +69,8 @@ if SERVER then
 	net.Receive( "gPhone_Transfer", function( len, ply )
 		local amount = net.ReadString()
 		local target = net.ReadString()
+		
+		target = util.getPlayerByNick( target ) 
 		
 		-- Make sure we are in DarkRP
 		if not ply.getDarkRPVar then
@@ -212,28 +211,38 @@ if SERVER then
 	net.Receive( "gPhone_Call", function( len, ply )
 		local number = net.ReadString()
 		
-		print(number)
 		if number != "end" then -- Start a call
 			local callingNum = ply:getPhoneNumber()
 			
 			local targetPly = gPhone.getPlayerByNumber( number )
 			
-			local reqStr = string.format( trans("being_called"), ply:Nick() )
-			local id = gPhone.sendRequest( {[2]=ply, [3]="Phone", [4]=reqStr}, targetPly )
-			
-			gPhone.waitForResponse( id, function( bAccepted, tbl ) 
-				print("Got response", bAccepted)
-				PrintTable(tbl)
-				if bAccepted == true then
-					print("Should create call", ply, targetPly )
-					gPhone.createCall( ply, targetPly )
-				end
-			end)
+			if targetPly:hasPhoneOpen() and not targetPly:inCall() then	
+				local reqStr = string.format( trans("being_called"), ply:Nick() )
+				local id = gPhone.sendRequest( {[2]=ply, [3]="Phone", [4]=reqStr}, targetPly )
+				
+				gPhone.runFunction( targetPly, "calledSound" )
+				
+				gPhone.waitForResponse( id, function( bAccepted, tbl ) 
+					if bAccepted == true then
+						gPhone.runFunction( targetPly, "stopSound" )
+						gPhone.createCall( ply, targetPly )
+					end
+				end)
+			else
+				gPhone.notifyPlayer( "alert", ply, 
+				{
+					msg=string.format(trans("cannot_call"), targetPly:Nick()), 
+					title=trans("phone"), 
+					options = {
+						trans("okay"),
+						"",
+					}
+				},
+				true)
+			end
 		else -- End a call
 			local id = gPhone.getCallID( ply )
 			gPhone.endCall( id )
-			
-			--gPhone.notifyPlayer( "banner", ply, {msg="Call ended", app="Phone"} )
 		end
 	end)
 end
@@ -246,6 +255,10 @@ if CLIENT then
 		local app = net.ReadString()
 		local func = net.ReadString()
 		local args = net.ReadTable()
+		
+		type = type:lower()
+		
+		gPhone.log(string.format( "Running function from server (%s). App? %s", func, tostring(type == app) ) )
 		
 		if type == "app" then
 			if gApp[app:lower()] then
@@ -272,6 +285,8 @@ if CLIENT then
 	
 	--// Handles requests
 	net.Receive( "gPhone_Request", function( len, ply )
+		gPhone.log("Received p2p request from server")
+		
 		local data = gPhone.readTable()
 		
 		gPhone.receiveRequest( data )
@@ -279,6 +294,8 @@ if CLIENT then
 	
 	--// Handles responses
 	net.Receive( "gPhone_Response", function( len, ply )
+		gPhone.log("Received p2p response from server")
+		
 		local data = gPhone.readTable()
 		
 		gPhone.receiveResponse( data )
@@ -301,6 +318,7 @@ if CLIENT then
 	
 	--// Sends a text message to the server
 	net.Receive( "gPhone_Text", function( len, ply )
+		gPhone.log("Received text message")
 		local date = net.ReadString()
 		local time = net.ReadString()
 		local message = net.ReadString()
@@ -316,8 +334,9 @@ if CLIENT then
 	end)
 	
 	net.Receive( "gPhone_Notify", function( len, ply )
+		gPhone.log("Received notification from server")
 		local type = net.ReadBit()
-		print("Receive", type)
+
 		if type == 1 then -- Banner
 			local msg = net.ReadString()
 			local app = net.ReadString()

@@ -42,18 +42,18 @@ function gPhone.buildPhone()
 	gPhone.phoneBase:SetSize( pWidth, pHeight )
 	gPhone.phoneBase:SetPos( ScrW()-pWidth, ScrH() - 40 )
 	gPhone.phoneBase:SetTitle( "" )
-	gPhone.phoneBase:SetDraggable( true )  -- TEMPORARY
+	gPhone.phoneBase:SetDraggable( false )
 	gPhone.phoneBase:SetDeleteOnClose( true )
-	gPhone.phoneBase:ShowCloseButton( true ) -- TEMPORARY
+	gPhone.phoneBase:ShowCloseButton( false )
 	gPhone.phoneBase.Paint = function( self, w, h)
 		surface.SetDrawColor( gPhone.config.phoneColor )
 		surface.SetMaterial( phone ) 
 		--surface.DrawTexturedRect( 0, 0, pWidth, pHeight )
 		surface.DrawTexturedRectRotated( self:GetWide()/2, self:GetTall()/2, pWidth, pHeight, gPhone.rotation )
 	end
-	gPhone.phoneBase.btnClose.DoClick = function ( button ) -- TEMPORARY
-		gPhone.destroyPhone()
-	end
+	--gPhone.phoneBase.btnClose.DoClick = function ( button )
+	--	gPhone.destroyPhone()
+	--end
 	
 	local phoneBase = gPhone.phoneBase
 	local pX, pY = phoneBase:GetPos()

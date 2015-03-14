@@ -47,37 +47,12 @@ concommand.Add("gphone_enabletutorial", function()
 	gPhone.setSeenTutorial( false )
 end)
 
---// Removes all files in the /data/ folder related the gPhone. Use for compatibility issues
---[[concommand.Add("gphone_reset", function()
-	-- Archive
-	local files = file.Find( "gphone/archive/*.txt", "DATA" ) 
-	for k, v in pairs(files) do file.Delete( "gphone/archive/"..v ) end
-	
-	-- Data
-	local files = file.Find( "gphone/data/*.txt", "DATA" ) 
-	for k, v in pairs(files) do file.Delete( "gphone/data/"..v ) end
-	
-	-- Dumps
-	local files = file.Find( "gphone/dumps/*.txt", "DATA" ) 
-	for k, v in pairs(files) do file.Delete( "gphone/dumps/"..v ) end
-	
-	-- Messages
-	local files = file.Find( "gphone/messages/*.txt", "DATA" ) 
-	for k, v in pairs(files) do file.Delete( "gphone/messages/"..v ) end
-	
-	-- Base folder stuff
-	local files = files.Find( "gphone/*.txt" ) 
-	for k, v in pairs(files) do file.Delete( "gphone/"..v ) end
-	
-	gPhone.msgC( GPHONE_MSGC_NOTIFY, "Removed all phone data files" )
-end)]]
-
 --// Simulates searching an 'artist song' pair to get an album url
 concommand.Add("gphone_searchsong", function(_, _, args)
-	--assert(args[1])
 	local name = table.concat(args, " ")
 	gPhone.loadAlbumArt(name, 1, function( url )
-		print("Found album cover: "..url)
+		gPhone.msgC( GPHONE_MSGC_NONE, "Found album cover")
+		print(url)
 	end)
 end)
 
@@ -100,37 +75,6 @@ function gPhone.loadAlbumArt(track_name, track_id, callback) -- where id is how 
 end
 
 local plymeta = FindMetaTable( "Player" )
-
-
--- TEMPORARY
-
-concommand.Add("text", function()
-	gPhone.sendTextMessage( "Exho", "Test message from console command" ) 
-end)
-
-concommand.Add("notify_p", function()
-	gPhone.notifyBanner( {msg="Banner "..math.random(10, 400),
-	app="Settings", title="OVERRIDE"},
-	function( app )
-
-	end)
-end)
-
-concommand.Add("notify_i", function()
-	local str = tostring("Alert "..math.random(10, 400))
-	gPhone.notifyAlert( {msg=str,
-	title="Testing", options={"Deny", "Accept"}}, 
-	function( pnl, value )
-		
-	end, 
-	function( pnl, value )
-	
-	end, 
-	false, 
-	true )
-end)
-
--- END TEMPORARY
 
 --// Chat messages
 function gPhone.chatMsg( text )
@@ -659,7 +603,6 @@ function gPhone.sendTextMessage( target, msg )
 		
 		gPhone.log("Sending text to ", target)
 		
-		PrintTable(msgTable)
 		-- Off to the server!
 		net.Start("gPhone_Text")
 			net.WriteString( os.date( "%x" ) )
@@ -718,19 +661,16 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 	file.Write( "gphone/messages/"..idFormat..".txt", json)
 	
 	local app = gPhone.getActiveApp()
-	if app and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
+	if app and app.Data and app.Data.UpdateMessages and gPhone.isOpen() then -- In app (viewing convo?)
 		if app.Data.CurrentConvo == ply:SteamID() then
 			gPhone.log("Received message - In app")
 			app.Data.UpdateMessages( idFormat ) 
 		end
 		return
-	elseif gPhone.isOpen() then -- In phone
-		gPhone.log("Received message - In phone")
+	elseif gPhone.isOpen() and gPhone.exists() then -- Phone exists
+		gPhone.textSound()
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
-	else -- Not in phone
-		gPhone.log("Received message - Out of phone")
-		gPhone.vibrate()
-		gPhone.incrementBadge( "Messages", idFormat.."_message" )
+	else -- Phone removed
 		return
 	end
 	
@@ -781,7 +721,7 @@ function gPhone.checkUpdate()
 		local tbl = util.JSONToTable( json )
 		
 		if tbl == nil then
-			gPhone.msgC( GPHONE_MSGC_WARNING, "Update data returnd an invalid table" )
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Update data returned an invalid table" )
 			return
 		end
 		

@@ -53,17 +53,20 @@ function gPhone.createLanguage( name )
 	{
 		-- If we try to access a non existant key, return the key so it can be added
 		__index = function(t, k)
-			gPhone.msgC( GPHONE_MSGC_WARNING, 
-			string.format("Unable to get translation for (#%s) in language (%s)",
+			gPhone.msgC( GPHONE_MSGC_WARNING, string.format("Unable to get translation for (#%s) in language (%s)",
 			k, gPhone.getActiveLanguage()))
 			
-			if gPhone.config.replaceMissingTranslations == true then
-				gPhone.languages[name][k] = gPhone.languages["english"][k]
-				return gPhone.languages["english"][k]
-			else
-				gPhone.languages[name][k] = "##"..k
-				return "##"..k
+			-- Replace with english (as long as this isn't english because a stack overflow will occur)
+			if gPhone.config.replaceMissingTranslations == true and name != "english" then
+				if gPhone.languages["english"][k] then
+					gPhone.languages[name][k] = gPhone.languages["english"][k]
+					return gPhone.languages["english"][k]
+				end
 			end
+			
+			-- Fallback, just set the name to the key
+			gPhone.languages[name][k] = "##"..k
+			return "##"..k
 		end
 	})
 	

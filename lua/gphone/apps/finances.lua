@@ -1,4 +1,5 @@
 local APP = {}
+local trans = gPhone.getTranslation
 
 APP.PrintName = "Finances"
 APP.Icon = "vgui/gphone/finances.png"
@@ -12,11 +13,11 @@ function APP.Run( objects, screen )
 	bodyWidth = screen:GetWide()-20
 	
 	local toDraw = {
-		"Current User: "..LocalPlayer():Nick(),
-		"Balance: $"..LocalPlayer():getDarkRPVar("money") or "N/A",
-		"Salary: $"..LocalPlayer():getDarkRPVar("salary") or "N/A",
+		string.format( trans("current_user"), LocalPlayer():Nick() ),
+		string.format( trans("balance"), LocalPlayer():getDarkRPVar("money") or "N/A" ),
+		string.format( trans("salary"), LocalPlayer():getDarkRPVar("salary") or "N/A" ),
 		"_SPACE_",
-		"Wire Funds",
+		trans("wire_money")
 		--"_SPACE_",
 		--"Transaction Log", -- Removed because its a pretty bad idea
 	}
@@ -46,7 +47,7 @@ function APP.Run( objects, screen )
 	end
 	
 	objects.Title = vgui.Create( "DLabel", screen )
-	objects.Title:SetText( "Finance Manager" ) 
+	objects.Title:SetText( trans("finances") ) 
 	objects.Title:SetFont("gPhone_18Lite")
 	objects.Title:SetTextColor(Color(0,0,0))
 	objects.Title:SizeToContents()
@@ -111,7 +112,9 @@ end
 function APP.ButtonClick( objects, name )
 	local screen = gPhone.phoneScreen
 	
-	if name == "Wire Funds" then
+	local nameEn = gPhone.phraseToEnglish( name ):lower()
+	
+	if nameEn == "wire funds" then
 		for k, v in pairs(objects.Layout:GetChildren()) do
 			v:SetVisible(false)
 		end
@@ -120,7 +123,7 @@ function APP.ButtonClick( objects, name )
 		local targetPlayer, moneyAmount = nil
 		
 		local targetEntry = objects.Layout:Add("DComboBox")
-		targetEntry:SetValue( "Reciever" )
+		targetEntry:SetValue( trans("receiver") )
 		targetEntry:SetFont("gPhone_18")
 		targetEntry:SetSize( pnlWidth, 30 )
 		for k, v in pairs(player.GetAll()) do 
@@ -172,13 +175,13 @@ function APP.ButtonClick( objects, name )
 		sendMoney.DoClick = function()
 			-- Clientside checks to stop the honest users, this will be double checked on the server to stop cheaters
 			if not IsValid(targetPlayer) or targetPlayer == LocalPlayer() then
-				gPhone.chatMsg( "Invalid target to wire money to!" )
+				gPhone.chatMsg( trans("wire_invalid_player") )
 				return
 			elseif moneyAmount == nil or moneyAmount <= 0 or math.abs(moneyAmount) != moneyAmount then
-				gPhone.chatMsg( "Invalid amount of money to wire!" )
+				gPhone.chatMsg( trans("wire_invalid_amount") )
 				return
 			elseif moneyAmount > tonumber( LocalPlayer():getDarkRPVar("money") ) then
-				gPhone.chatMsg( "You do not have enough money to send!" )
+				gPhone.chatMsg( trans("wire_no_money") )
 				return
 			end
 			
@@ -186,7 +189,7 @@ function APP.ButtonClick( objects, name )
 			-- Send the transaction data to the server
 			net.Start("gPhone_Transfer")
 				net.WriteString(tostring(moneyAmount))
-				net.WriteString(targetPlayer)
+				net.WriteString(targetPlayer:Nick())
 			net.SendToServer()
 		end
 		
@@ -195,7 +198,7 @@ function APP.ButtonClick( objects, name )
 		title:SetFont("gPhone_18")
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
-		gPhone.setTextAndCenter(title, "Transfer", sendMoney)
+		gPhone.setTextAndCenter(title, trans("transfer"), sendMoney)
 		
 		local cancelTransaction = objects.Layout:Add("DButton")
 		cancelTransaction:SetSize(pnlWidth, 30)
@@ -223,7 +226,7 @@ function APP.ButtonClick( objects, name )
 		title:SizeToContents()
 		title:SetPos( 0, 5 )
 		gPhone.setTextAndCenter(title, "Cancel", cancelTransaction)
-	elseif name == "Transaction Log" then
+	elseif nameEn == "transaction log" then
 		for k, v in pairs(objects.Layout:GetChildren()) do
 			v:SetVisible( false )
 		end

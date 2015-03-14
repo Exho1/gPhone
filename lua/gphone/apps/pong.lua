@@ -65,6 +65,7 @@ function APP.Run( objects, screen )
 	end
 	titleButton.DoClick = function() -- Put us back at the main menu
 		gPhone.hideChildren( objects.Layout )
+		gPhone.removeAllPanels( objects )
 		APP.Run( objects, screen )
 	end
 	
@@ -173,10 +174,9 @@ function APP.OptionClick( option )
 			end]]
 		end
 		for k, v in pairs( player.GetAll() ) do
-			-- TEMP: No local player
-			--if v != LocalPlayer() then
+			if v != LocalPlayer() then -- Comment out to enable self gaming
 				opponentPicker:AddChoice( v:Nick() )
-			--end
+			end
 		end
 		
 		local fake = objects.Layout:Add("DPanel") -- Invisible panel for spacing
@@ -272,11 +272,7 @@ local gameType = nil
 function APP.QuitToMainMenu()	
 	local objects = gApp["_children_"]
 	
-	for k, v in pairs( objects ) do
-		if IsValid(v) then
-			v:Remove()
-		end
-	end
+	gPhone.removeAllPanels( objects )
 	
 	gameRunning = false
 	gamePaused = false
@@ -519,7 +515,6 @@ local function checkWin()
 	local p2Score = tonumber( objects.ScoreP2:GetText() )
 
 	if p1Score >= winScore or p2Score >= winScore then
-		print("Won")
 		gameRunning = false
 		
 		local status = objects.StatusPanel:GetChildren()[1]
