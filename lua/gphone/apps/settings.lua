@@ -610,7 +610,7 @@ NonCommercial 4.0 International License.
 				
 			end
 			layoutButton.DoClick = function()
-				gui.OpenURL( http://steamcommunity.com/sharedfiles/filedetails/?id=407945478" )
+				gui.OpenURL( "http://steamcommunity.com/sharedfiles/filedetails/?id=407945478" )
 			end
 			
 			local title = vgui.Create( "DLabel", layoutButton )
