@@ -1148,21 +1148,24 @@ hook.Add( "Think", "gPhone_SignalStrength", function()
 end)
 
 --// Logic for opening the phone by holding down a key
-local keyStartTime = 0
+local keyStartTime, nextOpen = 0, 0
 hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
-	if input.IsKeyDown( gPhone.config.openKey ) then
+	if input.IsKeyDown( gPhone.config.openKey ) and input.LookupBinding("gphone_toggle") == nil then
 		if keyStartTime == 0 then
 			keyStartTime = CurTime()
 		end
 		
+		if CurTime() < nextOpen then return end
+		
 		-- Key has been held down long enough and the phone is not animating
-		if CurTime() - keyStartTime >= gPhone.config.keyHoldTime and not gPhone.isInAnimation then
+		if CurTime() - keyStartTime >= gPhone.config.keyHoldTime and not gPhone.isAnimating() then
 			if gPhone.isOpen() != true then
 				gPhone.showPhone()
 			else
 				gPhone.hidePhone()
 			end
 			
+			nextOpen = CurTime() + 1
 			keyStartTime = 0
 		end
 	else
