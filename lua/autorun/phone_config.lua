@@ -39,7 +39,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.0.1"
+gPhone.version = "1.0.2"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

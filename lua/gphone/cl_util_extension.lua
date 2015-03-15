@@ -202,15 +202,18 @@ function gPhone.isPortrait()
 	return gPhone.orientation == "portrait"
 end
 
-
 --// Wallpaper
 function gPhone.setWallpaper( bHome, texStr )
-	if bHome then
-		gPhone.config.homeWallpaperMat = Material(texStr)
-		gPhone.config.homeWallpaper = texStr
+	if texStr != nil then
+		if bHome then
+			gPhone.config.homeWallpaperMat = Material(texStr)
+			gPhone.config.homeWallpaper = texStr
+		else
+			gPhone.config.lockWallpaperMat = Material(texStr)
+			gPhone.config.lockWallpaper = texStr
+		end
 	else
-		gPhone.config.lockWallpaperMat = Material(texStr)
-		gPhone.config.lockWallpaper = texStr
+		gPhone.msgC("Attempt to set wallpaper to nil texture!")
 	end
 end
 

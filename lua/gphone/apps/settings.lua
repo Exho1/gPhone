@@ -502,9 +502,11 @@ https://github.com/Chessnut/NutScript
 Translations:
 Tomelyr - STEAM_0:0:9136467
 Donkie - https://github.com/Donkie
+Azmok - STEAM_0:0:75743178
 
 Album Art:
-Spotify API and Rejax
+Spotify API
+Rejax for the code
 
 Phone image: 
 https://creativemarket.com/buatoom
