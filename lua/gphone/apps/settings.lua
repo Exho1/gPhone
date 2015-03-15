@@ -4,7 +4,7 @@ local trans = gPhone.getTranslation
 APP.PrintName = "Settings"
 APP.Icon = "vgui/gphone/settings.png"
 APP.Author = "Exho"
-APP.Tags = {"Manage", "Config"}
+APP.Tags = {"Manage", "Config", "Settings"}
 
 local topLevelTabs = {
 	trans("airplane_mode"),
@@ -487,7 +487,7 @@ function APP.OpenLowerTab( name, upperTabName )
 		titleLabel:SetPos( 0, 5 )
 		gPhone.setTextAndCenter( titleLabel, trans("title"), background )
 		
-		-- Center the Garry Phone
+		-- Credits and another phone info
 		local aboutText = [[
 // Contact:
 Exho - STEAM_0:0:53332328
@@ -500,13 +500,15 @@ Derma blur:
 https://github.com/Chessnut/NutScript
 
 Translations:
-Tomelyr - STEAM_0:0:9136467
-Donkie - https://github.com/Donkie
-Azmok - STEAM_0:0:75743178
+Tomelyr - DE - STEAM_0:0:9136467
+Donkie - SV - https://github.com/Donkie
+Azmok - FR - STEAM_0:0:75743178
+Le Otaku - IT - STEAM_0:1:59430965
+Mr Matthews - PT -STEAM_0:1:52334051
 
 Album Art:
-Spotify API
-Rejax for the code
+Spotify's API
+Rejax - STEAM_0:1:45852799
 
 Phone image: 
 https://creativemarket.com/buatoom

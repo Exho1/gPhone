@@ -32,14 +32,10 @@
 		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
 	- If you are called when the phone is closed, you can't really do anything about it
-		
-	- On release
-		- Update the webserver with the correct version number on release 1.0.0 
-		- Update the settings update button to point to the Workshop page for the phone
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.0.2"
+gPhone.version = "1.0.3"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
