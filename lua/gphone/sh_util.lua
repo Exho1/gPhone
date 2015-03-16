@@ -281,8 +281,10 @@ function gPhone.waitForResponse( id, callback )
 					
 					local ply = gPhone.requestIDs[id].target
 					
-					gPhone.notifyBanner( {msg=string.format(trans("response_timeout"), ply:Nick()),
-					app="gPhone", title=trans("confirmation")}, nil)
+					gPhone.notifyPlayer( "banner", ply,  
+					{msg=string.format(trans("response_timeout"), ply:Nick()),
+					app="gPhone", title=trans("confirmation")} )
+
 					gPhone.requestIDs[id] = {}
 				end
 			end

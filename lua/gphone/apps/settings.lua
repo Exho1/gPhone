@@ -686,7 +686,7 @@ NonCommercial 4.0 International License.
 			end
 		end
 		layoutButton.DoClick = function()
-			gPhone.config.phoneColor = color_white
+			gPhone.setConfigValue( "phoneColor", color_white )
 		end
 		
 		local title = vgui.Create( "DLabel", layoutButton )

@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 3/15/14
+-- Version: 3/16/14
 
 --[[ To Do:
 	- Multiplayer
@@ -35,7 +35,7 @@
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.0.3"
+gPhone.version = "1.0.4"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
