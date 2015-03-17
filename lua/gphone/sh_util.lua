@@ -383,7 +383,7 @@ function gPhone.steamIDToPhoneNumber( plyOrID )
 	
 	local idFragments = string.Explode( ":", bPlayer and plyOrID:SteamID() or plyOrID )
 	
-	if #idFragments <= 3 then
+	if #idFragments < 3 then
 		return gPhone.invalidNumber
 	end
 
