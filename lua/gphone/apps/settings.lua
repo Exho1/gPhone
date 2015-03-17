@@ -23,6 +23,7 @@ local generalLevelTabs = {
 	"_SPACE_",
 	trans("language"),
 	trans("color"),
+	trans("binds"),
 	trans("archive"),
 	"_SPACE_",
 	trans("developer"),
@@ -37,6 +38,14 @@ local homescreenLevelTabs = {
 local musicLevelTabs = {
 	[trans("stop_on_tab")] = "stopMusicOnTabOut",
 	[trans("find_album_covers")] = "autoFindAlbumCovers",
+}
+
+local bindLevelTabs = {
+	trans("open_key"),
+	trans("confirm"),
+	"_SPACE_",
+	trans("key_hold"),
+	trans("confirm"),
 }
 
 local archivePanels = {
@@ -1026,6 +1035,116 @@ NonCommercial 4.0 International License.
 				title:SetFont("gPhone_18")
 				title:SizeToContents()
 				title:SetPos( 35, 5 )
+			end
+		end
+	elseif nameEn == "binds" then
+		APP.PrepareNewTab( trans("binds") )
+		
+		objects.Back:SetVisible( true )
+		objects.Back.DoClick = function()
+			APP.OpenTab( upperTabName )
+		end
+		
+		local textEntries = {}
+		for k, name in pairs( bindLevelTabs ) do
+			if name == "_SPACE_" then
+				local fake = objects.Layout:Add("DPanel")
+				fake:SetSize(screen:GetWide(), 30)
+				fake.Paint = function() end
+			elseif name == trans("confirm") then
+				local layoutButton = objects.Layout:Add("DButton")
+				layoutButton:SetSize(screen:GetWide(), 30)
+				layoutButton:SetText("")
+				layoutButton.Paint = function()
+					if not layoutButton:IsDown() then
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+					else
+						draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+					end
+					
+					draw.RoundedBox(0, 30, layoutButton:GetTall()-1, layoutButton:GetWide()-30, 1, gPhone.colors.greyAccent)
+				end
+				layoutButton.DoClick = function( self )
+					if k == 2 then -- Confirm key
+						local key = textEntries[1]:GetText()
+						
+						if gPhone.keys[key:upper()] then
+							gPhone.setConfigValue( "openKey", gPhone.keys[key:upper()] )
+							textEntries[1]:SetTextColor( Color(0,255,0) )
+						else
+							textEntries[1]:SetTextColor( Color(255,0,0) )
+						end
+					else -- Confirm time
+						local time = textEntries[2]:GetText()
+						
+						if tonumber(time) != nil then
+							gPhone.setConfigValue( "keyHoldTime", tonumber(time) )
+							textEntries[2]:SetTextColor( Color(0,255,0) )
+						else
+							textEntries[2]:SetTextColor( Color(255,0,0) )
+						end
+					end
+				end
+				
+				local title = vgui.Create( "DLabel", layoutButton )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+			else
+				local bgPanel = objects.Layout:Add("DPanel")
+				bgPanel:SetSize(screen:GetWide(), 30)
+				bgPanel.Paint = function( self, w, h) 
+					draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.whiteBG)
+					
+					draw.RoundedBox(0, 30, h-1, w-30, 1, gPhone.colors.greyAccent)
+				end
+				
+				local title = vgui.Create( "DLabel", bgPanel )
+				title:SetText( name )
+				title:SetTextColor(Color(0,0,0))
+				title:SetFont("gPhone_18")
+				title:SizeToContents()
+				title:SetPos( 35, 5 )
+				
+				if name == bindLevelTabs[1] then
+					textEntries[1] = vgui.Create( "DTextEntry", bgPanel )
+					textEntries[1]:SetSize( bgPanel:GetWide() - 55 - title:GetWide(), bgPanel:GetTall() )
+					textEntries[1]:SetPos( bgPanel:GetWide() - textEntries[1]:GetWide() , 0 )
+					textEntries[1]:SetText( input.GetKeyName( gPhone.config.openKey ):upper() )
+					textEntries[1]:SetTextColor( color_black )
+					textEntries[1]:SetDrawBorder( false )
+					textEntries[1]:SetDrawBackground( false )
+					textEntries[1]:SetCursorColor( color_black )
+					textEntries[1]:SetHighlightColor( Color(27,161,226) )
+					textEntries[1]:SetFont( "gPhone_18" )
+					textEntries[1].OnTextChanged = function( self )
+						if gPhone.keys[self:GetText():upper()] then
+							textEntries[1]:SetTextColor( color_black )
+						else
+							textEntries[1]:SetTextColor( Color(255,0,0) )
+						end
+					end
+				else
+					textEntries[2] = vgui.Create( "DTextEntry", bgPanel )
+					textEntries[2]:SetSize( bgPanel:GetWide() - 55 - title:GetWide(), bgPanel:GetTall() )
+					textEntries[2]:SetPos( bgPanel:GetWide() - textEntries[2]:GetWide() , 0 )
+					textEntries[2]:SetText( gPhone.config.keyHoldTime )
+					textEntries[2]:SetTextColor( color_black )
+					textEntries[2]:SetDrawBorder( false )
+					textEntries[2]:SetDrawBackground( false )
+					textEntries[2]:SetCursorColor( color_black )
+					textEntries[2]:SetHighlightColor( Color(27,161,226) )
+					textEntries[2]:SetFont( "gPhone_18" )
+					textEntries[2].OnTextChanged = function( self )
+						if tonumber(self:GetText()) != nil then
+							textEntries[1]:SetTextColor( color_black )
+						else
+							textEntries[1]:SetTextColor( Color(255,0,0) )
+						end
+					end
+				end
 			end
 		end
 	end

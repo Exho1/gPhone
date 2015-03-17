@@ -8,28 +8,6 @@ for k, v in pairs(files) do
 	include("gphone/lang/"..v)
 end
 
---// Net Message Header Enumerations
---[[
-GPHONE_MP_REQUEST = 1
-GPHONE_MP_REQUEST_RESPONSE = 2
-GPHONE_MP_PLAYER_QUIT = 3
-GPHONE_MONEY_TRANSFER = 4
-GPHONE_STATE_CHANGED = 5
-GPHONE_BUILD = 6
-GPHONE_NOTIFY_ALERT = 7
-GPHONE_NOTIFY_BANNER = 8
-GPHONE_RETURNAPP = 9
-GPHONE_CUR_APP = 10
-GPHONE_RUN_APPFUNC = 11
-GPHONE_RUN_FUNC = 12
-GPHONE_MONEY_CONFIRMED = 13
-GPHONE_TEXT_MSG = 17
-GPHONE_START_CALL = 18
-GPHONE_NET_REQUEST = 19
-GPHONE_NET_RESPONSE = 20
-GPHONE_END_CALL = 21
-]]
-
 --// Language strings for requests. [appname] = string.format("%s...", playerNick)
 gPhone.deniedStrings = {
 	["phone"] = trans("phone_deny"),
@@ -39,6 +17,55 @@ gPhone.deniedStrings = {
 gPhone.acceptedStrings = {
 	["phone"] = trans("phone_accept"),
 	["gpong"] = trans("gpong_accept"),
+}
+
+--// Reverse table reference for input.GetKeyName. This was just sadness to write
+gPhone.keys = {
+	["0"] = KEY_0,
+	["1"] = KEY_1,
+	["2"] = KEY_2,
+	["3"] = KEY_3,
+	["4"] = KEY_4,
+	["5"] = KEY_5,
+	["6"] = KEY_6,
+	["7"] = KEY_7,
+	["8"] = KEY_8,
+	["9"] = KEY_9,
+	["A"] = KEY_A,
+	["B"] = KEY_B,
+	["C"] = KEY_C,
+	["D"] = KEY_D,
+	["E"] = KEY_E,
+	["F"] = KEY_F,
+	["G"] = KEY_G,
+	["H"] = KEY_H,
+	["I"] = KEY_I,
+	["J"] = KEY_J,
+	["K"] = KEY_K,
+	["L"] = KEY_L,
+	["M"] = KEY_M,
+	["N"] = KEY_N,
+	["O"] = KEY_O,
+	["P"] = KEY_P,
+	["Q"] = KEY_Q,
+	["R"] = KEY_R,
+	["S"] = KEY_S,
+	["T"] = KEY_T,
+	["U"] = KEY_U,
+	["V"] = KEY_V,
+	["W"] = KEY_W,
+	["X"] = KEY_X,
+	["Y"] = KEY_Y,
+	["Z"] = KEY_Z,
+	["["] = KEY_LBRACKET,
+	["]"] = KEY_RBRACKET,
+	[";"] = KEY_SEMICOLON,
+	[","] = KEY_COMMA,
+	["."] = KEY_PERIOD,
+	["/"] = KEY_SLASH,
+	["-"] = KEY_MINUS,
+	["="] = KEY_EQUAL,
+	["\\"] = KEY_BACKSLASH,
 }
 
 local plymeta = FindMetaTable( "Player" )
@@ -348,12 +375,17 @@ function gPhone.msgC( enum, ... )
 end
 
 function gPhone.steamIDToPhoneNumber( plyOrID )
-	local bPlayer = type(plyOrID) != "string"
+	local bPlayer = type(plyOrID) != "string" and IsValid(plyOrID)
+	
 	if bPlayer and plyOrID:SteamID() == "BOT" then
 		return "BOT" 
 	end
 	
-	local idFragments = string.Explode( ":", bPlayer and plyOrID:SteamID() or plyOrID );
+	local idFragments = string.Explode( ":", bPlayer and plyOrID:SteamID() or plyOrID )
+	
+	if #idFragments <= 3 then
+		return gPhone.invalidNumber
+	end
 
 	--local areaCode = idFragments[2] -- Very low chance not including the 1 or 0 will conflict
 	local number = idFragments[3]
@@ -417,7 +449,6 @@ function util.getPlayerByID( id )
 		end
 	end
 end
-
 
 --// Helper function for 'encryption' of JSON
 -- Not really that secure but its better than keeping it in plain text

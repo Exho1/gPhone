@@ -22,17 +22,6 @@ concommand.Add("gphone_destroy", function()
 	gPhone.setPhoneState( "destroyed" )
 end)
 
-
---// Opens or closes the phone
-concommand.Add("gphone_toggle", function()
-	if gPhone.isOpen() != true then
-		gPhone.showPhone()
-	else
-		gPhone.hidePhone()
-	end
-end)
-print("Bound to", input.LookupBinding("gphone_toggle"))
-
 --// Prints the phone's version
 concommand.Add("gphone_version", function()
 	gPhone.msgC( GPHONE_MSGC_NOTIFY, "This server is running the gPhone version: "..gPhone.version )
@@ -65,6 +54,11 @@ concommand.Add("gphone_searchsong", function(_, _, args)
 		gPhone.msgC( GPHONE_MSGC_NONE, "Found album cover")
 		print(url)
 	end)
+end)
+
+--// (DEPRECATED) Opens or closes the phone
+concommand.Add("gphone_toggle", function()
+	gPhone.msgC( GPHONE_MSGC_WARNING, "This function has been deprecated! Go to the Settings app then General->Binds to edit your key bind" )
 end)
 
 --// Spotify API album finding code provided by Rejax (STEAM_0:1:45852799)

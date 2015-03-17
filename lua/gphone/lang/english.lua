@@ -112,6 +112,10 @@ l.wipe_log = "Wipe log"
 l.dump_log = "Dump to file"
 l.c_print = "Console Printing"
 
+l.binds = "Binds"
+l.open_key = "Open key"
+l.key_hold = "Key hold time"
+
 -- Contacts
 l.contacts = "Contacts"
 l.search = "Search"
