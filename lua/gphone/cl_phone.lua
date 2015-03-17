@@ -1150,7 +1150,7 @@ end)
 --// Logic for opening the phone by holding down a key
 local keyStartTime, nextOpen = 0, 0
 hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
-	if input.IsKeyDown( gPhone.config.openKey ) and input.LookupBinding("gphone_toggle") == nil then
+	if input.IsKeyDown( gPhone.config.openKey ) then
 		if keyStartTime == 0 then
 			keyStartTime = CurTime()
 		end
