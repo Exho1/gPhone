@@ -46,7 +46,7 @@ function plymeta:generatePhoneNumber()
 		return
 	end
 	
-	local number = gPhone.steamIDToPhoneNumber( self:SteamID() )
+	local number = gPhone.steamIDToPhoneNumber( self )
 	
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
