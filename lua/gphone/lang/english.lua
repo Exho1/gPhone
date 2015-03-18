@@ -193,3 +193,6 @@ l.wire_invalid_player = "Invalid target to wire money to!"
 l.wire_invalid_amount = "Invalid amount of money to wire!"
 l.wire_no_money = "You do not have enough money to send!"
 l.receiver = "Receiver"
+
+-- Flappy Garry
+l.enter_play = "Press 'enter' to play!"

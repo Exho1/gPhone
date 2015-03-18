@@ -29,13 +29,12 @@
 	- Settings app
 		- Update tab needs something when you are up to date
 	- More games
-		- Find Flappy Garry guy or make own Flappy Garry
 		- Snake
 	- If you are called when the phone is closed, you can't really do anything about it
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.0.5"
+gPhone.version = "1.0.7"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -120,7 +119,6 @@ else
 end
 
 if SERVER then
-	--util.AddNetworkString("gPhone_DataTransfer")
 	util.AddNetworkString("gPhone_GenerateNumber")
 	util.AddNetworkString("gPhone_StateChange")
 	util.AddNetworkString("gPhone_RunFunction")

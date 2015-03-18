@@ -5,7 +5,7 @@ local trans = gPhone.getTranslation
 --// Resourcing and app adding
 resource.AddFile( "materials/vgui/gphone/gPhone.png" )
 resource.AddFile( "resource/fonts/roboto_light.tff" )
-resource.AddFile( "sound/gphone/vibrate.wav" )
+resource.AddFile( "resource/fonts/04b_19.tff" )
 local files = file.Find( "materials/vgui/gphone/*.png", "GAME" ) -- Phone images
 for k, v in pairs(files) do
 	resource.AddFile("materials/vgui/gphone/"..v)
