@@ -44,7 +44,7 @@ function gPhone.buildPhone()
 	gPhone.phoneBase:SetTitle( "" )
 	gPhone.phoneBase:SetDraggable( false )
 	gPhone.phoneBase:SetDeleteOnClose( true )
-	gPhone.phoneBase:ShowCloseButton( true ) -- TEMP
+	gPhone.phoneBase:ShowCloseButton( false )
 	gPhone.phoneBase.Paint = function( self, w, h)
 		surface.SetDrawColor( gPhone.config.phoneColor )
 		surface.SetMaterial( phone ) 

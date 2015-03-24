@@ -56,9 +56,14 @@ concommand.Add("gphone_searchsong", function(_, _, args)
 	end)
 end)
 
---// (DEPRECATED) Opens or closes the phone
+--// Opens or closes the phone
 concommand.Add("gphone_toggle", function()
-	gPhone.msgC( GPHONE_MSGC_WARNING, "This function has been deprecated! Go to the Settings app then General->Binds to edit your key bind" )
+	gPhone.msgC( GPHONE_MSGC_NONE, "Toggle phone - Open? "..tostring(gPhone.isOpen()))
+	if gPhone.isOpen() then
+		gPhone.hidePhone()
+	else
+		gPhone.showPhone()
+	end
 end)
 
 --// Spotify API album finding code provided by Rejax (STEAM_0:1:45852799)
@@ -721,6 +726,14 @@ function gPhone.checkUpdate()
 		local startPos = string.find( body, "{")
 		local endPos = string.find( body, "}")
 		
+		-- Somehow the JSON isn't working properly
+		if startPos == nil or endPos == nil then
+			gPhone.incrementBadge( "Settings", "update" )
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid JSON format to check version from" )
+			gPhone.updateTable = {update=true, version="N/A", description=trans(update_check_fail).." #2", date="N/A"}
+			return
+		end
+		
 		-- Json -> Table
 		local json = string.sub( body, startPos, endPos )
 		local tbl = util.JSONToTable( json )
@@ -749,7 +762,7 @@ function gPhone.checkUpdate()
 		-- Not actually an update but an error
 		gPhone.incrementBadge( "Settings", "update" )
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Unable to connect to the gPhone webpage to verify versions!" )
-		gPhone.updateTable = {update=true, version="N/A", description=trans(update_check_fail), date="N/A"}
+		gPhone.updateTable = {update=true, version="N/A", description=trans(update_check_fail).." #1", date="N/A"}
 	end)
 end
 
