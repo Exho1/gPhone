@@ -3,7 +3,7 @@
 local trans = gPhone.getTranslation
 
 --// Resourcing and app adding
-resource.AddFile( "materials/vgui/gphone/gPhone.png" )
+resource.AddFile( "materials/vgui/gphone/gphone.png" )
 resource.AddFile( "resource/fonts/roboto_light.tff" )
 resource.AddFile( "resource/fonts/04b_19.tff" )
 local files = file.Find( "materials/vgui/gphone/*.png", "GAME" ) -- Phone images
@@ -39,8 +39,9 @@ function plymeta:generatePhoneNumber()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Generating number for "..self:Nick() )
 	
 	local number = self:GetPData( "gPhone_Number", gPhone.invalidNumber )
-	if number != gPhone.invalidNumber and number != "0" then
+	if number != gPhone.invalidNumber then
 		gPhone.msgC( GPHONE_MSGC_NONE, self:Nick().." has phone number: "..self:GetPData( "gPhone_Number"))
+		
 		-- Already has a number, just set the networked string
 		self:SetNWString( "gPhone_Number", number )
 		return
