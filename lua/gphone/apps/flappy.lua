@@ -43,6 +43,7 @@ local gameLost = false
 local pipesPassed = 0
 local gravity = 9.8
 local bgMoveX = 250
+local pipes = {}
 function APP.SetUpGame()
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
@@ -53,7 +54,7 @@ function APP.SetUpGame()
 		end
 	end
 	
-	APP.Pipes = {}
+	pipes = {}
 	
 	objects.player:SetVisible( true )
 	
@@ -80,7 +81,7 @@ function APP.SetUpGame()
 	gameLost = false
 	
 	pipesPassed = 0
-	APP.Pipes = {}
+	pipes = {}
 	
 	-- Create pipes
 	local x = 234 * 1.5
@@ -133,7 +134,7 @@ function APP.Think( screen )
 			player.velocity = -1.5
 		end
 		
-		for k, tbl in pairs( APP.Pipes ) do
+		for k, tbl in pairs( pipes ) do
 			tbl.top.x = tbl.top.x - bgMoveX
 			tbl.bottom.x = tbl.bottom.x - bgMoveX
 			
@@ -151,14 +152,14 @@ function APP.Think( screen )
 			end
 			
 			-- Increment the passed counter and remove old pipes
-			if tbl.top.x + 60 < x and not APP.Pipes[k].passed then 
+			if tbl.top.x + 60 < x and not pipes[k].passed then 
 				pipesPassed = pipesPassed + 1
-				APP.Pipes[k].passed = true
+				pipes[k].passed = true
 				
 				objects.score:updateScore()
 			elseif tbl.top.x + 60 < 0 then
-				table.remove(APP.Pipes, k)
-				APP.createPipe( APP.Pipes[#APP.Pipes].top.x + 60 + math.random( 100, 300 ) )
+				table.remove(pipes, k)
+				APP.createPipe( pipes[#pipes].top.x + 60 + math.random( 100, 300 ) )
 			end
 		end
 		
@@ -206,7 +207,7 @@ function APP.createPipe( x )
 	bottom.x = x
 	bottom.y = nextY + buffer
 	
-	table.insert( APP.Pipes, {top=top, bottom=bottom} )
+	table.insert( pipes, {top=top, bottom=bottom} )
 end
 
 local matGameLost = Material( "vgui/gphone/apps/fg_gameover.png" )
@@ -229,7 +230,7 @@ function APP.Paint( screen )
 	surface.SetMaterial( matBackground )
 	surface.DrawTexturedRect( nextBGX, 0, screen:GetWide(), screen:GetTall() )
 	
-	for k, tbl in pairs( APP.Pipes ) do
+	for k, tbl in pairs( pipes ) do
 		surface.SetMaterial( matTopPipe )
 		surface.DrawTexturedRect( tbl.top.x, tbl.top.y, 60, 311 )
 		
@@ -268,7 +269,7 @@ function APP.Paint( screen )
 end
 
 function APP.Close()
-	APP.Pipes = {}
+	pipes = {}
 end
 
 surface.CreateFont( "gPhone_flappy50", {

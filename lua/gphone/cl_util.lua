@@ -677,7 +677,7 @@ function gPhone.receiveTextMessage( tbl, bSelf )
 			app.Data.UpdateMessages( idFormat ) 
 		end
 		return
-	elseif gPhone.isOpen() and gPhone.exists() then -- Phone exists
+	elseif gPhone.isOpen() or gPhone.exists() then -- Phone exists
 		gPhone.textSound()
 		gPhone.incrementBadge( "Messages", idFormat.."_message" )
 	else -- Phone removed
