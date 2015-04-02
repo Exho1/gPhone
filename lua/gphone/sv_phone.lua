@@ -51,6 +51,8 @@ function plymeta:generatePhoneNumber()
 	
 	self:SetPData( "gPhone_Number", number )
 	self:SetNWString( "gPhone_Number", number )
+	
+	return number
 end 
 
 function plymeta:inCallWith( ply2 )
