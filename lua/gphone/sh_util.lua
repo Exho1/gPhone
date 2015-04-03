@@ -93,7 +93,7 @@ function plymeta:getPhoneNumber()
 		else
 			net.Start("gPhone_GenerateNumber")
 			net.SendToServer()
-			number = gPhone.steamIDToPhoneNumber( self:GetSteamID() )
+			number = gPhone.steamIDToPhoneNumber( self:SteamID() )
 		end
 	end
 	

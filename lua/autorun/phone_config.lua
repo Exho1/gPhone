@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 3/28/14
+-- Version: 4/3/14
 
 --[[ To Do:
 	- Multiplayer
@@ -31,10 +31,12 @@
 	- More games
 		- Snake
 	- If you are called when the phone is closed, you can't really do anything about it
+	- Perhaps geoip http://freegeoip.net/json/iphere to determine language? 
+		- It could be used in the tutorial to make a certain language pop up first
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.1.1"
+gPhone.version = "1.1.2"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

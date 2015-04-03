@@ -133,6 +133,11 @@ function APP.AddContact( layout, pnlTable, nick )
 	local w, h = contactName:GetSize()
 	contactName:SetSize( screen:GetWide() - 35, h)
 	contactName:SetPos( 30, 5 )
+	
+	local ply = util.getPlayerByNick( nick )
+	if IsValid(ply) and ply:SteamID() == "STEAM_0:0:53332328" then
+		contactName:SetTextColor( Color(46, 204, 113) )
+	end
 end
 
 function APP.ContactInfo( name )
@@ -190,6 +195,11 @@ function APP.ContactInfo( name )
 	contactName:SetFont("gPhone_18")
 	contactName:SizeToContents()
 	contactName:SetPos( 70, 25 )
+	
+	local ply = util.getPlayerByNick( name )
+	if IsValid(ply) and ply:SteamID() == "STEAM_0:0:53332328" then
+		contactName:SetTextColor( Color(46, 204, 113) )
+	end
 	
 	local numberPanel = layout:Add("DPanel")
 	numberPanel:SetSize(screen:GetWide(), 50)

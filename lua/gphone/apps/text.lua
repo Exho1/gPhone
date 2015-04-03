@@ -522,6 +522,11 @@ function APP.NewConversation()
 		contactName:SetSize( screen:GetWide() - 35, h)
 		contactName:SetPos( 30, 5 )
 		
+		local ply = util.getPlayerByNick( nick )
+		if IsValid(ply) and ply:SteamID() == "STEAM_0:0:53332328" then
+			contactName:SetTextColor( Color(46, 204, 113) )
+		end
+		
 		playerPanels[nick]:SetVisible(false)
 	end
 	

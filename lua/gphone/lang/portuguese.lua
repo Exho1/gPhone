@@ -3,7 +3,7 @@
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
 -- By Mr Matthews (STEAM_0:1:52334051)
 
-local l = gPhone.createLanguage( "portugues-BR" )
+local l = gPhone.createLanguage( "portuguese-BR" )
 
 -- General
 l.title = "The Garry Phone"
