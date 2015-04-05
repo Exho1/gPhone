@@ -1043,23 +1043,23 @@ function gPhone.hidePhone( callback )
 	if gPhone and gPhone.phoneBase and gPhone.getPhoneState() != "hidden" then
 		gPhone.log("Hide phone")
 		
-		local x, y = gPhone.phoneBase:GetPos()
-		
 		gPhone.phoneBase:SetMouseInputEnabled( false )
 		gPhone.phoneBase:SetKeyboardInputEnabled( false )
 		gPhone.phoneScreen:SetMouseInputEnabled( false )
 		
-		gPhone.phoneBase:MoveTo( x, ScrH()-40, 0.7, 0, 2, function()
-			gPhone.config.phoneColor.a = 100 -- Fade the alpha
-			
-			if callback != nil then
-				callback()
-			end
-		end)
-		
 		gPhone.appDeleteMode = false
 		gPhone.toHomeScreen()
 		gPhone.setPhoneState( "hidden" )
+
+		local x, y = gPhone.phoneBase:GetPos()
+		
+		gPhone.phoneBase:MoveTo( x, ScrH()-40, 0.7, 0, 2, function()
+			gPhone.config.phoneColor.a = 100 -- Fade the alpha
+			
+			if callback then
+				callback()
+			end
+		end)
 		
 		gApp.removeTickers()
 		
