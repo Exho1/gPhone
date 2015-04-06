@@ -58,6 +58,10 @@ function APP.SetUpGame()
 	
 	objects.player:SetVisible( true )
 	
+	if IsValid( objects.score ) then
+		objects.score:Remove()
+	end
+	
 	objects.score = vgui.Create("DLabel", screen)
 	objects.score:SetTextColor( color_white )
 	objects.score:SetFont( "gPhone_flappy50" ) 
