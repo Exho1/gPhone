@@ -750,7 +750,10 @@ function gPhone.checkUpdate()
 		
 		gPhone.msgC( GPHONE_MSGC_NONE, "Successfully retrieved update data from server" )
 		
-		if webVersion != gPhone.version then
+		webVersion = string.gsub( webVersion, "[.]", "" ) -- The period is the gsub symbol for all characters... Brackets negates that
+		local curVersion = string.gsub( gPhone.version , "[.]", "" )
+		
+		if webVersion > curVersion then
 			isUpdate = true
 			gPhone.incrementBadge( "Settings", "update" )
 		else

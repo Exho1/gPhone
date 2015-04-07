@@ -273,7 +273,11 @@ function APP.Paint( screen )
 end
 
 function APP.Close()
+	-- Clean up our local variables
 	pipes = {}
+	gameRunning = false
+	gameLost = false
+	lipesPassed = 0
 end
 
 surface.CreateFont( "gPhone_flappy50", {

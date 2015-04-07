@@ -524,7 +524,7 @@ function gPhone.buildLockScreen()
 	end
 	gPhone.showStatusBar()
 	gPhone.hideStatusBarElement( "time" )
-	
+
 	gPhone.phoneScreen.Paint = function( self )
 		surface.SetMaterial( gPhone.getWallpaper( false, true ) ) 
 		surface.SetDrawColor(255,255,255)

@@ -1139,7 +1139,7 @@ end
 
 --// Updates the signal strength
 local nextUpdate = 0
-hook.Add( "Think", "gPhone_SignalStrength", function()
+hook.Add( "Think", "gPhone_signalStrength", function()
 	if CurTime() > nextUpdate then
 		-- Its purely for looks and players don't normally move 1-2k units in 5 seconds
 		gPhone.updateSignalStrength()
@@ -1149,7 +1149,11 @@ end)
 
 --// Logic for opening the phone by holding down a key
 local keyStartTime, nextOpen = 0, 0
-hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
+local canOpenPhone = true
+hook.Add( "Think", "gPhone_openAndCloseKey", function()
+	-- Prevents the phone from being opened while chatting, in console, or in the main menu
+	if not canOpenPhone or gui.IsConsoleVisible() or gui.IsGameUIVisible() then return end
+	
 	if input.IsKeyDown( gPhone.config.openKey ) then
 		if keyStartTime == 0 then
 			keyStartTime = CurTime()
@@ -1171,4 +1175,12 @@ hook.Add( "Think", "gPhone_OpenAndCloseKey", function()
 	else
 		keyStartTime = 0
 	end
+end)
+
+hook.Add("StartChat", "gPhone_liveAndLetChat", function()
+	canOpenPhone = false
+end)
+
+hook.Add("FinishChat", "gPhone_weDoneChatting", function()
+	canOpenPhone = true
 end)
