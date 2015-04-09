@@ -216,7 +216,13 @@ function gPhone.receiveRequest( tbl )
 			local sendTable = {[1]=tbl[2], [6]=true, [5]=id, [3]=tbl[3]}
 			
 			gPhone.sendResponse( sendTable, tbl[2] )
-			gPhone.runApp( tbl[3] )
+			
+			-- Make sure we don't open the same app again
+			if tbl[3]:lower() != gPhone.getActiveApp().Data.PrintName:lower() then
+				gPhone.runApp( tbl[3] )
+			else
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to reopen app from notification!")
+			end
 		end,
 		false, true)
 	end
