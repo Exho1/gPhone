@@ -181,14 +181,14 @@ function APP.StartCall( number )
 	local ply = gPhone.getPlayerByNumber( number )
 
 	-- Comment out to enable self calling
-	if ply == LocalPlayer() then
+	--[[if ply == LocalPlayer() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, number.." is tied to local player")
 		
 		gPhone.notifyAlert( {msg=trans("invalid_player_phone"),
 		title=trans("error"), options={trans("okay")}}, 
 		nil, nil, true, true )
 		return
-	end
+	end]]
 	
 	if connectedNumbers[number] and IsValid(ply) then
 		gPhone.msgC( GPHONE_MSGC_NONE, number.." is tied to an online player! Calling..")
@@ -207,43 +207,12 @@ function APP.StartCall( number )
 		nil, nil, true, true )
 		return
 	end
-	
-	APP.OpenWaitScreen()
-end
-
-function APP.OpenWaitScreen()
-	local objects = gApp["_children_"]
-	local screen = gPhone.phoneScreen
-	
-	gPhone.hideChildren( objects.layout )
-	
-	objects.connecting = vgui.Create("DLabel", screen)
-	objects.connecting:SetFont("gPhone_36")
-	objects.connecting:SetTextColor( color_black )
-	objects.connecting:SizeToContents()
-	objects.connecting:SetPos( screen:GetWide()/2 - objects.connecting:GetWide()/2, screen:GetTall()/2 - objects.connecting:GetTall()/2 )
-	local nextDot, dots = 0, ""
-	objects.connecting.Think = function( self )
-		-- Create a counting dot effect to make it seem like something is going on
-		-- Technically there is as the server is checking that the other person accepted and creating the call lobby
-		if CurTime() > nextDot then
-			dots = dots.."."
-			gPhone.setTextAndCenter(self, "Connecting"..dots, screen, true)
-			nextDot = CurTime() + 0.3
-			
-			if string.find( dots, "[.][.][.]") then
-				dots = ""
-			end
-		end
-	end
 end
 
 function APP.OpenCallScreen( number, timeStarted )
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
-	objects.connecting:Remove()
-	gPhone.hideChildren( objects.layout )
 	LocalPlayer():ConCommand("+voicerecord")
 	
 	hook.Add("Think", "gPhone_callScreenHandler", function()
@@ -267,6 +236,8 @@ function APP.OpenCallScreen( number, timeStarted )
 		"_SPACE_",
 		trans("add"):lower(),
 	}
+	
+	gPhone.hideChildren( objects.layout )
 		
 	local buttonBG = objects.layout:Add("DPanel")
 	buttonBG:SetSize( objects.layout:GetWide(), objects.layout:GetTall() )
@@ -399,9 +370,9 @@ function APP.EndCall( bAppClose )
 		net.WriteString("end")
 	net.SendToServer()
 	
-	gPhone.removeAllPanels( objects )
-	
-	if not bAppClose then
+	if bAppClose != true then
+		gPhone.removeAllPanels( objects )
+		
 		APP.Run( objects, screen )
 	end
 end
@@ -411,7 +382,6 @@ function APP.Paint( screen )
 end
 
 function APP.Close()
-	hook.Remove("Think", "gPhone_callScreenHandler")
 	APP.EndCall( true )
 end
 

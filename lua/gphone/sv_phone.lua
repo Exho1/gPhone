@@ -35,10 +35,6 @@ function plymeta:getTransferCooldown()
 	return timeLeft - CurTime()
 end
 
-function plymeta:getCurApp()
-	return self:GetNWString("gPhone_CurApp", nil)
-end
-
 function plymeta:generatePhoneNumber()
 	gPhone.msgC( GPHONE_MSGC_NONE, "Generating number for "..self:Nick() )
 	
