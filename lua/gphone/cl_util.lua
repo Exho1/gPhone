@@ -241,7 +241,7 @@ function gPhone.simpleTime(seconds, fmt)
     return string.format(fmt, m, s, ms)
 end
 
---// Hide children of a panel
+--// Hide or show children of a panel
 function gPhone.hideChildren( pnl )
 	if not IsValid( pnl ) then return end
 	
@@ -252,24 +252,13 @@ function gPhone.hideChildren( pnl )
 	end
 end
 
---// Show children of a panel
+--// Hide or show children of a panel
 function gPhone.showChildren( pnl )
 	if not IsValid( pnl ) then return end
 	
 	for k, v in pairs( pnl:GetChildren() ) do
 		if IsValid(v) then
 			v:SetVisible(true)
-		end
-	end
-end
-
---// Remove children of a panel
-function gPhone.removeChildren( pnl )
-	if not IsValid( pnl ) then return end
-	
-	for k, v in pairs( pnl:GetChildren() ) do
-		if IsValid(v) then
-			v:Remove()
 		end
 	end
 end
@@ -761,10 +750,10 @@ function gPhone.checkUpdate()
 		
 		gPhone.msgC( GPHONE_MSGC_NONE, "Successfully retrieved update data from server" )
 		
-		local numWebVersion = string.gsub( webVersion, "[.]", "" ) -- The period is the gsub symbol for all characters... Brackets negates that
+		webVersion = string.gsub( webVersion, "[.]", "" ) -- The period is the gsub symbol for all characters... Brackets negates that
 		local curVersion = string.gsub( gPhone.version , "[.]", "" )
 		
-		if numWebVersion > curVersion then
+		if webVersion > curVersion then
 			isUpdate = true
 			gPhone.incrementBadge( "Settings", "update" )
 		else
