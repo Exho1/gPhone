@@ -90,6 +90,9 @@ function gPhone.addApp( tbl )
 	gApp[name] = {
 		["Data"] = tbl,
 		["Start"] = function() -- A shortcut function to launch the app
+			gPhone.removeAllPanels( gApp["_children_"] )
+			gApp["_children_"] = {}
+	
 			-- Call the 'APP.Run' function
 			tbl.Run( gApp["_children_"], gPhone.phoneScreen )
 			
@@ -106,8 +109,24 @@ function gPhone.addApp( tbl )
 		end,
 	}
 	
-	-- Add the app to the homescreen table
-	table.insert(gPhone.apps, {icon=tbl.Icon, name=tbl.PrintName})
+	local key = nil
+	
+	-- Make sure we don't add the same application twice, override the old one
+	for k, appTbl in pairs( gPhone.apps ) do
+		if appTbl.name == tbl.PrintName then
+			gPhone.msgC( GPHONE_MSGC_WARNING, "Overriding existing application ("..tbl.PrintName..")" ) 
+			key = k
+		end
+	end
+	
+	local tbl = {icon=tbl.Icon, name=tbl.PrintName}
+	
+	-- Add the app to the homescreen table either at a key or appended
+	if key then
+		table.insert(gPhone.apps, key, tbl)
+	else
+		table.insert(gPhone.apps, tbl)
+	end
 	
 	-- Handle app hiding 
 	if gPhone.config.showUnusableApps == false then

@@ -218,7 +218,7 @@ function APP.OpenWaitScreen()
 	gPhone.hideChildren( objects.layout )
 	
 	objects.connecting = vgui.Create("DLabel", screen)
-	objects.connecting:SetFont("gPhone_36")
+	objects.connecting:SetFont("gPhone_24")
 	objects.connecting:SetTextColor( color_black )
 	objects.connecting:SizeToContents()
 	objects.connecting:SetPos( screen:GetWide()/2 - objects.connecting:GetWide()/2, screen:GetTall()/2 - objects.connecting:GetTall()/2 )
@@ -228,7 +228,7 @@ function APP.OpenWaitScreen()
 		-- Technically there is as the server is checking that the other person accepted and creating the call lobby
 		if CurTime() > nextDot then
 			dots = dots.."."
-			gPhone.setTextAndCenter(self, "Connecting"..dots, screen, true)
+			gPhone.setTextAndCenter(self, trans("connecting")..dots, screen, true)
 			nextDot = CurTime() + 0.3
 			
 			if string.find( dots, "[.][.][.]") then

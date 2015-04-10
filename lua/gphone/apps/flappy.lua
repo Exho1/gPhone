@@ -167,7 +167,7 @@ function APP.Think( screen )
 			end
 		end
 		
-		if tonumber(objects.score:GetText()) == 10 then -- Oh my god...
+		if tonumber(objects.score:GetText()) == 25 then -- Oh my god...
 			gameRunning = false
 			objects.player:SizeTo( screen:GetWide()*2, screen:GetTall()*2, 2 )
 			objects.player:MoveTo( -screen:GetWide()/2, -screen:GetTall()/2, 2 )

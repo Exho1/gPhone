@@ -21,6 +21,9 @@ l.homescreen = "Homescreen"
 l.about = "About"
 l.color = "Color"
 
+l.phone_confis = "Your phone has been confiscated!"
+l.unable_to_open = "You are unable to open the gPhone at this moment"
+
 -- Homescreen
 l.battery_dead = "Your phone has run out of battery and died! Recharging..."
 l.battery_okay = "Recharged!"
@@ -196,3 +199,6 @@ l.receiver = "Receiver"
 
 -- Flappy Garry
 l.enter_play = "Press 'enter' to play!"
+
+-- Browser
+l.connecting = "Connecting"

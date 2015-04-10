@@ -70,6 +70,10 @@ gPhone.keys = {
 
 local plymeta = FindMetaTable( "Player" )
 
+function plymeta:canOpenPhone()
+	return self:GetNWBool( "gPhone_canOpen", true )
+end
+
 function plymeta:hasPhoneOpen()
 	return self:GetNWBool("gPhone_Open", false)
 end

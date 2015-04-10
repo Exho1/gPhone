@@ -26,6 +26,10 @@ end
 --// Meta table
 local plymeta = FindMetaTable( "Player" )
 
+function plymeta:setCanOpenPhone( b )
+	self:SetNWBool( "gPhone_canOpen", b )
+end
+
 function plymeta:setTransferCooldown( time )
 	self.transferCooldown = CurTime() + time
 end
@@ -235,6 +239,17 @@ hook.Add("PlayerCanHearPlayersVoice", "gPhone_CallHandler", function( listener, 
 	if listener:inCallWith( talker ) and talker:inCallWith( listener ) then
 		return true
 	end
+end)
+
+hook.Add("playerArrested", "gPhone_jailTime", function( ply, time, arrester )
+	gPhone.runFunction( ply, "destroyPhone" )
+	ply:setCanOpenPhone( false )
+	gPhone.chatMsg( ply, trans("phone_confis") )
+end)
+
+hook.Add("playerUnArrested", "gPhone_returnPossessions", function( ply, arrester )
+	gPhone.runFunction( ply, "buildPhone" )
+	ply:setCanOpenPhone( true )
 end)
 
 

@@ -36,23 +36,7 @@ function APP.PopulateList()
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
-	local availableApps = {}
-	
-	-- Grab all apps that exist but are not on the homescren
-	for key, data in pairs( gPhone.apps ) do
-		local failCount = 0 
-		for _, tbl in pairs( gPhone.appPanels ) do
-			if data.name != tbl.name then
-				failCount = failCount + 1
-			else
-				break
-			end
-			
-			if failCount == #gPhone.appPanels then
-				table.insert( availableApps, data )
-			end
-		end
-	end
+	local availableApps = gPhone.getHiddenApps()
 	
 	-- Handle not having an applications available to download
 	if #availableApps == 0 then
@@ -75,6 +59,8 @@ function APP.PopulateList()
 	
 	-- Loop through all the apps that we can download
 	for key, data in pairs( availableApps ) do
+		gPhone.incrementBadge( "App Store", data.name:lower() )
+		
 		local bgPanel = objects.Layout:Add("DPanel")
 		bgPanel:SetSize(screen:GetWide(), 50)
 		bgPanel.Paint = function( self, w, h )

@@ -14,6 +14,11 @@ function gPhone.buildPhone()
 		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! Expect errors")
 	end
 	
+	if not client:canOpenPhone() then
+		gPhone.chatMsg( trans("unable_to_open") )
+		return
+	end
+	
 	file.CreateDir( "gphone" )
 	
 	gPhone.loadClientConfig()
@@ -455,11 +460,6 @@ function gPhone.buildPhone()
 						removedAppKeys[k] = k
 						continue
 					end
-					
-					--[[if gPhone.removedApps[name:lower()] then
-						removedAppKeys[k] = k
-						continue
-					end]]
 				end
 				
 				-- Moving an icon out of a folder
@@ -992,6 +992,11 @@ function gPhone.buildPhone()
 		gPhone.saveAppPositions( gPhone.apps )
 	end
 	gPhone.buildHomescreen( gPhone.apps )
+	
+	-- Update the store's badges
+	for _, data in pairs( gPhone.getHiddenApps() ) do
+		gPhone.incrementBadge( "App Store", data.name:lower() )
+	end
 	
 	-- Assorted stuff
 	gPhone.setPhoneState( "hidden" )

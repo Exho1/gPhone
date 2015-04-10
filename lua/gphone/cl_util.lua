@@ -92,6 +92,7 @@ function gPhone.chatMsg( text )
 		Color(17, 148, 240), "[gPhone]", 
 		Color(255,255,255), ": "..text
 	)
+	gPhone.log("gPhone.chatMsg: "..text)
 end
  
 net.Receive( "gPhone_ChatMsg", function( len, ply )
@@ -491,9 +492,13 @@ function gPhone.setAppVisible( name, bVisible )
 	if bVisible then
 		gPhone.apps[gAppsKey].hidden = nil
 		gPhone.removedApps[nameL] = nil
+		
+		gPhone.decrementBadge( "App Store", nameL )
 	else
 		gPhone.apps[gAppsKey].hidden = true
 		gPhone.removedApps[nameL] = 0
+		
+		gPhone.incrementBadge( "App Store", nameL )
 	end
 	
 	gPhone.saveAppPositions( gPhone.apps )
@@ -885,7 +890,7 @@ function gPhone.incrementBadge( app, id )
 	id = string.lower( id )
 	
 	if not gPhone.exists() or not gPhone.phoneBase then
-		gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot increment badge for unopened phone")
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot increment badge for non-existant phone")
 		gPhone.cacheBadge( {app=app,id=id} )
 		return
 	end
@@ -934,6 +939,28 @@ function gPhone.decrementBadge( app, id, bAll )
 		end
 	end
 	gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted remove badge for nonexistant id: "..id )
+end
+
+function gPhone.getHiddenApps()
+	local hidden = {}
+	
+	-- Grab all apps that exist but are not on the homescren
+	for key, data in pairs( gPhone.apps ) do
+		local failCount = 0 
+		for _, tbl in pairs( gPhone.appPanels ) do
+			if data.name != tbl.name then
+				failCount = failCount + 1
+			else
+				break
+			end
+			
+			if failCount == #gPhone.appPanels then
+				table.insert( hidden, data )
+			end
+		end
+	end
+	
+	return hidden
 end
 
 --// Returns the badge table for the given app name

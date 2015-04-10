@@ -588,6 +588,8 @@ end
 -- The code looks intimidating but its really quite simple
 gPhone.notifyQueue = { alert={}, banner={} }
 hook.Add("Think", "gPhone_notificationQueue", function()
+	if not gPhone.isOpen() or not gPhone.exists() then return end
+	
 	if #gPhone.notifyQueue.alert > 0 or #gPhone.notifyQueue.banner > 0 then
 		for type, queue in pairs( gPhone.notifyQueue ) do
 			if type == "alert" then
