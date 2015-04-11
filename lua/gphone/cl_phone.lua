@@ -14,7 +14,7 @@ function gPhone.buildPhone()
 		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! Expect errors")
 	end
 	
-	if not client:canOpenPhone() then
+	if not client:GetNWBool( "gPhone_canOpen", true ) then
 		gPhone.chatMsg( trans("unable_to_open") )
 		return
 	end
