@@ -14,7 +14,6 @@
 	- Moving apps in folders
 	- Function to bypass using net.*Table entirely
 	- Phone/calling
-		- Enable speaking for both players
 		- Finish implementing group calling
 	- Selfie camera
 	- Figure out why missing config values dont save
@@ -31,10 +30,13 @@
 	- If you are called when the phone is closed, you can't really do anything about it
 	- Perhaps geoip http://freegeoip.net/json/iphere to determine language? 
 		- It could be used in the tutorial to make a certain language pop up first
+	- Richtext
+		- Messages
+		- Credits
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.1.5"
+gPhone.version = "1.1.6"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

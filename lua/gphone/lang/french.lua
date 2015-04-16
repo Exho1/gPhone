@@ -4,6 +4,7 @@
 
 --------------------------------------------------------------------------------------
 --  French translation by r0uge for the gPhone. http://steamcommunity.com/id/r0uge  --
+-- 	Also by Azmok (STEAM_0:0:75743178)
 --------------------------------------------------------------------------------------
 
 local l = gPhone.createLanguage( "français" )

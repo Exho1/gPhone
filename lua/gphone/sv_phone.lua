@@ -205,7 +205,6 @@ end
 --// Runs a function in the gPhone app table
 function gPhone.runAppFunction( ply, app, name, ... )
 	net.Start("gPhone_RunFunction")
-		--gPhone.writeTable({"app", app, name, {...}})
 		net.WriteString("app")
 		net.WriteString(app)
 		net.WriteString(name)
@@ -216,7 +215,6 @@ end
 --// Runs a function in the gPhone table
 function gPhone.runFunction( ply, name, ... )
 	net.Start("gPhone_RunFunction")
-		--gPhone.writeTable({"phone", "", name, {...}})
 		net.WriteString("phone")
 		net.WriteString("")
 		net.WriteString(name)

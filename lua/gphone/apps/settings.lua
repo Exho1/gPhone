@@ -512,6 +512,7 @@ Translations:
 Tomelyr - DE - STEAM_0:0:9136467
 Donkie - SV - https://github.com/Donkie
 Azmok - FR - STEAM_0:0:75743178
+R0gue - FR - STEAM_0:0:41083988
 Le Otaku - IT - STEAM_0:1:59430965
 Mr Matthews - PT - STEAM_0:1:52334051
 PORTAL2 - RU - STEAM_0:0:59342541
