@@ -3,7 +3,10 @@
 -- '\n' and '\r\n' are used to create a new line, try to keep those in similar spots to preserve spacing
 
 --------------------------------------------------------------------------------------------------------
--- French Translation Overhaul by PwndKilled for the gPhone. http://steamcommunity.com/id/PwndKilled/ --
+-- Credits: 
+-- 3rd Revision: PwndKilled (STEAM_0:0:71420212)
+-- 2nd Revision: r0uge (STEAM_0:0:41083988)
+-- 1st Revision: Azmok (STEAM_0:0:75743178)
 --------------------------------------------------------------------------------------------------------
 
 local l = gPhone.createLanguage( "français" )

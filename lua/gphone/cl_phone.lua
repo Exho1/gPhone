@@ -115,12 +115,12 @@ function gPhone.buildPhone()
 		if batteryPerc < math.random(1, 4) then -- Simulate a phone dying, its kinda silly and few people will ever see it
 			batteryPerc = 100
 			batteryPercent:SetText( batteryPerc.."%" )
-			gPhone.chatMsg( trans("battery_dead") )
+			--[[gPhone.chatMsg( trans("battery_dead") )
 			gPhone.hidePhone()
 			timer.Simple(math.random(2, 5), function()
 				gPhone.chatMsg( trans("battery_okay") )
 				gPhone.showPhone()
-			end)
+			end)]]
 		end
 	end
 	batteryPercent.Paint = gPhone.dLabelPaintOverride
