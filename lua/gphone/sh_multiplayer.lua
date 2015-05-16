@@ -5,6 +5,11 @@ gPhone.connectedPlayers = gPhone.connectedPlayers or {{"test"}}
 
 local plymeta = FindMetaTable( "Player" )
 
+--// Returns if the player is currently in a multiplayer game with other players
+function plymeta:inMPGame()
+	return self:GetNWBool("gPhone_InMPGame", false)
+end
+
 -- Net message enumerations 
 GPHONE_MP_PLAYER_QUIT = 1
 =======
@@ -40,7 +45,7 @@ if SERVER then
 			end
 			
 			-- This gives a false positive immediately after creating a match. Look into it
-			--[[if ply1::GetNWBool("gPhone_InMPGame", false) or not ply2::GetNWBool("gPhone_InMPGame", false) then
+			--[[if ply1:inMPGame() or not ply2:inMPGame() then
 				gPhone.endNetStream( ply1 )
 				gPhone.endNetStream( ply2 )
 			end]]
@@ -219,6 +224,7 @@ if CLIENT then
 	local client = LocalPlayer()
 	
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if not client.inMPGame then
 	
 =======
@@ -298,6 +304,11 @@ if CLIENT then
 	function gPhone.updateToNetStream( data )
 <<<<<<< HEAD
 		if client.inMPGame and client:GetNWBool("gPhone_InMPGame", false) then
+=======
+	--// Send a table to the server to be distributed amongst the connected players
+	function gPhone.updateToNetStream( data )
+		if client:inMPGame() then
+>>>>>>> parent of ff2889e... Removed ply:inMPGame and fixed some MP bugs
 			data.sender = client
 			
 =======
@@ -330,10 +341,14 @@ if CLIENT then
 	local seen = false
 	hook.Add("Think", "gPhone_CheckConnected", function()
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if client:GetNWBool("gPhone_InMPGame", false) then
 =======
 		if client.inMPGame and client:inMPGame() then -- Meta function hasn't loaded yet
 >>>>>>> parent of 804b3cd... Rewrote and re-enabled multiplayer for gPong
+=======
+		if client.inMPGame and client:inMPGame() then
+>>>>>>> parent of ff2889e... Removed ply:inMPGame and fixed some MP bugs
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true
 				

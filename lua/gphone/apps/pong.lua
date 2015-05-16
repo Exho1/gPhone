@@ -175,10 +175,14 @@ function APP.OptionClick( option )
 		end
 		for k, v in pairs( player.GetAll() ) do
 <<<<<<< HEAD
+<<<<<<< HEAD
 			--if v != LocalPlayer() then -- Comment out to enable playing against yourself over multiplayer
 =======
 			if v != LocalPlayer() then -- Comment out to enable self gaming
 >>>>>>> parent of 804b3cd... Rewrote and re-enabled multiplayer for gPong
+=======
+			--if v != LocalPlayer() then -- Comment out to enable self gaming
+>>>>>>> parent of ff2889e... Removed ply:inMPGame and fixed some MP bugs
 				opponentPicker:AddChoice( v:Nick() )
 			end
 		end
@@ -292,7 +296,7 @@ function APP.QuitToMainMenu()
 end
 
 function APP.Close()
-	if gameType == PONG_GAME_MP and LocalPlayer():GetNWBool("gPhone_InMPGame", false) then
+	if gameType == PONG_GAME_MP and LocalPlayer():inMPGame() then
 		gPhone.updateToNetStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
 		hook.Remove( "Think", "gPhone_CheckConnected" )
 =======
@@ -324,9 +328,9 @@ function APP.SetUpGame( type )
 	elseif gameType == PONG_GAME_MP then
 <<<<<<< HEAD
 		-- We might need to wait for the server to set up the lobby before setting up a game
-		if not client:GetNWBool("gPhone_InMPGame", false) then
+		if not client:inMPGame() then
 			hook.Add("Think", "gPhone_mpWait", function()
-				if client:GetNWBool("gPhone_InMPGame", false) then
+				if client:inMPGame() then
 					print("In game, setting up")
 					APP.SetUpGame( PONG_GAME_MP )
 					hook.Remove("Think", "gPhone_mpWait")

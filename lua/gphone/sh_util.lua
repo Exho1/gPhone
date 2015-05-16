@@ -221,20 +221,8 @@ function gPhone.receiveRequest( tbl )
 			
 			gPhone.sendResponse( sendTable, tbl[2] )
 			
-			local app = gPhone.getActiveApp().Data
-			
-			if not app then 
-				gPhone.msgC( GPHONE_MSGC_WARNING, "Cannot access active app data" )
-				return
-			end
-			
-			if not tbl[3] then
-				gPhone.msgC( GPHONE_MSGC_WARNING, "Request does not have a valid app" )
-				return
-			end
-			
 			-- Make sure we don't open the same app again
-			if tbl[3]:lower() != app.PrintName:lower() then
+			if tbl[3]:lower() != gPhone.getActiveApp().Data.PrintName:lower() then
 				gPhone.runApp( tbl[3] )
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to reopen app from notification!")
