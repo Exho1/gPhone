@@ -164,7 +164,7 @@ if SERVER then
 	
 	include("gphone/sv_phone.lua")
  	include("gphone/sh_util.lua")
- 	include("gphone/sh_multiplayer.lua")
+ 	--include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")
 	
 	if game.SinglePlayer() then
@@ -189,7 +189,7 @@ if CLIENT then
  	include("gphone/cl_util_extension.lua")
  	include("gphone/cl_animations.lua")
 	include("gphone/sh_util.lua")
- 	include("gphone/sh_multiplayer.lua")
+ 	--include("gphone/sh_multiplayer.lua")
 	include("gphone/sh_datatransfer.lua")
 	include("vgui/backbutton.lua")
 	
