@@ -7,6 +7,7 @@ APP.Author = "Exho"
 APP.Tags = {"Texts", "Contact", "Communication"}
 
 APP.CurrentConvo = nil
+
 function APP.Run( objects, screen )
 	gPhone.darkenStatusBar()
 	
@@ -79,11 +80,11 @@ function APP.PopulateMain( layout )
 			draw.RoundedBox(0, 0, 0, w, h, gPhone.colors.red)
 		end
 		deleteConvo.DoClick = function( self )
-			-- Deletes the conversation from the phone, this CANNOT be undone
+			-- Moves the conversation file into the archive where it can be deleted later
 			backbackground:Remove()
 			local fmat = gPhone.steamIDToFormat( id )
 			gPhone.discardFile( "gphone/messages/"..fmat..".txt" )
-			--file.Delete( "gphone/messages/"..fmat..".txt" )
+
 			layout:LayoutIcons_TOP()
 		end
 		
@@ -104,15 +105,14 @@ function APP.PopulateMain( layout )
 		background.DoClick = function( self )
 			local x, y = self:ScreenToLocal( gui.MouseX(), gui.MouseY() )
 			
-			if x >= self:GetWide() - (deleteOffset - 10) and not background.DeleteMode  then
+			if x >= self:GetWide() - (deleteOffset - 10) and not background.DeleteMode then
 				local bX, bY = background:GetPos()
 				background:MoveTo( bX - deleteOffset, bY, 0.5, 0, -1 )
 				background.DeleteMode = true
-				deleteConvo:SetVisible(true)
 				return
 			elseif background.DeleteMode then
 				local bX, bY = background:GetPos()
-				background:MoveTo( bX + deleteOffset, bY, 0.5, 0, -1, function() deleteConvo:SetVisible(false) end)
+				background:MoveTo( bX + deleteOffset, bY, 0.5, 0, -1 )
 				background.DeleteMode = false
 				return
 			end
@@ -121,6 +121,14 @@ function APP.PopulateMain( layout )
 				gPhone.hideChildren( layout )
 				APP.PopulateMessages( id )
 			end
+		end
+		background.Think = function( self )
+			local x, y = self:GetPos()
+			
+			-- Make sure the panel doesn't move too far while animating
+			x = math.Clamp( x, -deleteOffset, 0 )
+			
+			self:SetPos( x, y )
 		end
 		
 		local senderNick

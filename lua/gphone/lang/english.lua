@@ -107,6 +107,7 @@ l.install_u = "Install Update"
 l.wipe_archive_confirm = "Are you sure you want to delete all files in the archive? (this cannot be undone)"
 l.archive = "Archive"
 l.update = "Update"
+l.noupdate = "Your phone is up-to-date"
 l.set_color = "Set Color"
 
 l.wipe_log_confirm = "Are you sure you want to wipe the log? This cannot be undone"

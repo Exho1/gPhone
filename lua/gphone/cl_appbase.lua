@@ -119,13 +119,13 @@ function gPhone.addApp( tbl )
 		end
 	end
 	
-	local tbl = {icon=tbl.Icon, name=tbl.PrintName}
+	local data = {icon=tbl.Icon, name=tbl.PrintName}
 	
 	-- Add the app to the homescreen table either at a key or appended
 	if key then
-		table.insert(gPhone.apps, key, tbl)
+		table.insert(gPhone.apps, key, data)
 	else
-		table.insert(gPhone.apps, tbl)
+		table.insert(gPhone.apps, data)
 	end
 	
 	-- Handle app hiding 
@@ -135,7 +135,7 @@ function gPhone.addApp( tbl )
 			gPhone.setAppVisible( tbl.PrintName, false )
 		end
 	end
-	
+
 	if tbl.Hidden == true then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "Hiding application due to 'Hidden' boolean: "..tbl.PrintName ) 
 		gPhone.setAppVisible( tbl.PrintName, false )

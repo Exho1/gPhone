@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 5/14/15
+-- Version: 5/16/15
 
 --[[ To Do:
 	- Multiplayer
@@ -22,21 +22,14 @@
 		- Online wallpapers?
 	- Networking
 		- Move P2P request/response system to not use Write/ReadTable
-	- Sounds?
-	- Settings app
-		- Update tab needs something when you are up to date
 	- More games
 		- Snake
 	- If you are called when the phone is closed, you can't really do anything about it
-	- Perhaps geoip http://freegeoip.net/json/iphere to determine language? 
 		- It could be used in the tutorial to make a certain language pop up first
-	- Richtext
-		- Messages
-		- Credits
 ]]
 
 gPhone = gPhone or {}
-gPhone.version = "1.1.8"
+gPhone.version = "1.1.9"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"

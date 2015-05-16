@@ -545,7 +545,15 @@ NonCommercial 4.0 International License.
 			self:SetFGColor( color_black )
 		end
 		
-	elseif name == trans("update"):lower() then
+	elseif name == trans("update"):lower() then	
+		-- {update=Bool, version=String, description=String}
+		local uData = gPhone.updateTable
+		
+		if not uData.update then 
+			gPhone.notifyAlert( {msg=trans("noupdate"), title=trans("settings"), options={trans("okay")}}, nil, nil, true )
+			return
+		end
+		
 		APP.PrepareNewTab( trans("update") )
 		
 		objects.Back:SetVisible( true )
@@ -553,90 +561,83 @@ NonCommercial 4.0 International License.
 			APP.OpenTab( upperTabName )
 		end
 		
-		--{update=Bool, version=String, description=String}
-		local uData = gPhone.updateTable
-		
-		if uData.update then
-			local background = objects.Layout:Add("DScrollPanel")
-			background:SetSize(screen:GetWide() + 20, screen:GetTall()/2.4)
-			background:SetText("")
-			background.Paint = function( self )
-				draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
-			end
-			
-			local appIcon = vgui.Create("DImage", background)
-			appIcon:SetSize( 64, 64 )
-			appIcon:SetPos( 10, 10)
-			appIcon:SetImage( APP.Icon )
-			appIcon:SetImageColor( color_white )
-			
-			local versionLabel = vgui.Create( "DLabel", background )
-			versionLabel:SetText( "gOS "..(uData.version or "N/A") )
-			versionLabel:SetTextColor(Color(0,0,0))
-			versionLabel:SetFont("gPhone_20")
-			versionLabel:SizeToContents()
-			local x, y = appIcon:GetPos()
-			versionLabel:SetPos( x + appIcon:GetWide() + 15, y )
-			
-			local providerLabel = vgui.Create( "DLabel", background )
-			providerLabel:SetText( "Exho" )
-			providerLabel:SetTextColor(Color(0,0,0))
-			providerLabel:SetFont("gPhone_16")
-			providerLabel:SizeToContents()
-			providerLabel:SetPos( x + appIcon:GetWide() + 15, y + versionLabel:GetTall() + 3 )
-			
-			local dateLabel = vgui.Create( "DLabel", background )
-			dateLabel:SetText( uData.date or "N/A" )
-			dateLabel:SetTextColor(Color(0,0,0))
-			dateLabel:SetFont("gPhone_16")
-			dateLabel:SizeToContents()
-			local _, y = providerLabel:GetPos()
-			dateLabel:SetPos( x + appIcon:GetWide() + 15, y + providerLabel:GetTall() + 3 )
-			
-			local descriptionLabel = vgui.Create( "DLabel", background )
-			descriptionLabel:SetText( uData.description or trans("no_description") )
-			descriptionLabel:SetTextColor(Color(0,0,0))
-			descriptionLabel:SetFont("gPhone_14")
-			local x, y = appIcon:GetPos()
-			descriptionLabel:SetPos( x, y + appIcon:GetTall() + 5)
-			
-			gPhone.wordWrap( descriptionLabel, background:GetWide(), 10 )
-			
-			-- Shrink the DPanel to match the content of the text
-			local _, dY = descriptionLabel:GetPos()
-			dY = dY + descriptionLabel:GetTall()
-			
-			--local w, h = background:GetSize()
-			--background:SetSize( w, dY + 10 )
-			
-			local fake = objects.Layout:Add("DPanel")
-			fake:SetSize(screen:GetWide(), 30)
-			fake.Paint = function() end
-				
-			local layoutButton = objects.Layout:Add("DButton")
-			layoutButton:SetSize(screen:GetWide(), 30)
-			layoutButton:SetText("")
-			layoutButton.Paint = function()
-				if not layoutButton:IsDown() then
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
-				else
-					draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
-				end
-				
-			end
-			layoutButton.DoClick = function()
-				gui.OpenURL( "http://steamcommunity.com/sharedfiles/filedetails/?id=407945478" )
-			end
-			
-			local title = vgui.Create( "DLabel", layoutButton )
-			title:SetText( trans("install_u") )
-			title:SetTextColor( gPhone.colors.blue )
-			title:SetFont("gPhone_18")
-			title:SizeToContents()
-			title:SetPos( 15, 5 )
-		else
-			-- Your software is up to date
+		local background = objects.Layout:Add("DScrollPanel")
+		background:SetSize(screen:GetWide() + 20, screen:GetTall()/2.4)
+		background:SetText("")
+		background.Paint = function( self )
+			draw.RoundedBox(0, 0, 0, self:GetWide(), self:GetTall(), gPhone.colors.whiteBG)
 		end
+		
+		local appIcon = vgui.Create("DImage", background)
+		appIcon:SetSize( 64, 64 )
+		appIcon:SetPos( 10, 10)
+		appIcon:SetImage( APP.Icon )
+		appIcon:SetImageColor( color_white )
+		
+		local versionLabel = vgui.Create( "DLabel", background )
+		versionLabel:SetText( "gOS "..(uData.version or "N/A") )
+		versionLabel:SetTextColor(Color(0,0,0))
+		versionLabel:SetFont("gPhone_20")
+		versionLabel:SizeToContents()
+		local x, y = appIcon:GetPos()
+		versionLabel:SetPos( x + appIcon:GetWide() + 15, y )
+		
+		local providerLabel = vgui.Create( "DLabel", background )
+		providerLabel:SetText( "Exho" )
+		providerLabel:SetTextColor(Color(0,0,0))
+		providerLabel:SetFont("gPhone_16")
+		providerLabel:SizeToContents()
+		providerLabel:SetPos( x + appIcon:GetWide() + 15, y + versionLabel:GetTall() + 3 )
+		
+		local dateLabel = vgui.Create( "DLabel", background )
+		dateLabel:SetText( uData.date or "N/A" )
+		dateLabel:SetTextColor(Color(0,0,0))
+		dateLabel:SetFont("gPhone_16")
+		dateLabel:SizeToContents()
+		local _, y = providerLabel:GetPos()
+		dateLabel:SetPos( x + appIcon:GetWide() + 15, y + providerLabel:GetTall() + 3 )
+		
+		local descriptionLabel = vgui.Create( "DLabel", background )
+		descriptionLabel:SetText( uData.description or trans("no_description") )
+		descriptionLabel:SetTextColor(Color(0,0,0))
+		descriptionLabel:SetFont("gPhone_14")
+		local x, y = appIcon:GetPos()
+		descriptionLabel:SetPos( x, y + appIcon:GetTall() + 5)
+		
+		gPhone.wordWrap( descriptionLabel, background:GetWide(), 10 )
+		
+		-- Shrink the DPanel to match the content of the text
+		local _, dY = descriptionLabel:GetPos()
+		dY = dY + descriptionLabel:GetTall()
+		
+		--local w, h = background:GetSize()
+		--background:SetSize( w, dY + 10 )
+		
+		local fake = objects.Layout:Add("DPanel")
+		fake:SetSize(screen:GetWide(), 30)
+		fake.Paint = function() end
+			
+		local layoutButton = objects.Layout:Add("DButton")
+		layoutButton:SetSize(screen:GetWide(), 30)
+		layoutButton:SetText("")
+		layoutButton.Paint = function()
+			if not layoutButton:IsDown() then
+				draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.whiteBG)
+			else
+				draw.RoundedBox(0, 0, 0, layoutButton:GetWide(), layoutButton:GetTall(), gPhone.colors.darkWhiteBG)
+			end
+			
+		end
+		layoutButton.DoClick = function()
+			gui.OpenURL( "http://steamcommunity.com/sharedfiles/filedetails/?id=407945478" )
+		end
+		
+		local title = vgui.Create( "DLabel", layoutButton )
+		title:SetText( trans("install_u") )
+		title:SetTextColor( gPhone.colors.blue )
+		title:SetFont("gPhone_18")
+		title:SizeToContents()
+		title:SetPos( 15, 5 )
 	elseif nameEn == "color" then	
 		APP.PrepareNewTab( trans("color") )
 		
