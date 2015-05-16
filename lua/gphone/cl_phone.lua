@@ -526,10 +526,8 @@ function gPhone.buildPhone()
 								local droppedName = gPhone.appPanels[i].name
 
 								for p = 1, #gPhone.apps do
-									if gPhone.apps[p] then
-										if gPhone.apps[p].name:lower() == droppedName:lower() then
-											droppedKey = p 
-										end
+									if gPhone.apps[p].name == droppedName then
+										droppedKey = p
 									end
 								end
 							end

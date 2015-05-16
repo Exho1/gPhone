@@ -166,11 +166,21 @@ function APP.OptionClick( option )
 			surface.SetDrawColor( color_white )
 			surface.DrawOutlinedRect( 0, 0, w, h )
 			
+			--[[if IsValid(self.Menu) then
+				self.Menu.Paint = function( self, w, h )
+					surface.SetDrawColor( color_white )
+					surface.DrawOutlinedRect( 0, 0, w, h )
+				end
+			end]]
 		end
 		for k, v in pairs( player.GetAll() ) do
+<<<<<<< HEAD
 			--if v != LocalPlayer() then -- Comment out to enable playing against yourself over multiplayer
+=======
+			if v != LocalPlayer() then -- Comment out to enable self gaming
+>>>>>>> parent of 804b3cd... Rewrote and re-enabled multiplayer for gPong
 				opponentPicker:AddChoice( v:Nick() )
-			--end
+			end
 		end
 		
 		local fake = objects.Layout:Add("DPanel") -- Invisible panel for spacing
@@ -198,16 +208,15 @@ function APP.OptionClick( option )
 		confirmButton.DoClick = function()
 			local ply = util.getPlayerByNick( opponentPicker:GetText() )
 			if IsValid(ply) then
-				print("Valid opponent, requesting")
-				--gPhone.chatMsg( trans("feature_deny") )
+				gPhone.chatMsg( trans("feature_deny") )
+				--gPhone.requestGame(ply, APP.PrintName)
 				
-				local msg = LocalPlayer():Nick().." has invited you to play gPong!"
-				local tbl = {ply, nil, APP.PrintName, msg}
+				--local msg = LocalPlayer():Nick().." has invited you to play gPong!"
+				--local tbl = {target=ply, app=APP.PrintName, msg=msg}
+				--gPhone.sendRequest( tbl, ply )
 				
-				gPhone.sendRequest( tbl, ply )
-				
-				--The server tells us when to set up the game
-				APP.SetUpGame( PONG_GAME_MP )
+				-- The server tells us when to set up the game
+				--APP.SetUpGame( PONG_GAME_MP )
 			end
 		end
 	elseif option == gameOptions[3] then -- Playing against someone else on their computer
@@ -277,6 +286,7 @@ function APP.QuitToMainMenu()
 	
 	if gameType == PONG_GAME_MP then
 		gPhone.updateToNetStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
+<<<<<<< HEAD
 		hook.Remove( "Think", "gPhone_CheckConnected" )
 	end
 end
@@ -285,13 +295,14 @@ function APP.Close()
 	if gameType == PONG_GAME_MP and LocalPlayer():GetNWBool("gPhone_InMPGame", false) then
 		gPhone.updateToNetStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
 		hook.Remove( "Think", "gPhone_CheckConnected" )
+=======
+>>>>>>> parent of 804b3cd... Rewrote and re-enabled multiplayer for gPong
 	end
 end
 
 -- Set up the game to be played
 local ballSide = PONG_BALLSIDE_CENTER
 function APP.SetUpGame( type )
-	local client = LocalPlayer()
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
@@ -301,11 +312,17 @@ function APP.SetUpGame( type )
 		end
 	end
 	
+	gPhone.setOrientation( "landscape" )
+	isInGame = true
+	objectBounds = {}
+	traceData = {}
+	
 	gameType = type
 	
 	if gameType == PONG_GAME_BOT then
 
 	elseif gameType == PONG_GAME_MP then
+<<<<<<< HEAD
 		-- We might need to wait for the server to set up the lobby before setting up a game
 		if not client:GetNWBool("gPhone_InMPGame", false) then
 			hook.Add("Think", "gPhone_mpWait", function()
@@ -317,13 +334,12 @@ function APP.SetUpGame( type )
 			end)
 			return
 		end
+=======
+
+>>>>>>> parent of 804b3cd... Rewrote and re-enabled multiplayer for gPong
 	elseif gameType == PONG_GAME_SELF then
 	
 	end
-	
-	gPhone.setOrientation( "landscape" )
-	isInGame = true
-	objectBounds = {}
 	
 	objects.ScoreP1 = vgui.Create( "DLabel", screen)
 	objects.ScoreP1:SetText( "0" )
@@ -776,7 +792,7 @@ function updateGamePositions( tab )
 		local ball = gApp["_children_"].Ball
 		
 		-- These are our opponent's positions, so everything is from their point of view
-		local opponentPaddle = objects.PaddleP2
+		local opponentPaddle = objects.PaddleP1
 		local opponentY = tab.paddle1.y
 		
 		movePaddle( opponentPaddle, opponentY, false )
@@ -794,7 +810,6 @@ end
 
 
 --// We basically run the game in the application's Think function
-local lastMPUpdate = {}
 function APP.Think()
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
@@ -821,12 +836,7 @@ function APP.Think()
 		elseif gameType == PONG_GAME_MP then
 			gPhone.updateToNetStream( grabGamePositions() ) -- Sends our positions to the server
 			
-			-- Make sure we are not sending repeats of the tables
-			local MPUpdate = gPhone.updateFromNetStream()
-			if not table.equal( MPUpdate, lastMPUpdate ) then
-				lastMPUpdate = MPUpdate
-				updateGamePositions( MPUpdate ) -- Updates our positions from the server
-			end
+			updateGamePositions( gPhone.updateFromNetStream() ) -- Updates our positions from the server
 		end
 		
 		-- This block of code runs the entire game
