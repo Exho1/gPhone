@@ -6,7 +6,9 @@
 	- Multiplayer
 		- Make it work
 		- App variable which defines a function to run to start a multiplayer game
-		- Replace the horrid multiplayer request system with my new one
+			-- Or just set up a standard function name to use
+		- Network pong events like scoring a point
+		
 	- Convert all the back buttons to my format
 		objects.Back = vgui.Create("gPhoneBackButton", screen)
 		objects.Back:SetTextColor( gPhone.colors.blue )
@@ -18,7 +20,7 @@
 	- Selfie camera
 	- Figure out why missing config values dont save
 	- Wallpaper
-		- The gPhone is bloated by the backgrounds, 2mb.
+		- The gPhone is bloated by the backgrounds, 2mb
 		- Online wallpapers?
 	- Networking
 		- Move P2P request/response system to not use Write/ReadTable
@@ -27,9 +29,8 @@
 	- If you are called when the phone is closed, you can't really do anything about it
 		- It could be used in the tutorial to make a certain language pop up first
 ]]
-
 gPhone = gPhone or {}
-gPhone.version = "1.1.9"
+gPhone.version = "1.2.0"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
