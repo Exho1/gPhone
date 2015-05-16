@@ -168,7 +168,7 @@ function APP.OptionClick( option )
 			
 		end
 		for k, v in pairs( player.GetAll() ) do
-			--if v != LocalPlayer() then -- Comment out to enable self gaming
+			--if v != LocalPlayer() then -- Comment out to enable playing against yourself over multiplayer
 				opponentPicker:AddChoice( v:Nick() )
 			--end
 		end
@@ -282,7 +282,7 @@ function APP.QuitToMainMenu()
 end
 
 function APP.Close()
-	if gameType == PONG_GAME_MP and LocalPlayer():inMPGame() then
+	if gameType == PONG_GAME_MP and LocalPlayer():GetNWBool("gPhone_InMPGame", false) then
 		gPhone.updateToNetStream( {header=GPHONE_MP_PLAYER_QUIT} ) -- Tell the server that we quit
 		hook.Remove( "Think", "gPhone_CheckConnected" )
 	end
@@ -307,9 +307,9 @@ function APP.SetUpGame( type )
 
 	elseif gameType == PONG_GAME_MP then
 		-- We might need to wait for the server to set up the lobby before setting up a game
-		if not client:inMPGame() then
+		if not client:GetNWBool("gPhone_InMPGame", false) then
 			hook.Add("Think", "gPhone_mpWait", function()
-				if client:inMPGame() then
+				if client:GetNWBool("gPhone_InMPGame", false) then
 					print("In game, setting up")
 					APP.SetUpGame( PONG_GAME_MP )
 					hook.Remove("Think", "gPhone_mpWait")

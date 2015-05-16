@@ -4,11 +4,6 @@ gPhone.connectedPlayers = gPhone.connectedPlayers or {{"test"}}
 
 local plymeta = FindMetaTable( "Player" )
 
---// Returns if the player is currently in a multiplayer game with other players
-function plymeta:inMPGame()
-	return self:GetNWBool("gPhone_InMPGame", false)
-end
-
 -- Net message enumerations 
 GPHONE_MP_PLAYER_QUIT = 1
 
@@ -58,7 +53,7 @@ if SERVER then
 			end
 			
 			-- This gives a false positive immediately after creating a match. Look into it
-			--[[if ply1:inMPGame() or not ply2:inMPGame() then
+			--[[if ply1::GetNWBool("gPhone_InMPGame", false) or not ply2::GetNWBool("gPhone_InMPGame", false) then
 				gPhone.endNetStream( ply1 )
 				gPhone.endNetStream( ply2 )
 			end]]
@@ -184,9 +179,13 @@ end
 if CLIENT then
 	local client = LocalPlayer()
 	
+	if not client.inMPGame then
+	
+	end
+	
 	--// Send a table to the server to be distributed amongst the connected players
 	function gPhone.updateToNetStream( data )
-		if client:inMPGame() then
+		if client.inMPGame and client:GetNWBool("gPhone_InMPGame", false) then
 			data.sender = client
 			
 			net.Start("gPhone_MultiplayerStream")
@@ -216,7 +215,7 @@ if CLIENT then
 	--// Check if the server is continuing to stream data to us
 	local seen = false
 	hook.Add("Think", "gPhone_CheckConnected", function()
-		if client.inMPGame and client:inMPGame() then
+		if client:GetNWBool("gPhone_InMPGame", false) then
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true
 				
