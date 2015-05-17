@@ -178,8 +178,7 @@ function gPhone.sendRequest( tbl, ply )
 		tbl[1] = ply
 		
 		net.Start("gPhone_Request")
-			--net.WriteTable( tbl )
-			gPhone.writeTable( tbl )
+			net.WriteTable( tbl )
 		net.Send( ply )
 		
 		return id
@@ -188,8 +187,7 @@ function gPhone.sendRequest( tbl, ply )
 		tbl[1] = ply
 		
 		net.Start("gPhone_Request")
-			--net.WriteTable( tbl )
-			gPhone.writeTable( tbl )
+			net.WriteTable( tbl )
 		net.SendToServer()
 	end
 end
@@ -236,7 +234,7 @@ function gPhone.sendResponse( tbl, ply )
 	if SERVER then
 		-- Foward response to target
 		net.Start("gPhone_Response")
-			gPhone.writeTable( tbl )
+			net.WriteTable( tbl )
 		net.Send( ply )
 	else
 		-- This is a response so flip the roles around
@@ -249,7 +247,7 @@ function gPhone.sendResponse( tbl, ply )
 		sendTable[6] = nil -- Shrink the table
 		
 		net.Start("gPhone_Response")
-			gPhone.writeTable( sendTable )
+			net.WriteTable( sendTable )
 		net.SendToServer()
 	end
 end
