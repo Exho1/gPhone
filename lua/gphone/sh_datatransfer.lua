@@ -46,14 +46,14 @@ if SERVER then
 	
 	--// Handles requests
 	net.Receive( "gPhone_Request", function( len, ply )
-		local data = gPhone.readTable()
+		local data = net.ReadTable()
 		
 		gPhone.receiveRequest( data )
 	end)
 	
 	--// Handles responses
 	net.Receive( "gPhone_Response", function( len, ply )
-		local data = gPhone.readTable()
+		local data = net.ReadTable()
 
 		gPhone.receiveResponse( data )
 	end)
@@ -287,7 +287,7 @@ if CLIENT then
 	net.Receive( "gPhone_Request", function( len, ply )
 		gPhone.log("Received p2p request from server")
 		
-		local data = gPhone.readTable()
+		local data = net.ReadTable()
 		
 		gPhone.receiveRequest( data )
 	end)
@@ -296,7 +296,7 @@ if CLIENT then
 	net.Receive( "gPhone_Response", function( len, ply )
 		gPhone.log("Received p2p response from server")
 		
-		local data = gPhone.readTable()
+		local data = net.ReadTable()
 		
 		gPhone.receiveResponse( data )
 	end)
