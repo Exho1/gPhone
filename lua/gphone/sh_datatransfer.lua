@@ -216,6 +216,7 @@ if SERVER then
 			
 			local targetPly = gPhone.getPlayerByNumber( number )
 			
+			-- TODO: Remove the hasPhoneOpen check so players with their phone minimized can be called
 			if targetPly:hasPhoneOpen() and not targetPly:inCall() then	
 				local reqStr = string.format( trans("being_called"), ply:Nick() )
 				local id = gPhone.sendRequest( {[2]=ply, [3]="Phone", [4]=reqStr}, targetPly )

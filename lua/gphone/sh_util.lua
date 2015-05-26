@@ -104,11 +104,6 @@ function plymeta:getPhoneNumber()
 	return number
 end
 
---// Returns if the player is currently in a multiplayer game with other players
-function plymeta:inMPGame()
-	return self:GetNWBool("gPhone_InMPGame", false)
-end
-
 --// Returns if the player is in a call
 function plymeta:inCall()
 	return self:GetNWBool("gPhone_InCall", false)
@@ -204,7 +199,7 @@ function gPhone.receiveRequest( tbl )
 		end
 		
 		hook.Run( "gPhone_requestSent", tbl[2], tbl[1], tbl, id )
-		gPhone.sendRequest( tbl, tbl.target )
+		gPhone.sendRequest( tbl, tbl[1] )
 	else
 		-- Recieve the request and alert the client
 		gPhone.notifyAlert( {msg=tbl[4], title=trans("request"), options={trans("deny"), trans("accept")}},
@@ -214,13 +209,26 @@ function gPhone.receiveRequest( tbl )
 		end,
 		function( pnl, value )
 			-- On accept, send response and run app
-			local msg -- Um... Why doesn't this get assigned to anything?
 			local sendTable = {[1]=tbl[2], [6]=true, [5]=id, [3]=tbl[3]}
 			
 			gPhone.sendResponse( sendTable, tbl[2] )
 			
+			local app = gPhone.getActiveApp()
+			
+			local app = ""
+			if gPhone.getActiveApp() then
+				if gPhone.getActiveApp().Data then
+					app = gPhone.getActiveApp().Data.PrintName
+				end
+			end
+			
+			if not tbl[3] then
+				gPhone.msgC( GPHONE_MSGC_WARNING, "Request does not have a valid app" )
+				return
+			end
+			
 			-- Make sure we don't open the same app again
-			if tbl[3]:lower() != gPhone.getActiveApp().Data.PrintName:lower() then
+			if tbl[3]:lower() != app:lower() then
 				gPhone.runApp( tbl[3] )
 			else
 				gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to reopen app from notification!")
@@ -241,10 +249,9 @@ function gPhone.sendResponse( tbl, ply )
 		local sendTable = tbl
 		sendTable[1] = ply
 		sendTable[2] = tbl[1]
-		-- The third entry doesn't change
 		sendTable[4] = tbl[5]
 		sendTable[5] = tbl[6]
-		sendTable[6] = nil -- Shrink the table
+		sendTable[6] = nil -- The 6th key in 'tbl' becomes the 5th in 'sendTable'
 		
 		net.Start("gPhone_Response")
 			net.WriteTable( sendTable )
@@ -263,10 +270,10 @@ function gPhone.receiveResponse( tbl )
 			gPhone.requestIDs[id].receiveTime = CurTime()
 		else
 			gPhone.msgC( GPHONE_MSGC_WARNING, "Attempted to receive response for invalid request id: "..id )
-			
 		end
 	
 		hook.Run( "gPhone_responseSent", tbl[2], tbl[1], tbl, id )
+		
 		-- Forward the response
 		gPhone.sendResponse( tbl, tbl[1] )
 		
@@ -341,6 +348,22 @@ function gPhone.getRequestResponded( id )
 		-- Was there a response to this request?
 		return gPhone.requestIDs[id].responded
 	end
+end
+
+--// Checks if two tables have the exact same contents
+function table.equal( tbl1, tbl2 )	
+	-- Iterates through the first table and compares it to the second
+    for k, v in pairs( tbl1 ) do
+		if type(v) == "table" and type(tbl2[k]) == "table" then
+			-- Iterates further through nested tables
+			if not table.equal( v, tbl2[k] ) then
+				return false
+			end
+		elseif tbl2[k] != v then
+            return false
+        end
+    end
+    return true
 end
 
 --// Sends a colored message to console
