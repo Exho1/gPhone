@@ -6,6 +6,8 @@ local phone = Material( "vgui/gphone/gphone.png" )
 
 --// Builds the phone 
 function gPhone.buildPhone()
+	client = LocalPlayer()
+	
 	gPhone.wipeLog()
 	
 	gPhone.log("Building phone")
