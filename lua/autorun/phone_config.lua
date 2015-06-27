@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 5/16/15
+-- Version: 6/13/15
 
 --[[ To Do:
 	- Multiplayer
@@ -28,9 +28,10 @@
 		- Snake
 	- If you are called when the phone is closed, you can't really do anything about it
 		- It could be used in the tutorial to make a certain language pop up first
+	- Steam IDs have gotten longer...
 ]]
 gPhone = gPhone or {}
-gPhone.version = "1.2.0"
+gPhone.version = "1.2.2"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
@@ -125,6 +126,7 @@ if SERVER then
 	util.AddNetworkString("gPhone_Request")
 	util.AddNetworkString("gPhone_Response")
 	util.AddNetworkString("gPhone_Transfer")
+	util.AddNetworkString("gPhone_Build")
 	
 	util.AddNetworkString("gPhone_MultiplayerData")
 	util.AddNetworkString("gPhone_MultiplayerStream")
@@ -139,63 +141,70 @@ if SERVER then
 	AddCSLuaFile("gphone/sh_datatransfer.lua")
 	AddCSLuaFile("gphone/sh_util.lua")
 	AddCSLuaFile("gphone/sh_lang.lua")
- 	AddCSLuaFile("gphone/sh_multiplayer.lua")
+ 	--AddCSLuaFile("gphone/sh_multiplayer.lua")
 	AddCSLuaFile("vgui/backbutton.lua")
 	
-	-- Apps
+	-- Add apps
 	local files = file.Find( "gphone/apps/*.lua", "LUA" )
 	for k, v in pairs(files) do
 		AddCSLuaFile("gphone/apps/"..v)
 	end
 	
-	-- Language files
+	-- Add language files
 	files = file.Find( "gphone/lang/*.lua", "LUA" )
 	for k, v in pairs(files) do
 		AddCSLuaFile("gphone/lang/"..v)
 	end
 	
-	-- Have to include the language file before the languages or errors result
-	include("gphone/sh_lang.lua")
+	-- Delayed including of Lua files
+	hook.Add("PostGamemodeLoaded", "gPhone_waitForLoad", function()
 	
-	-- Include languages
-	local files = file.Find( "gphone/lang/*.lua", "LUA" )
-	for k, v in pairs(files) do
-		include("gphone/lang/"..v)
-	end
-	
-	include("gphone/sv_phone.lua")
- 	include("gphone/sh_util.lua")
- 	include("gphone/sh_multiplayer.lua")
-	include("gphone/sh_datatransfer.lua")
+		-- Have to include the language file before the languages or errors result
+		include("gphone/sh_lang.lua")
+		
+		-- Include languages
+		local files = file.Find( "gphone/lang/*.lua", "LUA" )
+		for k, v in pairs(files) do
+			include("gphone/lang/"..v)
+		end
+		
+		include("gphone/sv_phone.lua")
+		include("gphone/sh_util.lua")
+		--include("gphone/sh_multiplayer.lua")
+		include("gphone/sh_datatransfer.lua")
+	end)
 	
 	if game.SinglePlayer() then
-		for _, ply in pairs(player.GetAll()) do
+		for _, ply in pairs( player.GetAll() ) do
 			gPhone.chatMsg( ply, "The phone will not work properly in Single Player!!! Expect bugs and other paranormal activities" )
 		end
 	end
 end
 
 if CLIENT then
-	include("gphone/sh_lang.lua")
-	
-	-- Include languages
-	local files = file.Find( "gphone/lang/*.lua", "LUA" )
-	for k, v in pairs(files) do
-		include("gphone/lang/"..v)
-	end
+	-- Delayed including of Lua files
+	hook.Add("PostGamemodeLoaded", "gPhone_waitForLoad", function()
+		include("gphone/sh_lang.lua")
+		
+		-- Include languages
+		local files = file.Find( "gphone/lang/*.lua", "LUA" )
+		for k, v in pairs(files) do
+			include("gphone/lang/"..v)
+		end
 
-	include("gphone/cl_phone.lua")
- 	include("gphone/cl_appbase.lua")
- 	include("gphone/cl_util.lua")
- 	include("gphone/cl_util_extension.lua")
- 	include("gphone/cl_animations.lua")
-	include("gphone/sh_util.lua")
- 	include("gphone/sh_multiplayer.lua")
-	include("gphone/sh_datatransfer.lua")
-	include("vgui/backbutton.lua")
-	
-	-- Check for updates from my website ONCE 
-	gPhone.checkUpdate()
+		include("gphone/cl_phone.lua")
+		include("gphone/cl_appbase.lua")
+		include("gphone/cl_util.lua")
+		include("gphone/cl_util_extension.lua")
+		include("gphone/cl_animations.lua")
+		include("gphone/sh_util.lua")
+		--include("gphone/sh_multiplayer.lua")
+		include("gphone/sh_datatransfer.lua")
+		include("vgui/backbutton.lua")
+		
+		-- Check for updates from my website ONCE 
+		gPhone.checkUpdate()
+	end)
 end
 
 print([[

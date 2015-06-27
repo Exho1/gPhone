@@ -225,8 +225,9 @@ end
 --// Various gameplay hooks and what not
 hook.Add("PlayerInitialSpawn", "gPhone_generateNumber", function( ply )
 	ply:generatePhoneNumber()
-
-	gPhone.runFunction( ply, "buildPhone" )
+	
+	net.Start( "gPhone_Build" )
+	net.Send( ply )
 end)
 
 hook.Add("PlayerDeath", "gPhone_HideOnDeath", function( ply )

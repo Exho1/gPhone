@@ -212,7 +212,11 @@ if CLIENT then
 	
 	--// Check if the server is continuing to stream data to us
 	local seen = false
-	hook.Add("Think", "gPhone_CheckConnected", function()
+	hook.Add("Think", "gPhone_CheckConnected", function()	
+		if not IsValid(client) then
+			client = LocalPlayer()
+		end
+		
 		if client:GetNWBool("gPhone_InMPGame", false) then
 			if CurTime() - lastUpdate > 5 and not seen then
 				seen = true

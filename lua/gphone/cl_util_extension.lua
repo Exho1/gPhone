@@ -116,7 +116,7 @@ function gPhone.isOpen()
 end
 
 function gPhone.exists()
-	return gPhone.phoneState != "destroyed"
+	return gPhone.phoneState != "destroyed" and IsValid( gPhone.phoneBase )
 end
 
 function gPhone.isHidden()

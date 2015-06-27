@@ -12,11 +12,25 @@ function gPhone.buildPhone()
 	
 	gPhone.log("Building phone")
 	
+	-- Don't create multiple gPhones
+	if gPhone.exists() then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "You cannot have multiple instances of the gPhone running!" )
+		return
+	end
+	
+	-- Make sure the local player is valid before creating the phone
+	if not IsValid( client ) then
+		timer.Simple(0.5, function()
+			gPhone.buildPhone()
+		end)
+		return
+	end
+	
 	if game.SinglePlayer() then
 		gPhone.msgC( GPHONE_MSGC_WARNING, "The phone is being run in single player!! Expect errors")
 	end
 	
-	if not client:GetNWBool( "gPhone_canOpen", true ) then
+	if not LocalPlayer():GetNWBool( "gPhone_canOpen", true ) then
 		gPhone.chatMsg( trans("unable_to_open") )
 		return
 	end

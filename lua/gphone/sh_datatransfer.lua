@@ -284,6 +284,11 @@ if CLIENT then
 		end
 	end)
 	
+	--// Builds the phone
+	net.Receive( "gPhone_Build", function( len, ply )
+		gPhone.buildPhone()
+	end)
+	
 	--// Handles requests
 	net.Receive( "gPhone_Request", function( len, ply )
 		gPhone.log("Received p2p request from server")
