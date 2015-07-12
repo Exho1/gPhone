@@ -76,7 +76,7 @@ l.received_money = "Mottagit $%i från %s!"
 l.sent_money = "Skickade $%i till %s!"
 
 l.text_cooldown = "Du måste vänta %i sekunder innan du kan skicka SMS igen!"
-l.text_flagged = "Du blockerad från att skicka SMS i %i sekunder på grund av spam!"
+l.text_flagged = "Du är blockerad från att skicka SMS i %i sekunder på grund av spam!"
 
 l.being_called = "%s ringer dig!"
 
