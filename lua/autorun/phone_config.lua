@@ -1,6 +1,6 @@
 ----// gPhone //----
 -- Author: Exho
--- Version: 6/13/15
+-- Version: 9/13/15
 
 --[[ To Do:
 	- Multiplayer
@@ -31,7 +31,7 @@
 	- Steam IDs have gotten longer...
 ]]
 gPhone = gPhone or {}
-gPhone.version = "1.2.2"
+gPhone.version = "1.2.4"
 
 gPhone.languages = {}
 gPhone.invalidNumber = "ERRO-RNUM"
