@@ -78,10 +78,6 @@ function APP.CreateKeypad( objects )
 		local txt = numberText:GetText()
 		local newText = txt..text
 		
-		if string.len( newText ) > 9 then
-			return
-		end
-		
 		if bErase then
 			newText = string.sub( newText, 1, string.len(newText) - 1 )
 		end
