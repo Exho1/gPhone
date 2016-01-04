@@ -554,6 +554,12 @@ function gPhone.loadClientConfig()
 	local cfgFile = file.Read( "gphone/config.txt", "DATA" )
 	local cfgTable = util.JSONToTable( cfgFile ) 
 	
+	if not cfgTable then
+		gPhone.msgC( GPHONE_MSGC_WARNING, "Invalid config file")
+		gPhone.saveClientConfig()
+		return gPhone.config
+	end
+	
 	-- Search for values that exist in the config table but not the file
 	local shouldSave = false
 	for k, v in pairs( gPhone.config ) do
