@@ -238,7 +238,9 @@ function APP.OpenCallScreen( number, timeStarted )
 	local objects = gApp["_children_"]
 	local screen = gPhone.phoneScreen
 	
-	objects.connecting:Remove()
+	if IsValid( objects.connecting ) then
+		objects.connecting:Remove()
+	end
 	gPhone.hideChildren( objects.layout )
 	LocalPlayer():ConCommand("+voicerecord")
 	
