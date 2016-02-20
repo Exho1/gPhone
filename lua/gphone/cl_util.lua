@@ -200,11 +200,10 @@ function gPhone.canUseApp( appData )
 		end
 	end
 	
-	if appData.AllowedUsergroups and #appData.AllowedUsergroups > 0 then
-		for _, group in pairs( appData.AllowedUsergroups ) do
-			if client:GetUserGroup() == group then
-				break
-			end
+	if appData.AllowedUsergroups then
+		if table.HasValue(appData.AllowedUsergroups, client:GetUserGroup()) then
+			canUse = true
+		else
 			canUse = false
 		end
 	end
