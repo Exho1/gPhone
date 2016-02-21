@@ -128,6 +128,20 @@ function APP.PopulateList()
 		download.DoClick = function()
 			download.chosen = !download.chosen
 			
+			for name, tbl in pairs( gApp ) do
+				if name == dNameL then
+					if tbl.Data and tbl.Data.AllowedUsergroups then
+						groups = tbl.Data.AllowedUsergroups
+						break
+					end
+				end
+			end
+			
+			if !table.HasValue(groups, LocalPlayer():GetUserGroup()) then	
+				gPhone.msgC( GPHONE_MSGC_NOTIFY, "You are not the right rank to get this app!" )
+				return			
+			end
+			
 			if download.chosen then -- Download app
 				if canDownload then
 					gPhone.msgC( GPHONE_MSGC_NOTIFY, "Downloaded app ("..dName..") from app store" )
