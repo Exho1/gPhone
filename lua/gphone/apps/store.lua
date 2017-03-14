@@ -137,7 +137,7 @@ function APP.PopulateList()
 				end
 			end
 			
-			if !table.HasValue(groups, LocalPlayer():GetUserGroup()) then	
+			if groups and !table.HasValue(groups, LocalPlayer():GetUserGroup()) then	
 				gPhone.msgC( GPHONE_MSGC_NOTIFY, "You are not the right rank to get this app!" )
 				return			
 			end
